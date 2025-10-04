@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<view xmlns="http://jmix.io/schema/flowui/view"
+      title="msg://ecmView.title">
+    <data>
+        <collection id="foldersDc" class="com.vn.ecm.entity.Folder">
+            <fetchPlan>
+                <property name="name"/>
+                <property name="parent"/>
+            </fetchPlan>
+            <loader id ="foldersDl">
+                <query>
+                    <![CDATA[select f from Folder f]]>
+                </query>
+            </loader>
+
+        </collection>
+
+
+        <collection id="filesDc" class="com.vn.ecm.entity.Folder"/>
+    </data>
+
+    <layout>
+        <split width="100%" height="100%">
+<!--            left-->
+            <vbox width="100%" height="100%">
+                <treeDataGrid id="foldersTree"
+                              dataContainer="foldersDc"
+                              hierarchyProperty="parent"
+                              width="100%"
+                              minHeight="100%">
+                    <columns>
+                        <column property="name"/>
+
+                    </columns>
+                    <actions>
+                        <action id="createFolder" text="New Folder"/>
+                        <action id="create" text="New Bucket" />
+                        <action id="delete" text="Delete" />
+                        <action id="assignPermission" text="Assign Permission"/>
+                    </actions>
+                </treeDataGrid>
+                
+                
+            </vbox>
+            
+            
+            
+            
+<!--            right-->
+            <vbox>
+                
+            </vbox>
+        </split>
+
+    </layout>
+</view>
