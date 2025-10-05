@@ -7,7 +7,7 @@
                 <property name="name"/>
                 <property name="parent"/>
             </fetchPlan>
-            <loader id ="foldersDl">
+            <loader id="foldersDl">
                 <query>
                     <![CDATA[select f from Folder f]]>
                 </query>
@@ -16,12 +16,30 @@
         </collection>
 
 
-        <collection id="filesDc" class="com.vn.ecm.entity.Folder"/>
+        <collection id="filesDc" class="com.vn.ecm.entity.File">
+            <fetchPlan>
+                <property name="name"/>
+                <property name="extension"/>
+                <property name="size"/>
+                <property name="lastModified"/>
+                <property name="folder"/>
+            </fetchPlan>
+            <loader id="filesDl">
+                <query><![CDATA[
+                         select f from File f
+                         where (:folderId is null or f.folder.id = :folderId)
+                         order by f.name]]>
+                </query>
+
+            </loader>
+        </collection>
+
+
     </data>
 
     <layout>
         <split width="100%" height="100%">
-<!--            left-->
+            <!--            left-->
             <vbox width="100%" height="100%">
                 <treeDataGrid id="foldersTree"
                               dataContainer="foldersDc"
@@ -34,22 +52,28 @@
                     </columns>
                     <actions>
                         <action id="createFolder" text="New Folder"/>
-                        <action id="create" text="New Bucket" />
-                        <action id="delete" text="Delete" />
+                        <action id="create" text="New Bucket"/>
+                        <action id="delete" text="Delete"/>
                         <action id="assignPermission" text="Assign Permission"/>
                     </actions>
                 </treeDataGrid>
-                
-                
             </vbox>
-            
-            
-            
-            
-<!--            right-->
-            <vbox>
-                
+
+            <!--            right-->
+            <vbox width="100%" height="100%">
+                <dataGrid id=""
+                          width="100%"
+                          minHeight="20em"
+                          dataContainer="filesDc">
+                    <columns>
+                        <column property="name"/>
+                        <column property="size"/>
+                        <column property="extension"/>
+                        <column property="lastModified"/>
+                    </columns>
+                </dataGrid>
             </vbox>
+
         </split>
 
     </layout>

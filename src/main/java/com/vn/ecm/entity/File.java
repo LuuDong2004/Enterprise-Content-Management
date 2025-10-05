@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @JmixEntity
-@Table(name = "FILE")
+@Table(name = "FILE_")
 @Entity
 public class File {
     @JmixGeneratedValue
