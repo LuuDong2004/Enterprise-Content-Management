@@ -1,0 +1,20 @@
+version: "3.9"
+
+services:
+  clamav:
+    image: clamav/clamav:stable
+    container_name: clamav
+    ports:
+      - "3310:3310"                # expose TCP clamd
+    volumes:
+      - clamdb:/var/lib/clamav     # lưu DB chữ ký virus (persist)
+      - ./clamd.conf:/etc/clamav/clamd.conf:ro
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "3310"]
+      interval: 30s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  clamdb:
