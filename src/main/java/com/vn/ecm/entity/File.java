@@ -17,8 +17,11 @@ public class File {
     @Column(name = "ID", nullable = false)
     private UUID id;
 
-    @Column(name = "NAME",  columnDefinition = "NVARCHAR(255)" ,nullable = false)
+    @Column(name = "NAME", columnDefinition = "NVARCHAR(255)", nullable = false)
     private String name;
+
+    @Column(name = "STORAGE")
+    private String storage;
 
     @Column(name = "EXTENSION")
     private String extension;
@@ -35,6 +38,14 @@ public class File {
 
     @Column(name = "FILE_REF")
     private FileRef fileRef;
+
+    public String getStorage() {
+        return storage;
+    }
+
+    public void setStorage(String storage) {
+        this.storage = storage;
+    }
 
     public File() {
     }

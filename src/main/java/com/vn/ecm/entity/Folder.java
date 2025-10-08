@@ -1,4 +1,5 @@
 package com.vn.ecm.entity;
+
 import io.jmix.core.entity.annotation.JmixGeneratedValue;
 import io.jmix.core.metamodel.annotation.JmixEntity;
 import jakarta.persistence.*;
@@ -6,6 +7,7 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+
 @JmixEntity
 @Table(name = "FOLDER")
 @Entity
@@ -15,6 +17,12 @@ public class Folder {
     @Column(name = "ID", nullable = false)
     private UUID id;
 
+    @Column(name = "FULL_PATH")
+    private String fullPath;
+
+    @Column(name = "STORAGE")
+    private String storage;
+
     @Column(name = "name", nullable = false)
     private String name;
 
@@ -22,15 +30,28 @@ public class Folder {
     @JoinColumn(name = "parent_ID")
     private Folder parent;
 
-    @OneToMany(mappedBy = "parent")
-    @OrderBy("name ASC")
-    private List<Folder> children;
-
     @OneToMany(mappedBy = "folder")
     private List<File> file;
 
     @Column(name = "createdDate")
     private LocalDateTime createdDate;
+
+    public String getStorage() {
+        return storage;
+    }
+
+    public void setStorage(String storage) {
+        this.storage = storage;
+    }
+
+    public String getFullPath() {
+        return fullPath;
+    }
+
+    public void setFullPath(String fullPath) {
+        this.fullPath = fullPath;
+    }
+
 
     public Folder() {
     }
@@ -39,7 +60,6 @@ public class Folder {
         this.id = id;
         this.name = name;
         this.parent = parent;
-        this.children = children;
         this.file = file;
         this.createdDate = createdDate;
     }
@@ -68,13 +88,6 @@ public class Folder {
         this.parent = parent;
     }
 
-    public List<Folder> getChildren() {
-        return children;
-    }
-
-    public void setChildren(List<Folder> children) {
-        this.children = children;
-    }
 
     public List<File> getFile() {
         return file;
