@@ -3,6 +3,7 @@ package com.vn.ecm.view.ecm;
 import com.vaadin.flow.component.grid.ItemClickEvent;
 
 import com.vaadin.flow.component.notification.NotificationVariant;
+import com.vaadin.flow.component.upload.FileRejectedEvent;
 import com.vaadin.flow.component.upload.SucceededEvent;
 
 import com.vaadin.flow.component.upload.Upload;
@@ -54,6 +55,7 @@ public class EcmView extends StandardView {
        // mở từng cấp
        foldersTree.expandRecursively(foldersDc.getItems(),1);
     }
+
     @Subscribe("foldersTree")
     public void onFoldersTreeItemClick(final ItemClickEvent<Folder> event) {
         Folder selected = event.getItem();
@@ -69,7 +71,7 @@ public class EcmView extends StandardView {
     }
 
     @Subscribe("upload")
-    public void onUploadFileRejected(final com.vaadin.flow.component.upload.FileRejectedEvent event) {
+    public void onUploadFileRejected(final FileRejectedEvent event) {
         notifications.create(event.getErrorMessage())
                 .withThemeVariant(NotificationVariant.LUMO_WARNING)
                 .withDuration(5000)
