@@ -26,10 +26,10 @@
             </fetchPlan>
             <loader id="filesDl">
                 <query><![CDATA[
-                         select f from File f
-                         where (:folderId is null or f.folder.id = :folderId)
-                         order by f.name]]>
-                </query>
+        select f from File f
+        where (:folder is null or f.folder = :folder)
+        order by f.name
+    ]]></query>
 
             </loader>
         </collection>

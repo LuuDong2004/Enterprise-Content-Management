@@ -1,8 +1,8 @@
 package com.vn.ecm.entity;
 
+import io.jmix.core.FileRef;
 import io.jmix.core.entity.annotation.JmixGeneratedValue;
 import io.jmix.core.metamodel.annotation.JmixEntity;
-
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -17,7 +17,7 @@ public class File {
     @Column(name = "ID", nullable = false)
     private UUID id;
 
-    @Column(name = "NAME", nullable = false)
+    @Column(name = "NAME",  columnDefinition = "NVARCHAR(255)" ,nullable = false)
     private String name;
 
     @Column(name = "EXTENSION")
@@ -33,16 +33,20 @@ public class File {
     @JoinColumn(name = "FOLDER_ID")
     private Folder folder;
 
+    @Column(name = "FILE_REF")
+    private FileRef fileRef;
+
     public File() {
     }
 
-    public File(UUID id, String name, String extension, Long size, LocalDateTime lastModified, Folder folder) {
+    public File(UUID id, String name, String extension, Long size, LocalDateTime lastModified, Folder folder, FileRef fileRef) {
         this.id = id;
         this.name = name;
         this.extension = extension;
         this.size = size;
         this.lastModified = lastModified;
         this.folder = folder;
+        this.fileRef = fileRef;
     }
 
     public UUID getId() {
@@ -91,5 +95,11 @@ public class File {
 
     public void setFolder(Folder folder) {
         this.folder = folder;
+    }
+    public FileRef getFileRef() {
+        return fileRef;
+    }
+    public void setFileRef(FileRef fileRef) {
+        this.fileRef = fileRef;
     }
 }

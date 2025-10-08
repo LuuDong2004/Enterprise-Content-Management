@@ -6,9 +6,9 @@ import org.springframework.lang.Nullable;
 
 
 public enum StorageType implements EnumClass<String> {
-
-    ;
-
+    S3("S3"),
+    MINIO("Minio"),
+    API("Api");
     private final String id;
 
     StorageType(String id) {
