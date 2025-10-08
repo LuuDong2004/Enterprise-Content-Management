@@ -1,6 +1,5 @@
 package com.vn.ecm.view.ecm;
 
-import com.vaadin.flow.component.Html;
 import com.vaadin.flow.component.grid.ItemClickEvent;
 
 import com.vaadin.flow.component.notification.NotificationVariant;
@@ -15,17 +14,11 @@ import io.jmix.flowui.Notifications;
 import io.jmix.flowui.component.grid.DataGrid;
 import io.jmix.flowui.component.grid.TreeDataGrid;
 import io.jmix.flowui.component.upload.receiver.MultiFileTemporaryStorageBuffer;
-import io.jmix.flowui.component.upload.receiver.TemporaryStorageFileData;
 import io.jmix.flowui.model.CollectionContainer;
 import io.jmix.flowui.model.CollectionLoader;
 import io.jmix.flowui.upload.TemporaryStorage;
 import io.jmix.flowui.view.*;
 import org.springframework.beans.factory.annotation.Autowired;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Map;
-import java.util.UUID;
 
 @Route(value = "ECM-view", layout = MainView.class)
 @ViewController(id = "EcmView")

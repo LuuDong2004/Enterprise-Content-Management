@@ -2,10 +2,10 @@ package com.vn.ecm.service;
 
 public interface StorageService {
 
-    String gerProviderName();
+    String getProviderName();
 
-    // upload
+    //upload
     //download
-    // delete
+    //delete
     //getList
 }

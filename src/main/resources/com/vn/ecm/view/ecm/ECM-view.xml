@@ -47,7 +47,7 @@
                               width="100%"
                               minHeight="100%">
                     <columns>
-                        <column property="name"/>
+                        <column property="name" header="Name"/>
 
                     </columns>
                     <actions>
@@ -70,10 +70,10 @@
                           dataContainer="filesDc">
 
                     <columns>
-                        <column property="name"/>
-                        <column property="size"/>
-                        <column property="extension"/>
-                        <column property="lastModified"/>
+                        <column property="name" header="Name"/>
+                        <column property="size" header="Size"/>
+                        <column property="extension" header="Extension"/>
+                        <column property="lastModified" header="Modified"/>
                     </columns>
                 </dataGrid>
             </vbox>
