@@ -1,14 +1,18 @@
 package com.vn.ecm.entity;
 
-
 import io.jmix.core.metamodel.datatype.EnumClass;
 
+import org.springframework.lang.Nullable;
+
+
 public enum PermissionType implements EnumClass<Integer> {
+
     READ(1),
     CREATE(2),
     MODIFY(4),
     FULL(8);
-    private int value;
+
+    private final int value;
 
     PermissionType(int value) {
         this.value = value;
@@ -16,6 +20,15 @@ public enum PermissionType implements EnumClass<Integer> {
 
     public int getValue() {
         return value;
+    }
+
+    public static boolean hasPermission(int mask, PermissionType type) {
+        // Nếu đã có FULL thì pass hết
+        if ((mask & FULL.value) == FULL.value) {
+            return true;
+        }
+        // Kiểm tra bit tương ứng
+        return (mask & type.value) == type.value;
     }
 
     @Override
@@ -49,5 +62,4 @@ public enum PermissionType implements EnumClass<Integer> {
                 return super.toString();
         }
     }
-
 }

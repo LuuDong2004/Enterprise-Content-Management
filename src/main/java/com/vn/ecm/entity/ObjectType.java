@@ -1,7 +1,9 @@
 package com.vn.ecm.entity;
 
 import io.jmix.core.metamodel.datatype.EnumClass;
+
 import org.springframework.lang.Nullable;
+
 
 public enum ObjectType implements EnumClass<String> {
 
@@ -27,5 +29,4 @@ public enum ObjectType implements EnumClass<String> {
         }
         return null;
     }
-
 }

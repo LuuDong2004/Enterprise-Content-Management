@@ -8,7 +8,9 @@ import java.util.UUID;
 
 @JmixEntity
 @Table(name = "PERMISSION", indexes = {
-        @Index(name = "IDX_PERMISSION_USER", columnList = "USER_ID")
+        @Index(name = "IDX_PERMISSION_USER", columnList = "USER_ID"),
+        @Index(name = "IDX_PERMISSION_FOLDER", columnList = "FOLDER_ID"),
+        @Index(name = "IDX_PERMISSION_FILE", columnList = "FILE_ID")
 })
 @Entity
 public class Permission {
@@ -22,6 +24,14 @@ public class Permission {
 
     @Column(name = "APPLIES_TO")
     private String appliesTo;
+
+    @JoinColumn(name = "FOLDER_ID")
+    @ManyToOne(fetch = FetchType.LAZY)
+    private Folder folder;
+
+    @JoinColumn(name = "FILE_ID")
+    @ManyToOne(fetch = FetchType.LAZY)
+    private File file;
 
     @JoinColumn(name = "USER_ID")
     @ManyToOne(fetch = FetchType.LAZY)
@@ -44,6 +54,22 @@ public class Permission {
 
     @Transient
     private Boolean allow;
+
+    public File getFile() {
+        return file;
+    }
+
+    public void setFile(File file) {
+        this.file = file;
+    }
+
+    public Folder getFolder() {
+        return folder;
+    }
+
+    public void setFolder(Folder folder) {
+        this.folder = folder;
+    }
 
     public AppliesTo getAppliesTo() {
         return AppliesTo.fromId(appliesTo);
