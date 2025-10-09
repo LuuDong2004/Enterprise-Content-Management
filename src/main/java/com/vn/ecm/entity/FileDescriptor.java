@@ -1,17 +1,15 @@
 package com.vn.ecm.entity;
-
 import io.jmix.core.FileRef;
 import io.jmix.core.entity.annotation.JmixGeneratedValue;
 import io.jmix.core.metamodel.annotation.JmixEntity;
 import jakarta.persistence.*;
-
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @JmixEntity
-@Table(name = "FILE_")
+@Table(name = "FILE_Descriptor")
 @Entity
-public class File {
+public class FileDescriptor {
     @JmixGeneratedValue
     @Id
     @Column(name = "ID", nullable = false)
@@ -47,10 +45,10 @@ public class File {
         this.storage = storage;
     }
 
-    public File() {
+    public FileDescriptor() {
     }
 
-    public File(UUID id, String name, String extension, Long size, LocalDateTime lastModified, Folder folder, FileRef fileRef) {
+    public FileDescriptor(UUID id, String name, String extension, Long size, LocalDateTime lastModified, Folder folder, FileRef fileRef) {
         this.id = id;
         this.name = name;
         this.extension = extension;

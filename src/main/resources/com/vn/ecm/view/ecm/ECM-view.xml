@@ -16,7 +16,7 @@
         </collection>
 
 
-        <collection id="filesDc" class="com.vn.ecm.entity.File">
+        <collection id="filesDc" class="com.vn.ecm.entity.FileDescriptor">
             <fetchPlan>
                 <property name="name"/>
                 <property name="extension"/>
@@ -27,12 +27,22 @@
             </fetchPlan>
             <loader id="filesDl">
                 <query><![CDATA[
-        select f from File f
+        select f from FileDescriptor f
         where (:folder is null or f.folder = :folder)
         order by f.name
     ]]></query>
-
             </loader>
+        </collection>
+        <collection id="StorageDc" class="com.vn.ecm.entity.SourceStorage">
+            <loader id="storagesDl">
+                <query>
+                    <![CDATA[
+                        select s from SourceStorage s
+                        where s.active = true
+                    ]]>
+                </query>
+            </loader>
+
         </collection>
 
 
@@ -49,7 +59,6 @@
                               minHeight="100%">
                     <columns>
                         <column property="name"/>
-
                     </columns>
                     <actions>
                         <action id="createFolder" text="New Folder"/>
@@ -61,16 +70,25 @@
             </vbox>
 
             <!--            right-->
-            <vbox width="100%" height="100%">
-                <!-- Ví dụ: 1 GB -->
-                <fileStorageUploadField id="fileRefField"
-                                        property="fileRef"
-                                        dropAllowed="true"
-                                        clearButtonVisible="true"
-                                        maxFileSize="1073741824"
-                                        fileStoragePutMode="MANUAL"/>
-                <button id="btnDownload"
-                        text="Download"/>
+            <vbox classNames="right" width="100%" height="100%">
+                <hbox id="rightHbox"
+                      spacing="true"
+                      width="100%"
+                      alignItems="CENTER">
+                    <entityComboBox id="storageComboBox"
+                                    dataContainer="StorageDc"
+                                    label="Storage"
+                                    property="type" />
+                    <fileStorageUploadField id="fileRefField"
+                                            property="fileRef"
+                                            dropAllowed="true"
+                                            clearButtonVisible="true"
+                                            maxFileSize="1073741824"
+                                            fileStoragePutMode="MANUAL"/>
+                    <button id="btnDownload"
+                            text="Download"/>
+                </hbox>
+
                 <dataGrid id="fileDataGird"
                           width="100%"
                           minHeight="20em"
