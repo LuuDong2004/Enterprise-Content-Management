@@ -70,7 +70,7 @@
                           dataContainer="filesDc">
 
                     <actions>
-                        <action id="assignPermission" text="Assign Permission"/>
+                        <action id="onObjectAssignPermission" text="Assign Permission"/>
                     </actions>
 
                     <columns>

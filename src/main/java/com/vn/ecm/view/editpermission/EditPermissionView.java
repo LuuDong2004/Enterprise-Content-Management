@@ -1,6 +1,5 @@
 package com.vn.ecm.view.editpermission;
 
-
 import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.notification.Notification;
@@ -35,9 +34,11 @@ public class EditPermissionView extends StandardView {
     private User selectedUser;
     String path = "";
     private EcmObject target;
+
     public void setTarget(EcmObject target) {
         this.target = target;
     }
+
     public void setPath(String path) {
         this.path = path;
     }
@@ -98,8 +99,7 @@ public class EditPermissionView extends StandardView {
                     EcmObject dto = new EcmObject(
                             u.getId().toString(),
                             ObjectType.USER,
-                            u.getUsername()
-                    );
+                            u.getUsername());
                     dtos.add(dto);
                 }
                 // load role tương tự
@@ -110,8 +110,7 @@ public class EditPermissionView extends StandardView {
                     EcmObject dto = new EcmObject(
                             r.getCode(),
                             ObjectType.ROLE,
-                            r.getName()
-                    );
+                            r.getName());
                     dtos.add(dto);
                 }
                 // cập nhật UI
@@ -125,6 +124,12 @@ public class EditPermissionView extends StandardView {
     public void onBeforeShow(BeforeShowEvent event) {
         if (path != null) {
             pathArea.setValue(path);
+        }
+        if (target != null) {
+            List<EcmObject> dtos = new ArrayList<>();
+            dtos.add(target);
+            objectsDc.setItems(dtos);
+            objectDataGrid.select(target);
         }
     }
 
@@ -140,7 +145,8 @@ public class EditPermissionView extends StandardView {
                         if (e.getValue()) {
                             permission.setAllow(true);
                             if (permission.getPermissionType().equals(PermissionType.MODIFY)) {
-                                CollectionContainer<Permission> permissionsDc = getViewData().getContainer("permissionsDc");
+                                CollectionContainer<Permission> permissionsDc = getViewData()
+                                        .getContainer("permissionsDc");
                                 for (Permission p : permissionsDc.getItems()) {
                                     if (p.getPermissionType().equals(PermissionType.READ)
                                             || p.getPermissionType().equals(PermissionType.CREATE)) {
@@ -155,8 +161,7 @@ public class EditPermissionView extends StandardView {
                         permissionDataGrid.getDataProvider().refreshItem(permission);
                     });
                     return checkbox;
-                })
-        ).setHeader("Allow");
+                })).setHeader("Allow");
 
         // Cột Deny
         permissionDataGrid.addColumn(
@@ -167,7 +172,8 @@ public class EditPermissionView extends StandardView {
                         if (e.getValue()) {
                             permission.setAllow(false);
                             if (permission.getPermissionType().equals(PermissionType.READ)) {
-                                CollectionContainer<Permission> permissionsDc = getViewData().getContainer("permissionsDc");
+                                CollectionContainer<Permission> permissionsDc = getViewData()
+                                        .getContainer("permissionsDc");
                                 for (Permission p : permissionsDc.getItems()) {
                                     if (p.getPermissionType().equals(PermissionType.CREATE)
                                             || p.getPermissionType().equals(PermissionType.MODIFY)) {
@@ -182,8 +188,7 @@ public class EditPermissionView extends StandardView {
                         permissionDataGrid.getDataProvider().refreshItem(permission);
                     });
                     return checkbox;
-                })
-        ).setHeader("Deny");
+                })).setHeader("Deny");
 
         objectDataGrid.addSelectionListener(selection -> {
             Optional<EcmObject> optional = selection.getFirstSelectedItem();
@@ -216,8 +221,10 @@ public class EditPermissionView extends StandardView {
                     for (PermissionType type : PermissionType.values()) {
                         Permission p = dataManager.create(Permission.class);
                         p.setUser(user);
-                        if (selectedFile != null) p.setFile(selectedFile);
-                        if (selectedFolder != null) p.setFolder(selectedFolder);
+                        if (selectedFile != null)
+                            p.setFile(selectedFile);
+                        if (selectedFolder != null)
+                            p.setFolder(selectedFolder);
                         p.setPermissionType(type);
                         p.setAllow(PermissionType.hasPermission(mask, type));
                         list.add(p);
@@ -246,8 +253,10 @@ public class EditPermissionView extends StandardView {
                     for (PermissionType type : PermissionType.values()) {
                         Permission p = dataManager.create(Permission.class);
                         p.setRoleCode(role.getCode());
-                        if (selectedFile != null) p.setFile(selectedFile);
-                        if (selectedFolder != null) p.setFolder(selectedFolder);
+                        if (selectedFile != null)
+                            p.setFile(selectedFile);
+                        if (selectedFolder != null)
+                            p.setFolder(selectedFolder);
                         p.setPermissionType(type);
                         p.setAllow(PermissionType.hasPermission(mask, type));
                         list.add(p);
@@ -267,7 +276,7 @@ public class EditPermissionView extends StandardView {
         List<EcmObject> dtos = new ArrayList<>();
         for (User u : users) {
             EcmObject dto = new EcmObject();
-            dto.setId(u.getId().toString());   // để sau này load User
+            dto.setId(u.getId().toString()); // để sau này load User
             dto.setName(u.getUsername());
             dto.setType(ObjectType.USER);
             dtos.add(dto);
@@ -284,7 +293,7 @@ public class EditPermissionView extends StandardView {
         List<EcmObject> dtos = new ArrayList<>();
         for (ResourceRoleEntity r : roles) {
             EcmObject dto = new EcmObject();
-            dto.setId(r.getCode());    // code dùng làm key cho role
+            dto.setId(r.getCode()); // code dùng làm key cho role
             dto.setName(r.getName());
             dto.setType(ObjectType.ROLE);
             dtos.add(dto);
@@ -295,20 +304,46 @@ public class EditPermissionView extends StandardView {
     @Subscribe(id = "saveBtn", subject = "clickListener")
     public void onSaveBtnClick(final ClickEvent<JmixButton> event) {
         CollectionContainer<Permission> permissionDc = getViewData().getContainer("permissionsDc");
+
+        // Guard: require a selected user or role before saving
+        if (selectedUser == null && selectedRole == null) {
+            Notification.show("Please select a user or role");
+            return;
+        }
+
+        // Guard: require a selected folder or file
+        if (selectedFolder == null && selectedFile == null) {
+            Notification.show("Please select a folder or file");
+            return;
+        }
+
+        boolean saved = false;
+
         if (selectedUser != null) {
             if (selectedFolder != null) {
                 permissionService.savePermission(permissionDc.getItems(), selectedUser, selectedFolder);
-            } else if (selectedFile != null) {
+                saved = true;
+            }
+            if (selectedFile != null) {
                 permissionService.savePermission(permissionDc.getItems(), selectedUser, selectedFile);
+                saved = true;
             }
         } else if (selectedRole != null) {
             if (selectedFolder != null) {
                 permissionService.savePermission(permissionDc.getItems(), selectedRole, selectedFolder);
-            } else if (selectedFile != null) {
+                saved = true;
+            }
+            if (selectedFile != null) {
                 permissionService.savePermission(permissionDc.getItems(), selectedRole, selectedFile);
+                saved = true;
             }
         }
-        Notification.show("Permission saved");
-        close(StandardOutcome.SAVE);
+
+        if (saved) {
+            Notification.show("Permission saved");
+            close(StandardOutcome.SAVE);
+        } else {
+            Notification.show("No target selected for saving permissions");
+        }
     }
 }

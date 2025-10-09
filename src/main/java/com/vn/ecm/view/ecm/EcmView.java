@@ -30,9 +30,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 @ViewDescriptor(path = "ECM-view.xml")
 public class EcmView extends StandardView {
 
-    private File selectedFile;
-    private Folder selectedFolder;
-
     @ViewComponent
     private CollectionContainer<Folder> foldersDc;
     @ViewComponent
@@ -52,7 +49,6 @@ public class EcmView extends StandardView {
     private Upload upload;
     @Autowired
     private DialogWindows dialogWindows;
-
 
     @Subscribe
     protected void onInit(InitEvent event) {
@@ -98,11 +94,7 @@ public class EcmView extends StandardView {
         try {
             String path = buildFolderPath(folder);
             DialogWindow<AssignPermissionView> window = dialogWindows.view(this, AssignPermissionView.class).build();
-            if (this.selectedFile != null) {
-                window.getView().setTargetFile(this.selectedFile);
-            } else if (this.selectedFolder != null) {
-                window.getView().setTargetFolder(this.selectedFolder);
-            }
+            window.getView().setTargetFolder(folder);
             window.getView().setPath(path);
             window.open();
         } catch (Exception e) {

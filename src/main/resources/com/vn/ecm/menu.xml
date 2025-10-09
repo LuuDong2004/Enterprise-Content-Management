@@ -4,6 +4,11 @@
     <menu id="application" title="msg://com.vn.ecm/menu.application.title" opened="true">
         <item view="User.list" title="msg://com.vn.ecm.view.user/UserListView.title"/>
         <item view="EcmView" title="msg://com.vn.ecm.view.ecm/ecmView.title"/>
+        <item view="AdvancedPermissionView"
+              title="msg://com.vn.ecm.view.advancedpermission/advancedPermissionView.title"/>
+        <item view="BlockInheritance" title="msg://com.vn.ecm.view.blockinheritance/blockInheritance.title"/>
+        <item view="ConfirmReplaceDialog"
+              title="msg://com.vn.ecm.view.confirmreplacedialog/confirmReplaceDialog.title"/>
 
     </menu>
 

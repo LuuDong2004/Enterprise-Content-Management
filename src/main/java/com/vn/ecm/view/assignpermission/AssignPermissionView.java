@@ -1,6 +1,5 @@
 package com.vn.ecm.view.assignpermission;
 
-
 import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.textfield.TextArea;
@@ -8,6 +7,7 @@ import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.Route;
 import com.vn.ecm.entity.*;
 import com.vn.ecm.service.PermissionService;
+import com.vn.ecm.view.advancedpermission.AdvancedPermissionView;
 import com.vn.ecm.view.editpermission.EditPermissionView;
 import com.vn.ecm.view.main.MainView;
 import io.jmix.core.DataManager;
@@ -17,7 +17,6 @@ import io.jmix.flowui.kit.component.button.JmixButton;
 import io.jmix.flowui.model.CollectionContainer;
 import io.jmix.flowui.model.CollectionLoader;
 import io.jmix.flowui.view.*;
-import io.jmix.security.role.ResourceRoleRepository;
 import io.jmix.securitydata.entity.ResourceRoleEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -25,7 +24,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-
 
 @Route(value = "assign-permission-view", layout = MainView.class)
 @ViewController(id = "AssignPermissionView")
@@ -53,17 +51,21 @@ public class AssignPermissionView extends StandardView {
     @Autowired
     private PermissionService permissionService;
 
-
     List<User> username = new ArrayList<>();
+
     public void setUserName(List<User> username) {
         this.username = username;
     }
+
     String path = "";
+
     public void setPath(String path) {
         this.path = path;
     }
+
     private File selectedFile;
     private Folder selectedFolder;
+
     public void setTargetFile(File file) {
         this.selectedFile = file;
         this.selectedFolder = null;
@@ -114,8 +116,7 @@ public class AssignPermissionView extends StandardView {
                 .map(r -> new EcmObject(
                         r.getCode(),
                         ObjectType.ROLE,
-                        r.getName()
-                ))
+                        r.getName()))
                 .toList();
         objectsDc.setItems(roleDtos);
     }
@@ -145,8 +146,7 @@ public class AssignPermissionView extends StandardView {
                         permissionDataGrid.getDataProvider().refreshItem(permission);
                     });
                     return checkbox;
-                })
-        ).setHeader("Allow");
+                })).setHeader("Allow");
 
         // Cột Deny
         permissionDataGrid.addColumn(
@@ -160,8 +160,7 @@ public class AssignPermissionView extends StandardView {
                         }
                     });
                     return checkbox;
-                })
-        ).setHeader("Deny");
+                })).setHeader("Deny");
 
         objectDataGrid.addSelectionListener(selection -> {
             Optional<EcmObject> optional = selection.getFirstSelectedItem();
@@ -171,7 +170,8 @@ public class AssignPermissionView extends StandardView {
             }
             EcmObject dto = optional.get();
 
-            // Build Permission items list (one per PermissionType) and set into permissionsDc
+            // Build Permission items list (one per PermissionType) and set into
+            // permissionsDc
             List<Permission> list = new ArrayList<>();
 
             if (dto.getType() == ObjectType.USER) {
@@ -193,8 +193,10 @@ public class AssignPermissionView extends StandardView {
                 for (PermissionType type : PermissionType.values()) {
                     Permission p = dataManager.create(Permission.class);
                     p.setUser(user);
-                    if (selectedFile != null) p.setFile(selectedFile);
-                    if (selectedFolder != null) p.setFolder(selectedFolder);
+                    if (selectedFile != null)
+                        p.setFile(selectedFile);
+                    if (selectedFolder != null)
+                        p.setFolder(selectedFolder);
                     p.setPermissionType(type);
                     p.setAllow(PermissionType.hasPermission(mask, type));
                     list.add(p);
@@ -202,7 +204,8 @@ public class AssignPermissionView extends StandardView {
             } else if (dto.getType() == ObjectType.ROLE) {
                 // load role
                 ResourceRoleEntity role = dataManager.load(ResourceRoleEntity.class)
-                        .id(UUID.fromString(dto.getId()))
+                        .query("select r from sec_ResourceRoleEntity r where r.code = :code")
+                        .parameter("code", dto.getId())
                         .one();
 
                 Permission dbPerm = null;
@@ -217,8 +220,10 @@ public class AssignPermissionView extends StandardView {
                 for (PermissionType type : PermissionType.values()) {
                     Permission p = dataManager.create(Permission.class);
                     p.setRoleCode(role.getCode());
-                    if (selectedFile != null) p.setFile(selectedFile);
-                    if (selectedFolder != null) p.setFolder(selectedFolder);
+                    if (selectedFile != null)
+                        p.setFile(selectedFile);
+                    if (selectedFolder != null)
+                        p.setFolder(selectedFolder);
                     p.setPermissionType(type);
                     p.setAllow(PermissionType.hasPermission(mask, type));
                     list.add(p);
@@ -227,6 +232,19 @@ public class AssignPermissionView extends StandardView {
 
             permissionsDc.setItems(list);
         });
+    }
 
+    @Subscribe(id = "advanceBtn", subject = "clickListener")
+    public void onAdvanceBtnClick(final ClickEvent<JmixButton> event) {
+        EcmObject seleted = objectDataGrid.getSingleSelectedItem();
+        DialogWindow<AdvancedPermissionView> window = dialogWindows.view(this, AdvancedPermissionView.class).build();
+        if (this.selectedFile != null) {
+            window.getView().setTargetFile(this.selectedFile);
+        } else if (this.selectedFolder != null) {
+            window.getView().setTargetFolder(this.selectedFolder);
+        }
+        window.getView().setPath(path);
+        window.getView().setTarget(seleted);
+        window.open();
     }
 }

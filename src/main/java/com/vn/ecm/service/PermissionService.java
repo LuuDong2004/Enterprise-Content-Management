@@ -26,7 +26,6 @@ public class PermissionService {
        SAVE permission (User)
        ============================ */
 
-    @Transactional
     public void savePermission(Collection<Permission> permissions, User user, Folder folder) {
         normalizePermissions(permissions);
         int mask = buildMask(permissions);
@@ -47,7 +46,6 @@ public class PermissionService {
         propagateToChildren(user, null, folder, mask);
     }
 
-    @Transactional
     public void savePermission(Collection<Permission> permissions, User user, File file) {
         normalizePermissions(permissions);
         int mask = buildMask(permissions);
@@ -69,7 +67,6 @@ public class PermissionService {
        SAVE permission (Role)
        ============================ */
 
-    @Transactional
     public void savePermission(Collection<Permission> permissions, ResourceRoleEntity role, Folder folder) {
         normalizePermissions(permissions);
         int mask = buildMask(permissions);
@@ -89,7 +86,6 @@ public class PermissionService {
         propagateToChildren(null, role, folder, mask);
     }
 
-    @Transactional
     public void savePermission(Collection<Permission> permissions, ResourceRoleEntity role, File file) {
         normalizePermissions(permissions);
         int mask = buildMask(permissions);
@@ -250,23 +246,21 @@ public class PermissionService {
 
         String inheritedFromValue = "FOLDER:" + parentFolder.getId().toString();
 
-        // files
+        // files - CHỈ CÂP NHẬT NẾU ĐÃ TỒN TẠI
         for (File childFile : childrenFiles) {
             Permission perm = (user != null) ? loadPermission(user, childFile) : loadPermission(role, childFile);
 
-            if (perm != null && Boolean.FALSE.equals(perm.getInheritEnabled())) {
-                continue;
-            }
-
-            int currentMask = perm == null || perm.getPermissionMask() == null ? 0 : perm.getPermissionMask();
-            int newMask = computeNewMask(parentMask, currentMask);
-
+            // THAY ĐỔI: Chỉ cập nhật nếu permission đã tồn tại
             if (perm == null) {
-                perm = dataManager.create(Permission.class);
-                if (user != null) perm.setUser(user);
-                else perm.setRoleCode(role.getCode());
-                perm.setFile(childFile);
+                continue; // Bỏ qua, không tạo mới
             }
+
+            if (Boolean.FALSE.equals(perm.getInheritEnabled())) {
+                continue; // Không cập nhật nếu đã tắt kế thừa
+            }
+
+            int currentMask = perm.getPermissionMask() == null ? 0 : perm.getPermissionMask();
+            int newMask = computeNewMask(parentMask, currentMask);
 
             perm.setPermissionMask(newMask);
             perm.setInherited(true);
@@ -276,32 +270,29 @@ public class PermissionService {
             dataManager.save(perm);
         }
 
-        // folders
+        // folders - CHỈ CÂP NHẬT NẾU ĐÃ TỒN TẠI
         for (Folder child : childrenFolders) {
             Permission perm = (user != null) ? loadPermission(user, child) : loadPermission(role, child);
 
-            if (perm != null && Boolean.FALSE.equals(perm.getInheritEnabled())) {
-                // skip
-            } else {
-                int currentMask = perm == null || perm.getPermissionMask() == null ? 0 : perm.getPermissionMask();
-                int newMask = computeNewMask(parentMask, currentMask);
-
-                if (perm == null) {
-                    perm = dataManager.create(Permission.class);
-                    if (user != null) perm.setUser(user);
-                    else perm.setRoleCode(role.getCode());
-                    perm.setFolder(child);
-                }
-
-                perm.setPermissionMask(newMask);
-                perm.setInherited(true);
-                perm.setInheritEnabled(true);
-                perm.setInheritedFrom(inheritedFromValue);
-                perm.setAppliesTo(AppliesTo.THIS_FOLDER_SUBFOLDERS_FILES);
-                dataManager.save(perm);
+            if (perm == null) {
+                continue; // Bỏ qua, không tạo mới
             }
 
-            // recurse
+            if (Boolean.FALSE.equals(perm.getInheritEnabled())) {
+                continue; // Không cập nhật nếu đã tắt kế thừa
+            }
+
+            int currentMask = perm.getPermissionMask() == null ? 0 : perm.getPermissionMask();
+            int newMask = computeNewMask(parentMask, currentMask);
+
+            perm.setPermissionMask(newMask);
+            perm.setInherited(true);
+            perm.setInheritEnabled(true);
+            perm.setInheritedFrom(inheritedFromValue);
+            perm.setAppliesTo(AppliesTo.THIS_FOLDER_SUBFOLDERS_FILES);
+            dataManager.save(perm);
+
+            // Đệ quy - chỉ cập nhật các permission đã tồn tại ở cấp sâu hơn
             propagateToChildren(user, role, child, parentMask);
         }
     }
@@ -488,7 +479,6 @@ public class PermissionService {
                 nodePerm.setAppliesTo(AppliesTo.THIS_FOLDER_ONLY);
                 dataManager.save(nodePerm);
             }
-            if (start != null) propagateToChildren(user, null, start, ancestor.getPermissionMask());
         }
     }
 
@@ -549,7 +539,6 @@ public class PermissionService {
                 nodePerm.setAppliesTo(AppliesTo.THIS_FOLDER_ONLY);
                 dataManager.save(nodePerm);
             }
-            if (start != null) propagateToChildren(null, role, start, ancestor.getPermissionMask());
         }
     }
 
@@ -831,4 +820,6 @@ public class PermissionService {
                 .optional()
                 .orElse(null);
     }
+
+
 }
