@@ -3,6 +3,7 @@ package com.vn.ecm.view.confirmreplacedialog;
 
 import com.vaadin.flow.router.Route;
 import com.vn.ecm.view.main.MainView;
+import io.jmix.core.DataManager;
 import io.jmix.flowui.view.StandardView;
 import io.jmix.flowui.view.ViewController;
 import io.jmix.flowui.view.ViewDescriptor;
@@ -17,6 +18,8 @@ import io.jmix.flowui.view.*;
 import io.jmix.securitydata.entity.ResourceRoleEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.util.UUID;
+
 @Route(value = "confirm-replace-dialog", layout = MainView.class)
 @ViewController(id = "ConfirmReplaceDialog")
 @ViewDescriptor(path = "confirm-replace-dialog.xml")
@@ -24,17 +27,18 @@ public class ConfirmReplaceDialog extends StandardView {
 
     @Autowired
     private PermissionService permissionService;
-
+    @Autowired
+    private DataManager dataManager;
     @ViewComponent
     private Span messageSpan;
 
     private String objectName;
-    private User user;
-    private ResourceRoleEntity role;
     private Integer permissionMask;
     private Folder targetFolder;
     private File targetFile;
 
+    private UUID userId;  // Thay đổi: lưu ID thay vì entity
+    private String roleCode;
     public void setObjectName(String objectName) {
         this.objectName = objectName;
     }
@@ -50,13 +54,17 @@ public class ConfirmReplaceDialog extends StandardView {
     }
 
     public void setUser(User user) {
-        this.user = user;
-        this.role = null;
+        System.out.println("DEBUG ConfirmReplaceDialog.setUser called with: " + user);
+        this.userId = user != null ? user.getId() : null;
+        System.out.println("DEBUG ConfirmReplaceDialog.setUser set userId to: " + this.userId);
+        this.roleCode = null;
     }
 
     public void setRole(ResourceRoleEntity role) {
-        this.role = role;
-        this.user = null;
+        System.out.println("DEBUG ConfirmReplaceDialog.setRole called with: " + role);
+        this.roleCode = role != null ? role.getCode() : null;
+        System.out.println("DEBUG ConfirmReplaceDialog.setRole set roleCode to: " + this.roleCode);
+        this.userId = null;
     }
 
     public void setPermissionMask(Integer mask) {
@@ -77,17 +85,18 @@ public class ConfirmReplaceDialog extends StandardView {
             close(StandardOutcome.CLOSE);
             return;
         }
-
-        // Chỉ replace nếu target là Folder (File không có children)
+        // Chỉ replace nếu target là Folder
         if (targetFolder != null) {
-            if (user != null) {
+            if (userId != null) {
+                // Reload User từ DB
+                User user = dataManager.load(User.class).id(userId).one();
                 permissionService.replaceChildPermissions(user, targetFolder, permissionMask);
-            } else if (role != null) {
+            } else if (roleCode != null) {
+                // Reload Role từ DB
+                ResourceRoleEntity role = permissionService.loadRoleByCode(roleCode);
                 permissionService.replaceChildPermissions(role, targetFolder, permissionMask);
             }
         }
-        // Nếu là File thì không làm gì (File không có children)
-
         close(StandardOutcome.SAVE);
     }
 

@@ -73,23 +73,6 @@ public class AdvancedPermissionView extends StandardView {
         this.target = target;
     }
 
-    @Subscribe
-    public void onBeforeShow(BeforeShowEvent event) {
-        if (targetFolder != null) {
-            nameArea.setValue(targetFolder.getName());
-            // Load permissions cho folder
-            loadPermissionsForFolder(targetFolder);
-        } else if (targetFile != null) {
-            nameArea.setValue(targetFile.getName());
-            // Load permissions cho file
-            loadPermissionsForFile(targetFile);
-        }
-
-        // Chọn permission đầu tiên để set nút
-        Permission p = permissionDataGrid.getSingleSelectedItem();
-        updateInheritanceButtonLabel(p);
-    }
-
     private void loadPermissionsForFolder(Folder folder) {
         List<Permission> permissions = dataManager.load(Permission.class)
                 .query("select p from Permission p where p.folder = :folder")
@@ -113,16 +96,17 @@ public class AdvancedPermissionView extends StandardView {
     private void updateInheritanceButtonLabel(Permission permission) {
         if (permission == null && permissionDataGrid.getItems() != null) {
             if (permissionDataGrid.getItems() instanceof ContainerDataUnit) {
-                ContainerDataUnit<?> dataUnit = (ContainerDataUnit<?>) permissionDataGrid.getItems();
+                ContainerDataUnit<Permission> dataUnit =
+                        (ContainerDataUnit<Permission>) permissionDataGrid.getItems();
                 if (dataUnit.getContainer() instanceof CollectionContainer) {
-                    CollectionContainer<Permission> container = (CollectionContainer<Permission>) dataUnit.getContainer();
+                    CollectionContainer<Permission> container =
+                            (CollectionContainer<Permission>) dataUnit.getContainer();
                     if (!container.getItems().isEmpty()) {
                         permission = container.getItems().get(0);
                     }
                 }
             }
         }
-
         if (permission == null) {
             // Không có permission => coi như inheritance đã bị remove
             disableInheritanceBtn.setText("Enable Inheritance");
@@ -195,6 +179,61 @@ public class AdvancedPermissionView extends StandardView {
                     }
                 }
         ).setHeader("Applies to");
+
+        permissionDataGrid.addSelectionListener(selectionEvent -> {
+            Permission selected = permissionDataGrid.getSingleSelectedItem();
+            updateInheritanceButtonLabel(selected);
+        });
+    }
+
+    @Subscribe
+    public void onBeforeShow(BeforeShowEvent event) {
+        if (targetFolder != null) {
+            nameArea.setValue(targetFolder.getName());
+            loadPermissionsForFolder(targetFolder);
+        } else if (targetFile != null) {
+            nameArea.setValue(targetFile.getName());
+            loadPermissionsForFile(targetFile);
+        }
+
+        // Tự động chọn permission đầu tiên
+        if (permissionDataGrid.getItems() instanceof ContainerDataUnit) {
+            ContainerDataUnit<Permission> dataUnit =
+                    (ContainerDataUnit<Permission>) permissionDataGrid.getItems();
+            if (dataUnit.getContainer() instanceof CollectionContainer) {
+                CollectionContainer<Permission> container =
+                        (CollectionContainer<Permission>) dataUnit.getContainer();
+                if (!container.getItems().isEmpty()) {
+                    permissionDataGrid.select(container.getItems().get(0));
+                }
+            }
+        }
+
+        // RELOAD PERMISSION TỪ DB TRƯỚC KHI UPDATE LABEL
+        Permission selected = permissionDataGrid.getSingleSelectedItem();
+        if (selected != null) {
+            // Reload từ DB để đảm bảo có trạng thái mới nhất
+            Permission freshPermission = null;
+            if (selected.getUser() != null) {
+                if (targetFolder != null) {
+                    freshPermission = permissionService.loadPermission(selected.getUser(), targetFolder);
+                } else if (targetFile != null) {
+                    freshPermission = permissionService.loadPermission(selected.getUser(), targetFile);
+                }
+            } else if (selected.getRoleCode() != null) {
+                ResourceRoleEntity role = permissionService.loadRoleByCode(selected.getRoleCode());
+                if (role != null) {
+                    if (targetFolder != null) {
+                        freshPermission = permissionService.loadPermission(role, targetFolder);
+                    } else if (targetFile != null) {
+                        freshPermission = permissionService.loadPermission(role, targetFile);
+                    }
+                }
+            }
+            updateInheritanceButtonLabel(freshPermission != null ? freshPermission : selected);
+        } else {
+            updateInheritanceButtonLabel(null);
+        }
     }
 
     @Subscribe(id = "disableInheritanceBtn", subject = "clickListener")
@@ -265,29 +304,45 @@ public class AdvancedPermissionView extends StandardView {
         if (permission == null) {
             return;
         }
+        // Chỉ xử lý cho Folder
+        if (targetFolder == null) {
+            return;
+        }
+        // Lấy quyền hiện tại của folder cha từ DB
+        Permission parentPermission = null;
+        User reloadedUser = null;
+        ResourceRoleEntity reloadedRole = null;
 
-        String objectName = "";
-        if (targetFolder != null) {
-            objectName = targetFolder.getName();
-        } else if (targetFile != null) {
-            objectName = targetFile.getName();
+        if (permission.getUser() != null) {
+            // RELOAD USER từ DB
+            reloadedUser = dataManager.load(User.class)
+                    .id(permission.getUser().getId())
+                    .one();
+            parentPermission = permissionService.loadPermission(reloadedUser, targetFolder);
+        } else if (permission.getRoleCode() != null) {
+            // RELOAD ROLE từ DB
+            reloadedRole = permissionService.loadRoleByCode(permission.getRoleCode());
+            if (reloadedRole != null) {
+                parentPermission = permissionService.loadPermission(reloadedRole, targetFolder);
+            }
         }
 
+        if (parentPermission == null || parentPermission.getPermissionMask() == null) {
+            return;
+        }
+        String objectName = targetFolder.getName();
         DialogWindow<ConfirmReplaceDialog> window = dialogWindows.view(this, ConfirmReplaceDialog.class).build();
         window.getView().setObjectName(objectName);
+        window.getView().setTargetFolder(targetFolder);
+        window.getView().setPermissionMask(parentPermission.getPermissionMask());
 
-        if (targetFolder != null) {
-            window.getView().setTargetFolder(targetFolder);
-        } else if (targetFile != null) {
-            window.getView().setTargetFile(targetFile);
+        if (reloadedUser != null) {
+            window.getView().setUser(reloadedUser);
+        } else if (reloadedRole != null) {
+            window.getView().setRole(reloadedRole);
+        } else {
+            System.out.println("DEBUG: WARNING - Both reloadedUser and reloadedRole are NULL!");
         }
-
-        window.getView().setUser(permission.getUser());
-        window.getView().setRole(permission.getRoleCode() != null
-                ? permissionService.loadRoleByCode(permission.getRoleCode())
-                : null);
-        window.getView().setPermissionMask(permission.getPermissionMask());
-
         window.addAfterCloseListener(e -> {
             if (e.closedWith(StandardOutcome.SAVE)) {
                 reloadPermissions();
