@@ -7,8 +7,7 @@ import com.vaadin.flow.component.grid.ItemClickEvent;
 
 import com.vaadin.flow.router.Route;
 
-import com.vn.ecm.ecm.storage.DynamicS3StorageManager;
-import com.vn.ecm.ecm.storage.S3Storage;
+import com.vn.ecm.ecm.storage.DynamicStorageManager;
 import com.vn.ecm.entity.FileDescriptor;
 import com.vn.ecm.entity.Folder;
 import com.vn.ecm.entity.SourceStorage;
@@ -28,14 +27,12 @@ import io.jmix.flowui.kit.component.button.JmixButton;
 import io.jmix.flowui.kit.component.upload.event.FileUploadSucceededEvent;
 import io.jmix.flowui.model.CollectionContainer;
 import io.jmix.flowui.model.CollectionLoader;
-import io.jmix.flowui.model.DataContext;
 import io.jmix.flowui.upload.TemporaryStorage;
 import io.jmix.flowui.view.*;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
 
-import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -72,7 +69,7 @@ public class EcmView extends StandardView {
     private ComboBox<?> storageComboBox;
 
     @Autowired
-    private DynamicS3StorageManager dynamicS3StorageManager;
+    private DynamicStorageManager dynamicS3StorageManager;
 
     @Subscribe
     // load tree data folder

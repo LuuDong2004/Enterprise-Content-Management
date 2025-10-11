@@ -7,7 +7,7 @@ import org.springframework.lang.Nullable;
 
 public enum StorageType implements EnumClass<String> {
     S3("S3"),
-    FTP("FTP"),
+    WEBDIR("WEBDIR"),
     API("Api");
     private final String id;
 

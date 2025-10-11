@@ -14,10 +14,10 @@ import java.util.List;
 public class DynamicFileStorageInitializer {
 
     private final DataManager dataManager;
-    private final DynamicS3StorageManager s3Manager;
+    private final DynamicStorageManager s3Manager;
     private final SystemAuthenticator systemAuthenticator;
 
-    public DynamicFileStorageInitializer(DataManager dataManager, DynamicS3StorageManager s3Manager, SystemAuthenticator systemAuthenticator) {
+    public DynamicFileStorageInitializer(DataManager dataManager, DynamicStorageManager s3Manager, SystemAuthenticator systemAuthenticator) {
         this.dataManager = dataManager;
         this.s3Manager = s3Manager;
         this.systemAuthenticator = systemAuthenticator;

@@ -34,14 +34,33 @@ public class SourceStorage {
     private String endpointUrl;
 
     @Column(name = "TYPE")
-    @Enumerated(EnumType.STRING)
-    private StorageType type;
+   // @Enumerated(EnumType.STRING)
+    private String type;
 
     @Column(name = "ACTIVE")
     private Boolean active;
 
+    @Column(name = "WEB_ROOT_PATH")
+    private String webRootPath;
+
     @Column(name = "USE_PATH_STYLE")
     private Boolean usePathStyleBucketAddressing;
+
+    public String getWebRootPath() {
+        return webRootPath;
+    }
+
+    public void setWebRootPath(String webRootPath) {
+        this.webRootPath = webRootPath;
+    }
+
+    public void setType(StorageType type) {
+        this.type = type == null ? null : type.getId();
+    }
+
+    public StorageType getType() {
+        return type == null ? null : StorageType.fromId(type);
+    }
 
     public Boolean getUsePathStyleBucketAddressing() {
         return usePathStyleBucketAddressing;
@@ -50,8 +69,6 @@ public class SourceStorage {
     public void setUsePathStyleBucketAddressing(Boolean usePathStyleBucketAddressing) {
         this.usePathStyleBucketAddressing = usePathStyleBucketAddressing;
     }
-
-    public StorageType getType() { return type; }
 
     public UUID getId() {
         return id;
@@ -108,8 +125,6 @@ public class SourceStorage {
     public void setEndpointUrl(String endpointUrl) {
         this.endpointUrl = endpointUrl;
     }
-
-    public void setType(StorageType type) { this.type = type; }
 
     public Boolean getActive() {
         return active;

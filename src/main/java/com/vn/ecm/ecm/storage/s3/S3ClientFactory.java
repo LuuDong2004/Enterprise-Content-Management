@@ -1,4 +1,4 @@
-package com.vn.ecm.ecm.storage;
+package com.vn.ecm.ecm.storage.s3;
 
 import com.vn.ecm.entity.SourceStorage;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
