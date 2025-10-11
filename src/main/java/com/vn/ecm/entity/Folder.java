@@ -5,7 +5,6 @@ import io.jmix.core.metamodel.annotation.JmixEntity;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
 
 @JmixEntity
@@ -17,12 +16,6 @@ public class Folder {
     @Column(name = "ID", nullable = false)
     private UUID id;
 
-    @Column(name = "FULL_PATH")
-    private String fullPath;
-
-    @Column(name = "STORAGE")
-    private String storage;
-
     @Column(name = "name", nullable = false)
     private String name;
 
@@ -30,18 +23,22 @@ public class Folder {
     @JoinColumn(name = "parent_ID")
     private Folder parent;
 
-    @OneToMany(mappedBy = "folder")
-    private List<FileDescriptor> fileDescriptor;
+    @Column(name = "FULL_PATH")
+    private String fullPath;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "SOURCE_STORAGE_ID")   // <-- dùng đúng 1 cột FK
+    private SourceStorage sourceStorage;
 
     @Column(name = "createdDate")
     private LocalDateTime createdDate;
 
-    public String getStorage() {
-        return storage;
+    public SourceStorage getSourceStorage() {
+        return sourceStorage;
     }
 
-    public void setStorage(String storage) {
-        this.storage = storage;
+    public void setSourceStorage(SourceStorage sourceStorage) {
+        this.sourceStorage = sourceStorage;
     }
 
     public String getFullPath() {
@@ -53,16 +50,7 @@ public class Folder {
     }
 
 
-    public Folder() {
-    }
 
-    public Folder(UUID id, String name, Folder parent, List<Folder> children, List<FileDescriptor> fileDescriptor, LocalDateTime createdDate) {
-        this.id = id;
-        this.name = name;
-        this.parent = parent;
-        this.fileDescriptor = fileDescriptor;
-        this.createdDate = createdDate;
-    }
 
     public UUID getId() {
         return id;
@@ -89,13 +77,7 @@ public class Folder {
     }
 
 
-    public List<FileDescriptor> getFile() {
-        return fileDescriptor;
-    }
 
-    public void setFile(List<FileDescriptor> fileDescriptor) {
-        this.fileDescriptor = fileDescriptor;
-    }
 
     public LocalDateTime getCreatedDate() {
         return createdDate;

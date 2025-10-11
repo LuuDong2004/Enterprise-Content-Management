@@ -6,11 +6,15 @@
             <fetchPlan>
                 <property name="name"/>
                 <property name="parent"/>
+                <property name="sourceStorage"/>
             </fetchPlan>
             <loader id="foldersDl">
-                <query>
-                    <![CDATA[select f from Folder f]]>
-                </query>
+                <query><![CDATA[
+            select f
+            from Folder f
+            where (:storage is null or f.sourceStorage = :storage)
+            order by f.name
+        ]]></query>
             </loader>
 
         </collection>
@@ -27,12 +31,17 @@
             </fetchPlan>
             <loader id="filesDl">
                 <query><![CDATA[
-        select f from FileDescriptor f
-        where (:folder is null or f.folder = :folder)
-        order by f.name
-    ]]></query>
+            select f
+            from FileDescriptor f
+            where (:folder is null or f.folder = :folder)
+            and (:storage is null or f.sourceStorage = :storage)
+            order by f.name
+        ]]></query>
             </loader>
         </collection>
+
+
+
         <collection id="StorageDc" class="com.vn.ecm.entity.SourceStorage">
             <loader id="storagesDl">
                 <query>
@@ -75,10 +84,6 @@
                       spacing="true"
                       width="100%"
                       alignItems="CENTER">
-                    <entityComboBox id="storageComboBox"
-                                    dataContainer="StorageDc"
-                                    label="Storage"
-                                    property="type" />
                     <fileStorageUploadField id="fileRefField"
                                             property="fileRef"
                                             dropAllowed="true"

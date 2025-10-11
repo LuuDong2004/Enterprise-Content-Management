@@ -1,0 +1,13 @@
+<!--<?xml version="1.0" encoding="UTF-8" standalone="no"?>-->
+<!--<menu-config xmlns="http://jmix.io/schema/flowui/menu">-->
+
+<!--    <menu id="application" title="msg://com.vn.ecm/menu.application.title" opened="true">-->
+<!--        <item view="User.list" title="msg://com.vn.ecm.view.user/UserListView.title"/>-->
+<!--    </menu>-->
+<!--    <menu id="storage" title="msg://com.vn.ecm.view.ecm/ecmView.title">-->
+<!--        <item id="storage-s3" view="ecm_S3View" title="msg://com.vn.ecm.view.ecm/S3View.title"/>-->
+<!--        <item id="storage-webdir" view="ecm_WebDirView" title="msg://com.vn.ecm.view.ecm/WebDirectoryView.title"/>-->
+<!--    </menu>-->
+
+
+<!--</menu-config>-->

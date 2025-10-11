@@ -18,8 +18,9 @@ public class FileDescriptor {
     @Column(name = "NAME", columnDefinition = "NVARCHAR(255)", nullable = false)
     private String name;
 
-    @Column(name = "STORAGE")
-    private String storage;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "SOURCE_STORAGE_ID")
+    private SourceStorage sourceStorage;
 
     @Column(name = "EXTENSION")
     private String extension;
@@ -37,12 +38,12 @@ public class FileDescriptor {
     @Column(name = "FILE_REF")
     private FileRef fileRef;
 
-    public String getStorage() {
-        return storage;
+    public SourceStorage getSourceStorage() {
+        return sourceStorage;
     }
 
-    public void setStorage(String storage) {
-        this.storage = storage;
+    public void setSourceStorage(SourceStorage sourceStorage) {
+        this.sourceStorage = sourceStorage;
     }
 
     public FileDescriptor() {
