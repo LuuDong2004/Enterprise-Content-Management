@@ -3,6 +3,8 @@ package com.vn.ecm.ecm.storage.web_directory;
 import com.vn.ecm.entity.SourceStorage;
 import io.jmix.core.FileRef;
 import io.jmix.core.FileStorage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -13,6 +15,8 @@ import java.util.UUID;
 
 
 public class WebDirectoryStorage implements FileStorage {
+    private static final Logger log = LoggerFactory.getLogger(WebDirectoryStorage.class);
+    
     private final String storageName ;
     private final Path root;
 
@@ -60,12 +64,34 @@ public class WebDirectoryStorage implements FileStorage {
 
     @Override
     public InputStream openStream(FileRef ref) {
+        log.info("=== OPENING FILE STREAM ===");
+        log.info("FileRef: storageName={}, path={}, fileName={}", 
+                ref.getStorageName(), ref.getPath(), ref.getFileName());
+        
         assertSameStorage(ref);
         Path file = root.resolve(ref.getPath()).normalize();
+        log.info("Resolved file path: {}", file);
+        log.info("Root path: {}", root);
+        
         ensureUnderRoot(file);
+        
         try {
-            return Files.newInputStream(file, StandardOpenOption.READ);
+            if (!Files.exists(file)) {
+                log.error("File does not exist: {}", file);
+                throw new RuntimeException("File does not exist: " + file);
+            }
+            
+            if (!Files.isRegularFile(file)) {
+                log.error("Path is not a regular file: {}", file);
+                throw new RuntimeException("Path is not a regular file: " + file);
+            }
+            
+            log.info("File exists and is readable. Opening stream...");
+            InputStream stream = Files.newInputStream(file, StandardOpenOption.READ);
+            log.info("File stream opened successfully");
+            return stream;
         } catch (IOException e) {
+            log.error("Failed to open file stream: {}", file, e);
             throw new RuntimeException("Open failed: " + file, e);
         }
     }
