@@ -33,7 +33,7 @@ public class DynamicFileStorageInitializer {
             for (SourceStorage s : actives) {
                 if (s.getType() == StorageType.S3) {
                     try {
-                        s3Manager.getOrCreate(s);
+                        s3Manager.getOrCreateFileStorage(s);
                     } catch (Exception e) {
                         // log lại, không chặn app start
                         System.err.println("Cannot init storage for " + s.getId() + ": " + e.getMessage());

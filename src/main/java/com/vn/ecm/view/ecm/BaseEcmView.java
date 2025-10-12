@@ -27,23 +27,15 @@ import java.io.File;
 import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.UUID;
+import java.util.Optional;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-/**
- * Base view dùng chung cho tất cả màn hình ECM (S3, WebDir...)
- * Các subclass chỉ cần override getCurrentStorage() để xác định kho đang dùng.
- */
+
 @ViewController("ecm_BaseEcmView")
 @ViewDescriptor("ECM-view.xml")
 public abstract class BaseEcmView extends StandardView {
 
-    private static final Logger log = LoggerFactory.getLogger(BaseEcmView.class);
 
-    // -----------------------------
-    // UI Components
-    // -----------------------------
     @ViewComponent
     private CollectionContainer<Folder> foldersDc;
     @ViewComponent
@@ -116,7 +108,7 @@ public abstract class BaseEcmView extends StandardView {
             File fileIo = temporaryStorage.getFile(fileId);
             if (fileIo != null) {
                 try {
-                    FileStorage dynamicFs = dynamicStorageManager.getOrCreate(selectedStorage);
+                    FileStorage dynamicFs = dynamicStorageManager.getOrCreateFileStorage(selectedStorage);
                     String fileName = event.getFileName();
                     FileRef fileRef = temporaryStorage.putFileIntoStorage(fileId, fileName, dynamicFs);
                     fileRefField.setValue(fileRef);
@@ -151,86 +143,42 @@ public abstract class BaseEcmView extends StandardView {
     }
     @Subscribe(id = "btnDownload", subject = "clickListener")
     public void onBtnDownloadClick(final ClickEvent<JmixButton> event) {
-        log.info("=== DOWNLOAD BUTTON CLICKED ===");
-        
         FileDescriptor selectedFile = fileDataGird.getSingleSelectedItem();
         if (selectedFile == null) {
-            log.warn("No file selected for download");
             notifications.create("Chưa chọn file để tải xuống.")
                     .withType(Notifications.Type.WARNING)
                     .show();
             return;
         }
-
-        log.info("Selected file: ID={}, Name={}, Size={}", 
-                selectedFile.getId(), selectedFile.getName(), selectedFile.getSize());
-
         FileRef fileRef = selectedFile.getFileRef();
         if (fileRef == null) {
-            log.error("FileRef is null for file: {}", selectedFile.getName());
             notifications.create("File này không có đường dẫn tải xuống hợp lệ.")
                     .withType(Notifications.Type.ERROR)
                     .show();
             return;
         }
 
-        String storageName = fileRef.getStorageName();
-        String filePath = fileRef.getPath();
-        String fileName = fileRef.getFileName();
-        
-        log.info("FileRef details: StorageName={}, Path={}, FileName={}", 
-                storageName, filePath, fileName);
-
         try {
-            log.info("Ensuring storage is registered: {}", storageName);
-            dynamicStorageManager.ensureRegistered(storageName);
-            log.info("Storage registration completed successfully");
-
-            log.info("Starting download process...");
-            
-            // Thử cách 1: Sử dụng Jmix downloader
-            try {
-                downloader.download(fileRef);
-                log.info("Download initiated successfully via Jmix downloader");
-            } catch (Exception e) {
-                log.warn("Jmix downloader failed, trying direct approach: {}", e.getMessage());
-                
-                // Cách 2: Tự implement download
-                SourceStorage sourceStorage = selectedFile.getSourceStorage();
-                if (sourceStorage != null) {
-                    FileStorage fileStorage = dynamicStorageManager.getOrCreate(sourceStorage);
-                    log.info("Got FileStorage instance: {}", fileStorage.getClass().getSimpleName());
-                    
-                    // Tạo InputStream từ FileStorage
-                    InputStream inputStream = fileStorage.openStream(fileRef);
-                    log.info("Opened input stream successfully");
-                    
-                    // Đọc toàn bộ file thành byte array
-                    byte[] fileBytes = inputStream.readAllBytes();
-                    inputStream.close();
-                    log.info("Read file bytes successfully, size: {} bytes", fileBytes.length);
-                    
-                    // Tạo download response
-                    String downloadFileName = selectedFile.getName();
-                    
-                    // Sử dụng Jmix Downloader với byte array
-                    downloader.download(fileBytes, downloadFileName);
-                    log.info("Download initiated successfully via direct approach");
-                } else {
-                    throw new RuntimeException("SourceStorage is null");
-                }
+            String storageName = fileRef.getStorageName();
+            dynamicStorageManager.ensureStorageRegistered(storageName);
+            SourceStorage sourceStorage = selectedFile.getSourceStorage();
+            if (sourceStorage != null) {
+                FileStorage fileStorage = dynamicStorageManager.getOrCreateFileStorage(sourceStorage);
+                InputStream inputStream = fileStorage.openStream(fileRef);
+                byte[] fileBytes = inputStream.readAllBytes();
+                inputStream.close();
+                String downloadFileName = selectedFile.getName();
+                downloader.download(fileBytes, downloadFileName);
+            } else {
+                throw new RuntimeException("SourceStorage is null");
             }
-            
-            notifications.create("Đang tải xuống: " + selectedFile.getName())
-                    .withType(Notifications.Type.DEFAULT)
-                    .show();
+
         } catch (Exception e) {
-            log.error("Error during download process", e);
             notifications.create("Lỗi khi tải xuống: " + e.getMessage())
                     .withType(Notifications.Type.ERROR)
                     .show();
         }
-        
-        log.info("=== DOWNLOAD PROCESS COMPLETED ===");
     }
+
+
 }

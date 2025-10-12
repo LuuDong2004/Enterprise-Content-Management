@@ -3,8 +3,6 @@ package com.vn.ecm.ecm.storage.web_directory;
 import com.vn.ecm.entity.SourceStorage;
 import io.jmix.core.FileRef;
 import io.jmix.core.FileStorage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -14,114 +12,158 @@ import java.nio.file.*;
 import java.util.UUID;
 
 
+/**
+ * FileStorage implementation cho Web Directory
+ * Lưu trữ file trong thư mục local với cấu trúc thư mục theo ngày
+ */
 public class WebDirectoryStorage implements FileStorage {
-    private static final Logger log = LoggerFactory.getLogger(WebDirectoryStorage.class);
-    
-    private final String storageName ;
-    private final Path root;
+    private final String storageName;
+    private final Path rootDirectory;
 
-    public WebDirectoryStorage(SourceStorage s) {
-        this.storageName= "webdir-" + s.getId();
-        if (s.getWebRootPath() == null || s.getWebRootPath().isBlank()) {
-            throw new IllegalArgumentException("WEB_ROOT_PATH is required for WEBDIR");
+    public WebDirectoryStorage(SourceStorage sourceStorage) {
+        this.storageName = "webdir-" + sourceStorage.getId();
+        
+        if (sourceStorage.getWebRootPath() == null || sourceStorage.getWebRootPath().isBlank()) {
+            throw new IllegalArgumentException("WEB_ROOT_PATH is required for WEBDIR storage");
         }
-        this.root = Paths.get(s.getWebRootPath()).toAbsolutePath().normalize();
-        if (!Files.exists(root)) {
-            try { Files.createDirectories(root); } catch (IOException e) {
-                throw new RuntimeException("Cannot create web root: " + root, e);
+        
+        this.rootDirectory = Paths.get(sourceStorage.getWebRootPath()).toAbsolutePath().normalize();
+        initializeRootDirectory();
+    }
+
+    /**
+     * Khởi tạo thư mục gốc, tạo nếu chưa tồn tại
+     */
+    private void initializeRootDirectory() {
+        if (!Files.exists(rootDirectory)) {
+            try {
+                Files.createDirectories(rootDirectory);
+            } catch (IOException e) {
+                throw new RuntimeException("Không thể tạo thư mục gốc: " + rootDirectory, e);
             }
         }
-        if (!Files.isDirectory(root) || !Files.isWritable(root)) {
-            throw new IllegalStateException("Web root must be writable directory: " + root);
+        
+        if (!Files.isDirectory(rootDirectory) || !Files.isWritable(rootDirectory)) {
+            throw new IllegalStateException("Thư mục gốc phải là thư mục có thể ghi: " + rootDirectory);
         }
     }
 
     @Override public String getStorageName() { return storageName; }
 
     @Override
-    public FileRef saveStream(String fileName, InputStream in, Map<String, Object> params) {
-        LocalDate d = LocalDate.now();
-        Path subdir = root.resolve(Path.of(String.valueOf(d.getYear()),
-                String.format("%02d", d.getMonthValue()),
-                String.format("%02d", d.getDayOfMonth())));
-        try { Files.createDirectories(subdir); } catch (IOException ignored) {}
+    public FileRef saveStream(String fileName, InputStream inputStream, Map<String, Object> params) {
+        LocalDate currentDate = LocalDate.now();
+        Path dateSubdirectory = createDateBasedSubdirectory(currentDate);
+        createDirectoryIfNotExists(dateSubdirectory);
 
-        // Sanitize name & tạo tên duy nhất
-        String sanitized = fileName;
-        String unique = UUID.randomUUID() + "_" + sanitized;
+        // Sanitize filename và tạo tên duy nhất
+        String sanitizedFileName = sanitizeFileName(fileName);
+        String uniqueFileName = generateUniqueFileName(sanitizedFileName);
 
-        Path dest = subdir.resolve(unique).normalize();
-        ensureUnderRoot(dest);
+        Path targetFilePath = dateSubdirectory.resolve(uniqueFileName).normalize();
+        validatePathIsUnderRoot(targetFilePath);
 
         try {
-            Files.copy(in, dest, StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(inputStream, targetFilePath, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
-            throw new RuntimeException("Write failed: " + dest, e);
+            throw new RuntimeException("Lỗi khi ghi file: " + targetFilePath, e);
         }
-        Path rel = root.relativize(dest);
-        return new FileRef(storageName, rel.toString().replace('\\','/'), sanitized);
+        
+        Path relativePath = rootDirectory.relativize(targetFilePath);
+        return new FileRef(storageName, relativePath.toString().replace('\\','/'), sanitizedFileName);
+    }
+
+    /**
+     * Tạo thư mục con theo ngày (YYYY/MM/DD)
+     */
+    private Path createDateBasedSubdirectory(LocalDate date) {
+        return rootDirectory.resolve(Path.of(
+                String.valueOf(date.getYear()),
+                String.format("%02d", date.getMonthValue()),
+                String.format("%02d", date.getDayOfMonth())
+        ));
+    }
+
+    /**
+     * Tạo thư mục nếu chưa tồn tại
+     */
+    private void createDirectoryIfNotExists(Path directory) {
+        try {
+            Files.createDirectories(directory);
+        } catch (IOException ignored) {
+            // Ignore nếu thư mục đã tồn tại
+        }
+    }
+
+    /**
+     * Sanitize tên file để tránh ký tự đặc biệt
+     */
+    private String sanitizeFileName(String fileName) {
+        return fileName.replaceAll("[^a-zA-Z0-9._-]", "_");
+    }
+
+    /**
+     * Tạo tên file duy nhất với UUID prefix
+     */
+    private String generateUniqueFileName(String fileName) {
+        return UUID.randomUUID() + "_" + fileName;
     }
 
     @Override
-    public InputStream openStream(FileRef ref) {
-        log.info("=== OPENING FILE STREAM ===");
-        log.info("FileRef: storageName={}, path={}, fileName={}", 
-                ref.getStorageName(), ref.getPath(), ref.getFileName());
-        
-        assertSameStorage(ref);
-        Path file = root.resolve(ref.getPath()).normalize();
-        log.info("Resolved file path: {}", file);
-        log.info("Root path: {}", root);
-        
-        ensureUnderRoot(file);
+    public InputStream openStream(FileRef fileRef) {
+        validateStorageMatch(fileRef);
+        Path filePath = rootDirectory.resolve(fileRef.getPath()).normalize();
+        validatePathIsUnderRoot(filePath);
         
         try {
-            if (!Files.exists(file)) {
-                log.error("File does not exist: {}", file);
-                throw new RuntimeException("File does not exist: " + file);
+            if (!Files.exists(filePath) || !Files.isRegularFile(filePath)) {
+                throw new RuntimeException("File không tồn tại hoặc không phải file thông thường: " + filePath);
             }
             
-            if (!Files.isRegularFile(file)) {
-                log.error("Path is not a regular file: {}", file);
-                throw new RuntimeException("Path is not a regular file: " + file);
-            }
-            
-            log.info("File exists and is readable. Opening stream...");
-            InputStream stream = Files.newInputStream(file, StandardOpenOption.READ);
-            log.info("File stream opened successfully");
-            return stream;
+            return Files.newInputStream(filePath, StandardOpenOption.READ);
         } catch (IOException e) {
-            log.error("Failed to open file stream: {}", file, e);
-            throw new RuntimeException("Open failed: " + file, e);
+            throw new RuntimeException("Lỗi khi mở file: " + filePath, e);
         }
     }
 
     @Override
-    public void removeFile(FileRef ref) {
-        assertSameStorage(ref);
-        Path file = root.resolve(ref.getPath()).normalize();
-        ensureUnderRoot(file);
-        try { Files.deleteIfExists(file); } catch (IOException e) {
-            throw new RuntimeException("Delete failed: " + file, e);
+    public void removeFile(FileRef fileRef) {
+        validateStorageMatch(fileRef);
+        Path filePath = rootDirectory.resolve(fileRef.getPath()).normalize();
+        validatePathIsUnderRoot(filePath);
+        
+        try {
+            Files.deleteIfExists(filePath);
+        } catch (IOException e) {
+            throw new RuntimeException("Lỗi khi xóa file: " + filePath, e);
         }
     }
 
     @Override
-    public boolean fileExists(FileRef ref) {
-        if (!storageName.equals(ref.getStorageName())) return false;
-        Path file = root.resolve(ref.getPath()).normalize();
-        return file.startsWith(root) && Files.exists(file);
+    public boolean fileExists(FileRef fileRef) {
+        if (!storageName.equals(fileRef.getStorageName())) {
+            return false;
+        }
+        
+        Path filePath = rootDirectory.resolve(fileRef.getPath()).normalize();
+        return filePath.startsWith(rootDirectory) && Files.exists(filePath);
     }
 
-    private void assertSameStorage(FileRef ref) {
-        if (!storageName.equals(ref.getStorageName())) {
-            throw new IllegalArgumentException("Wrong storage: " + ref.getStorageName());
+    /**
+     * Kiểm tra FileRef có thuộc về storage này không
+     */
+    private void validateStorageMatch(FileRef fileRef) {
+        if (!storageName.equals(fileRef.getStorageName())) {
+            throw new IllegalArgumentException("FileRef không thuộc về storage này: " + fileRef.getStorageName());
         }
     }
 
-    private void ensureUnderRoot(Path p) {
-        if (!p.toAbsolutePath().normalize().startsWith(root)) {
-            throw new SecurityException("Path traversal detected: " + p);
+    /**
+     * Kiểm tra đường dẫn có nằm trong thư mục gốc không (bảo mật)
+     */
+    private void validatePathIsUnderRoot(Path path) {
+        if (!path.toAbsolutePath().normalize().startsWith(rootDirectory)) {
+            throw new SecurityException("Path traversal attack detected: " + path);
         }
     }
 }
