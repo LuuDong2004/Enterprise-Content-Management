@@ -98,6 +98,9 @@
                           width="100%"
                           minHeight="20em"
                           dataContainer="filesDc">
+                    <actions>
+                        <action id="onObjectAssignPermission" text="Assign Permission"/>
+                    </actions>
 
                     <columns>
                         <column property="name"/>
@@ -105,6 +108,7 @@
                         <column property="extension"/>
                         <column property="lastModified"/>
                     </columns>
+
                 </dataGrid>
             </vbox>
 

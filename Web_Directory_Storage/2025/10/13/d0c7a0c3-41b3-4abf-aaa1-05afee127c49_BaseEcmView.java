@@ -6,19 +6,15 @@ import com.vn.ecm.ecm.storage.DynamicStorageManager;
 import com.vn.ecm.entity.FileDescriptor;
 import com.vn.ecm.entity.Folder;
 import com.vn.ecm.entity.SourceStorage;
-import com.vn.ecm.view.assignpermission.AssignPermissionView;
 import io.jmix.core.DataManager;
 import io.jmix.core.FileRef;
 import io.jmix.core.FileStorage;
-import io.jmix.flowui.DialogWindows;
-import io.jmix.flowui.Dialogs;
 import io.jmix.flowui.Notifications;
 import io.jmix.flowui.component.grid.DataGrid;
 import io.jmix.flowui.component.grid.TreeDataGrid;
 import io.jmix.flowui.component.upload.FileStorageUploadField;
 import io.jmix.flowui.component.upload.receiver.FileTemporaryStorageBuffer;
 import io.jmix.flowui.download.Downloader;
-import io.jmix.flowui.kit.action.ActionPerformedEvent;
 import io.jmix.flowui.kit.component.button.JmixButton;
 import io.jmix.flowui.kit.component.upload.event.FileUploadSucceededEvent;
 import io.jmix.flowui.model.CollectionContainer;
@@ -66,8 +62,7 @@ public abstract class BaseEcmView extends StandardView {
     @Autowired
     private DynamicStorageManager dynamicStorageManager;
 
-    @Autowired
-    private DialogWindows dialogWindows;
+
     protected abstract SourceStorage getCurrentStorage();
 
 
@@ -178,60 +173,6 @@ public abstract class BaseEcmView extends StandardView {
             notifications.create("Lỗi khi tải xuống: " + e.getMessage())
                     .withType(Notifications.Type.ERROR)
                     .show();
-        }
-    }
-
-    @Subscribe("foldersTree.assignPermission")
-    public void onFoldersTreeAssignPermission(final ActionPerformedEvent event) {
-        Folder folder = foldersTree.getSingleSelectedItem();
-        if (folder == null) {
-            notifications.show("Vui lòng chọn một folder để gán quyền.");
-            return;
-        }
-        try {
-            String path = buildFolderPath(folder);
-            DialogWindow<AssignPermissionView> window = dialogWindows.view(this, AssignPermissionView.class).build();
-            window.getView().setTargetFolder(folder);
-            window.getView().setPath(path);
-            window.open();
-        } catch (Exception e) {
-            e.printStackTrace();
-            notifications.show("Lỗi khi mở popup: " + e.getMessage());
-        }
-    }
-
-    // đệ quy lấy path
-    private String buildFolderPath(Folder folder) {
-        StringBuilder path = new StringBuilder(folder.getName());
-        Folder parent = folder.getParent();
-        while (parent != null) {
-            path.insert(0, parent.getName() + "/");
-            parent = parent.getParent();
-        }
-        return path.toString();
-    }
-
-    @Subscribe("fileDataGird.onObjectAssignPermission")
-    public void onOnObjectAssignPermission(final ActionPerformedEvent event) {
-        FileDescriptor file = fileDataGird.getSingleSelectedItem();
-        if (file == null) {
-            notifications.show("Vui lòng chọn một file để gán quyền.");
-            return;
-        }
-        try {
-            Folder folderParent = file.getFolder();
-            String path = "";
-            if (folderParent != null) {
-                path = buildFolderPath(folderParent) + "/" + file.getName();
-            } else {
-                path = file.getName();
-            }
-            DialogWindow<AssignPermissionView> window = dialogWindows.view(this, AssignPermissionView.class).build();
-            window.getView().setTargetFile(file);
-            window.getView().setPath(path);
-            window.open();
-        } catch (Exception e) {
-            e.printStackTrace();
         }
     }
 

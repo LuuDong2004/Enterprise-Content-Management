@@ -4,6 +4,7 @@ import com.vn.ecm.entity.SourceStorage;
 import io.jmix.core.FileRef;
 import io.jmix.core.FileStorage;
 import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
 
@@ -18,14 +19,12 @@ public class S3Storage implements FileStorage {
 
     private final SourceStorage source;
     private final S3Client s3;
-    private final String storageName; // cố định cho FileRef
+    private final String storageName;
 
     public S3Storage(SourceStorage source, S3Client s3) {
         this.source = Objects.requireNonNull(source);
         this.s3 = Objects.requireNonNull(s3);
-        this.storageName = "s3-" + ( // ưu tiên code nếu bạn có field đó; nếu chưa có, dùng id
-                source.getId() != null ? source.getId().toString() : UUID.randomUUID()
-        );
+        this.storageName = "s3-" + (source.getId() != null ? source.getId().toString() : UUID.randomUUID());
     }
 
     @Override
@@ -74,7 +73,7 @@ public class S3Storage implements FileStorage {
                             .bucket(source.getBucket())
                             .key(reference.getPath())
                             .build(),
-                    software.amazon.awssdk.core.sync.ResponseTransformer.toBytes());
+                   ResponseTransformer.toBytes());
             return new ByteArrayInputStream(rsp.asByteArray());
         } catch (NoSuchKeyException e) {
             throw new RuntimeException("Object not found: " + reference.getPath(), e);

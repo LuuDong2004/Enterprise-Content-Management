@@ -15,15 +15,15 @@ import java.time.Duration;
 
 public class S3ClientFactory {
 
-    public S3Client create(SourceStorage s) {
+    public S3Client create(SourceStorage sourceStorage) {
         AwsBasicCredentials creds = AwsBasicCredentials.create(
-                s.getAccessKey(), s.getSecretAccessKey());
+                sourceStorage.getAccessKey(), sourceStorage.getSecretAccessKey());
 
         S3Configuration s3cfg = S3Configuration.builder()
-                .pathStyleAccessEnabled(s.getUsePathStyleBucketAddressing() != null && s.getUsePathStyleBucketAddressing())
+                .pathStyleAccessEnabled(sourceStorage.getUsePathStyleBucketAddressing() != null && sourceStorage.getUsePathStyleBucketAddressing())
                 .build();
 
-        S3ClientBuilder b = S3Client.builder()
+        S3ClientBuilder build = S3Client.builder()
                 .httpClient(UrlConnectionHttpClient.builder().build())
                 .credentialsProvider(StaticCredentialsProvider.create(creds))
                 .overrideConfiguration(ClientOverrideConfiguration.builder()
@@ -31,12 +31,12 @@ public class S3ClientFactory {
                         .build())
                 .serviceConfiguration(s3cfg);
 
-        if (s.getRegion() != null && !s.getRegion().isBlank()) {
-            b = b.region(Region.of(s.getRegion()));
+        if (sourceStorage.getRegion() != null && !sourceStorage.getRegion().isBlank()) {
+            build = build.region(Region.of(sourceStorage.getRegion()));
         }
-        if (s.getEndpointUrl() != null && !s.getEndpointUrl().isBlank()) {
-            b = b.endpointOverride(URI.create(s.getEndpointUrl())); // MinIO / S3-compatible
+        if (sourceStorage.getEndpointUrl() != null && !sourceStorage.getEndpointUrl().isBlank()) {
+            build = build.endpointOverride(URI.create(sourceStorage.getEndpointUrl())); // MinIO / S3-compatible
         }
-        return b.build();
+        return build.build();
     }
 }
