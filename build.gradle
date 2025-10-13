@@ -21,6 +21,10 @@ repositories {
     }
 }
 
+configurations.all {
+    exclude group: 'io.jmix.awsfs'
+}
+
 dependencies {
     implementation 'io.jmix.core:jmix-core-starter'
     implementation 'io.jmix.data:jmix-eclipselink-starter'
@@ -34,6 +38,11 @@ dependencies {
     implementation 'io.jmix.datatools:jmix-datatools-starter'
     implementation 'io.jmix.datatools:jmix-datatools-flowui-starter'
     implementation 'com.microsoft.sqlserver:mssql-jdbc:12.6.1.jre11'
+//    implementation 'xyz.capybara:clamav-client:2.1.3'
+    implementation 'software.amazon.awssdk:s3:2.25.46'
+    implementation 'software.amazon.awssdk:auth:2.25.46'
+    implementation 'software.amazon.awssdk:regions:2.25.46'
+    implementation 'software.amazon.awssdk:url-connection-client:2.25.46'
 
     implementation 'org.springframework.boot:spring-boot-starter-web'
 
@@ -57,7 +66,7 @@ test {
 
 idea {
     module {
-        excludeDirs.addAll(files '.jmix', 'node_modules', 'src/main/frontend/generated/', 'src/main/bundles')
+        excludeDirs.addAll(files('.jmix', 'node_modules', 'src/main/frontend/generated/', 'src/main/bundles'))
     }
 }
 

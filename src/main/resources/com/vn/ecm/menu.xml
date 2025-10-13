@@ -2,8 +2,20 @@
 <menu-config xmlns="http://jmix.io/schema/flowui/menu">
 
     <menu id="application" title="msg://com.vn.ecm/menu.application.title" opened="true">
-        <item view="User.list" title="msg://com.vn.ecm.view.user/UserListView.title"/>
-        <item view="EcmView" title="msg://com.vn.ecm.view.ecm/ecmView.title"/>
+<!--        <item view="User.list" title="msg://com.vn.ecm.view.user/UserListView.title"/>-->
+<!--        <item view="AssignPermissionView" title="msg://com.vn.ecm.view.assignpermission/assignPermissionView.title"/>-->
+<!--        <item view="EditPermissionView" title="msg://com.vn.ecm.view.editpermission/editPermissionView.title"/>-->
+<!--        <item view="AdvancedPermissionView"-->
+<!--              title="msg://com.vn.ecm.view.advancedpermission/advancedPermissionView.title"/>-->
+<!--        <item view="BlockInheritance" title="msg://com.vn.ecm.view.blockinheritance/blockInheritance.title"/>-->
+<!--        <item view="ConfirmReplaceDialog"-->
+<!--              title="msg://com.vn.ecm.view.confirmreplacedialog/confirmReplaceDialog.title"/>-->
+<!--        <item view="UserListView" title="msg://com.vn.ecm.view.userlist/userListView.title"/>-->
     </menu>
+    <menu id="storage" title="msg://com.vn.ecm.view.ecm/ecmView.title">
+        <item id="storage-s3" view="ecm_S3View" title="msg://com.vn.ecm.view.ecm/S3View.title"/>
+        <item id="storage-webdir" view="ecm_WebDirView" title="msg://com.vn.ecm.view.ecm/WebDirectoryView.title"/>
+    </menu>
+
 
 </menu-config>

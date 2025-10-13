@@ -1,11 +1,12 @@
 package com.vn.ecm.entity;
+
 import io.jmix.core.entity.annotation.JmixGeneratedValue;
 import io.jmix.core.metamodel.annotation.JmixEntity;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
+
 @JmixEntity
 @Table(name = "FOLDER")
 @Entity
@@ -22,27 +23,34 @@ public class Folder {
     @JoinColumn(name = "parent_ID")
     private Folder parent;
 
-    @OneToMany(mappedBy = "parent")
-    @OrderBy("name ASC")
-    private List<Folder> children;
+    @Column(name = "FULL_PATH")
+    private String fullPath;
 
-    @OneToMany(mappedBy = "folder")
-    private List<File> file;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "SOURCE_STORAGE_ID")   // <-- dùng đúng 1 cột FK
+    private SourceStorage sourceStorage;
 
     @Column(name = "createdDate")
     private LocalDateTime createdDate;
 
-    public Folder() {
+    public SourceStorage getSourceStorage() {
+        return sourceStorage;
     }
 
-    public Folder(UUID id, String name, Folder parent, List<Folder> children, List<File> file, LocalDateTime createdDate) {
-        this.id = id;
-        this.name = name;
-        this.parent = parent;
-        this.children = children;
-        this.file = file;
-        this.createdDate = createdDate;
+    public void setSourceStorage(SourceStorage sourceStorage) {
+        this.sourceStorage = sourceStorage;
     }
+
+    public String getFullPath() {
+        return fullPath;
+    }
+
+    public void setFullPath(String fullPath) {
+        this.fullPath = fullPath;
+    }
+
+
+
 
     public UUID getId() {
         return id;
@@ -68,21 +76,8 @@ public class Folder {
         this.parent = parent;
     }
 
-    public List<Folder> getChildren() {
-        return children;
-    }
 
-    public void setChildren(List<Folder> children) {
-        this.children = children;
-    }
 
-    public List<File> getFile() {
-        return file;
-    }
-
-    public void setFile(List<File> file) {
-        this.file = file;
-    }
 
     public LocalDateTime getCreatedDate() {
         return createdDate;

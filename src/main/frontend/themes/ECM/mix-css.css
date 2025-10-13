@@ -1,0 +1,11 @@
+.right {
+    display: flex;
+    align-items: flex-end; /* căn đáy theo comboBox */
+    gap: 10px;
+}
+
+.right .v-button,
+.right .jmix-file-storage-upload-field {
+    margin-bottom: 0;
+}
+

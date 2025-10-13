@@ -5,13 +5,14 @@ import io.jmix.core.metamodel.datatype.EnumClass;
 import org.springframework.lang.Nullable;
 
 
-public enum StorageType implements EnumClass<String> {
-    S3("S3"),
-    WEBDIR("WEBDIR"),
-    API("Api");
+public enum ObjectType implements EnumClass<String> {
+
+    USER("A"),
+    ROLE("B");
+
     private final String id;
 
-    StorageType(String id) {
+    ObjectType(String id) {
         this.id = id;
     }
 
@@ -20,8 +21,8 @@ public enum StorageType implements EnumClass<String> {
     }
 
     @Nullable
-    public static StorageType fromId(String id) {
-        for (StorageType at : StorageType.values()) {
+    public static ObjectType fromId(String id) {
+        for (ObjectType at : ObjectType.values()) {
             if (at.getId().equals(id)) {
                 return at;
             }
