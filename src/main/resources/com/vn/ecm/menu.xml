@@ -2,7 +2,7 @@
 <menu-config xmlns="http://jmix.io/schema/flowui/menu">
 
     <menu id="application" title="msg://com.vn.ecm/menu.application.title" opened="true">
-<!--        <item view="User.list" title="msg://com.vn.ecm.view.user/UserListView.title"/>-->
+        <item view="User.list" title="msg://com.vn.ecm.view.user/UserListView.title"/>
 <!--        <item view="AssignPermissionView" title="msg://com.vn.ecm.view.assignpermission/assignPermissionView.title"/>-->
 <!--        <item view="EditPermissionView" title="msg://com.vn.ecm.view.editpermission/editPermissionView.title"/>-->
 <!--        <item view="AdvancedPermissionView"-->

@@ -3,15 +3,14 @@ package com.vn.ecm.view.ecm;
 import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.grid.ItemClickEvent;
 import com.vn.ecm.ecm.storage.DynamicStorageManager;
-import com.vn.ecm.entity.FileDescriptor;
-import com.vn.ecm.entity.Folder;
-import com.vn.ecm.entity.SourceStorage;
+import com.vn.ecm.entity.*;
+import com.vn.ecm.service.ecm.PermissionService;
 import com.vn.ecm.view.assignpermission.AssignPermissionView;
 import io.jmix.core.DataManager;
 import io.jmix.core.FileRef;
 import io.jmix.core.FileStorage;
+import io.jmix.core.security.CurrentAuthentication;
 import io.jmix.flowui.DialogWindows;
-import io.jmix.flowui.Dialogs;
 import io.jmix.flowui.Notifications;
 import io.jmix.flowui.component.grid.DataGrid;
 import io.jmix.flowui.component.grid.TreeDataGrid;
@@ -67,12 +66,30 @@ public abstract class BaseEcmView extends StandardView {
     private DynamicStorageManager dynamicStorageManager;
 
     @Autowired
+    private PermissionService permissionService;
+
+    @Autowired
+    private CurrentAuthentication currentAuthentication;
+
+    @Autowired
     private DialogWindows dialogWindows;
+
     protected abstract SourceStorage getCurrentStorage();
 
 
     @Subscribe
     public void onBeforeShow(BeforeShowEvent event) {
+        String username = currentAuthentication.getUser().getUsername();
+        if (!"admin".equalsIgnoreCase(username)) {
+            var folderAssignAction = foldersTree.getAction("assignPermission");
+            if(folderAssignAction != null) {
+                folderAssignAction.setVisible(false);
+            }
+            var objectAssignAction = fileDataGird.getAction("onObjectAssignPermission");
+            if(objectAssignAction != null) {
+                objectAssignAction.setVisible(false);
+            }
+        }
         // folders trước
         foldersDl.setParameter("storage", getCurrentStorage());
         foldersDl.load();
@@ -81,6 +98,7 @@ public abstract class BaseEcmView extends StandardView {
         filesDl.setParameter("storage", getCurrentStorage());
         filesDl.setParameter("folder", null);
     }
+
     @Subscribe("foldersTree")
     public void onFoldersTreeItemClick(ItemClickEvent<Folder> e) {
         Folder selected = e.getItem();
@@ -88,6 +106,7 @@ public abstract class BaseEcmView extends StandardView {
         filesDl.setParameter("folder", selected);
         filesDl.load();
     }
+
     @Subscribe("fileRefField")
     public void onFileRefFieldFileUploadSucceeded(final FileUploadSucceededEvent<FileStorageUploadField> event) {
         Folder selected = foldersTree.getSingleSelectedItem();
@@ -151,6 +170,15 @@ public abstract class BaseEcmView extends StandardView {
                     .show();
             return;
         }
+        User userCurr = (User) currentAuthentication.getUser();
+        boolean per = permissionService.hasPermission(userCurr, PermissionType.MODIFY, selectedFile);
+        if (!per) {
+            notifications.create("Bạn không có quyền tải xuống File này.")
+                    .withType(Notifications.Type.ERROR)
+                    .show();
+            return;
+        }
+
         FileRef fileRef = selectedFile.getFileRef();
         if (fileRef == null) {
             notifications.create("File này không có đường dẫn tải xuống hợp lệ.")
