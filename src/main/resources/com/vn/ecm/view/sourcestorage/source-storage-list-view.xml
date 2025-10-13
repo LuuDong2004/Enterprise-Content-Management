@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<view xmlns="http://jmix.io/schema/flowui/view"
+      xmlns:c="http://jmix.io/schema/flowui/jpql-condition"
+      title="msg://sourceStorageListView.title"
+      focusComponent="sourceStoragesDataGrid">
+    <data>
+        <collection id="sourceStoragesDc"
+                    class="com.vn.ecm.entity.SourceStorage">
+            <fetchPlan extends="_instance_name">
+                <property name="accessKey"/>
+                <property name="secretAccessKey"/>
+                <property name="endpointUrl"/>
+                <property name="type"/>
+                <property name="active"/>
+            </fetchPlan>
+            <loader id="sourceStoragesDl" readOnly="true">
+                <query>
+                    <![CDATA[select e from SourceStorage e]]>
+                </query>
+            </loader>
+        </collection>
+    </data>
+    <facets>
+        <dataLoadCoordinator auto="true"/>
+        <urlQueryParameters>
+            <genericFilter component="genericFilter"/>
+            <pagination component="pagination"/>
+        </urlQueryParameters>
+    </facets>
+    <actions>
+        <action id="selectAction" type="lookup_select"/>
+        <action id="discardAction" type="lookup_discard"/>
+    </actions>
+    <layout>
+        <genericFilter id="genericFilter"
+                       dataLoader="sourceStoragesDl">
+            <properties include=".*"/>
+        </genericFilter>
+        <hbox id="buttonsPanel" classNames="buttons-panel">
+            <button id="createButton" action="sourceStoragesDataGrid.createAction"/>
+            <button id="editButton" action="sourceStoragesDataGrid.editAction"/>
+            <button id="removeButton" action="sourceStoragesDataGrid.removeAction"/>
+            <simplePagination id="pagination" dataLoader="sourceStoragesDl"/>
+        </hbox>
+        <dataGrid id="sourceStoragesDataGrid"
+                  width="100%"
+                  minHeight="20em"
+                  dataContainer="sourceStoragesDc"
+                  columnReorderingAllowed="true">
+            <actions>
+                <action id="createAction" type="list_create"/>
+                <action id="editAction" type="list_edit"/>
+                <action id="removeAction" type="list_remove"/>
+            </actions>
+            <columns resizable="true">
+                <column property="accessKey"/>
+                <column property="secretAccessKey"/>
+                <column property="endpointUrl"/>
+                <column property="type"/>
+                <column property="active"/>
+            </columns>
+        </dataGrid>
+        <hbox id="lookupActions" visible="false">
+            <button id="selectButton" action="selectAction"/>
+            <button id="discardButton" action="discardAction"/>
+        </hbox>
+    </layout>
+</view>

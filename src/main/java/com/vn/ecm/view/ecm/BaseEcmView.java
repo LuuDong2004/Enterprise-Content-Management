@@ -1,7 +1,13 @@
 package com.vn.ecm.view.ecm;
 
 import com.vaadin.flow.component.ClickEvent;
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.grid.ItemClickEvent;
+import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vn.ecm.ecm.storage.DynamicStorageManager;
 import com.vn.ecm.entity.FileDescriptor;
 import com.vn.ecm.entity.Folder;
@@ -11,8 +17,9 @@ import io.jmix.core.DataManager;
 import io.jmix.core.FileRef;
 import io.jmix.core.FileStorage;
 import io.jmix.flowui.DialogWindows;
-import io.jmix.flowui.Dialogs;
+
 import io.jmix.flowui.Notifications;
+import io.jmix.flowui.UiComponents;
 import io.jmix.flowui.component.grid.DataGrid;
 import io.jmix.flowui.component.grid.TreeDataGrid;
 import io.jmix.flowui.component.upload.FileStorageUploadField;
@@ -26,6 +33,7 @@ import io.jmix.flowui.model.CollectionLoader;
 import io.jmix.flowui.upload.TemporaryStorage;
 import io.jmix.flowui.view.*;
 import org.springframework.beans.factory.annotation.Autowired;
+
 
 import java.io.File;
 import java.io.InputStream;
@@ -65,17 +73,24 @@ public abstract class BaseEcmView extends StandardView {
     private Downloader downloader;
     @Autowired
     private DynamicStorageManager dynamicStorageManager;
-
+    @Autowired
+    private UiComponents uiComponents;
     @Autowired
     private DialogWindows dialogWindows;
     protected abstract SourceStorage getCurrentStorage();
 
 
     @Subscribe
+    public void onInit(InitEvent event){
+        initFolderGridColumn();
+    }
+
+    @Subscribe
     public void onBeforeShow(BeforeShowEvent event) {
         // folders trước
         foldersDl.setParameter("storage", getCurrentStorage());
         foldersDl.load();
+
         foldersTree.expandRecursively(foldersDc.getItems(), 1);
 
         filesDl.setParameter("storage", getCurrentStorage());
@@ -86,6 +101,7 @@ public abstract class BaseEcmView extends StandardView {
         Folder selected = e.getItem();
         filesDl.setParameter("storage", getCurrentStorage());
         filesDl.setParameter("folder", selected);
+
         filesDl.load();
     }
     @Subscribe("fileRefField")
@@ -233,6 +249,50 @@ public abstract class BaseEcmView extends StandardView {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+
+
+
+    //css
+    private void initFolderGridColumn() {
+        //remove column by key
+        if (foldersTree.getColumnByKey("name") != null) {
+            foldersTree.removeColumn(foldersTree.getColumnByKey("name"));
+        }
+
+        //Add hierarchy column
+        TreeDataGrid.Column<Folder> nameColumn = foldersTree.addComponentHierarchyColumn(item -> renderFolderItem(item));
+        nameColumn.setHeader("Tên Đơn vị");
+        nameColumn.setWidth("500px");
+        //set position for hierarchy column
+        foldersTree.setColumnPosition(nameColumn, 0);
+    }
+    private Component renderFolderItem(Folder item) {
+        HorizontalLayout hboxMain = uiComponents.create(HorizontalLayout.class);
+        hboxMain.setAlignItems(FlexComponent.Alignment.CENTER);
+        hboxMain.setWidthFull();
+        hboxMain.setPadding(false);
+        hboxMain.setSpacing(true);
+
+        Icon icon = uiComponents.create(Icon.class);
+        icon.setIcon(VaadinIcon.FOLDER);
+
+        // Không cho icon bị co lại
+        icon.getElement().getStyle().set("flex-shrink", "0");
+        icon.addClassName("folder-item");
+
+        Span span = uiComponents.create(Span.class);
+        span.setText(item.getName());
+        span.addClassName("folder-text");
+
+        hboxMain.add(icon, span);
+
+        hboxMain.addClickListener(event -> {
+            foldersTree.select(item);
+            foldersDc.setItem(item);
+        });
+        return hboxMain;
     }
 
 

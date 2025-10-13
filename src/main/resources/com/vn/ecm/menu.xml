@@ -15,6 +15,7 @@
     <menu id="storage" title="msg://com.vn.ecm.view.ecm/ecmView.title">
         <item id="storage-s3" view="ecm_S3View" title="msg://com.vn.ecm.view.ecm/S3View.title"/>
         <item id="storage-webdir" view="ecm_WebDirView" title="msg://com.vn.ecm.view.ecm/WebDirectoryView.title"/>
+        <item view="SourceStorage.list" title="msg://com.vn.ecm.view.sourcestorage/sourceStorageListView.title"/>
     </menu>
 
 

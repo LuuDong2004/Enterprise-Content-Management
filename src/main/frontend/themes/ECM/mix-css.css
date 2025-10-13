@@ -8,4 +8,16 @@
 .right .jmix-file-storage-upload-field {
     margin-bottom: 0;
 }
-
+/*Folder item in Tree datagrid*/
+.folder-item {
+    color: #cccc00;
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+.folder-text {
+    flex: 1 1 auto; /* Chiếm phần còn lại, có thể co */
+    overflow: hidden; /* Ẩn nội dung tràn */
+    text-overflow: ellipsis; /* Hiện dấu ... */
+    white-space: nowrap; /* Không xuống dòng */
+}
