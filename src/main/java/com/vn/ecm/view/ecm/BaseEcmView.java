@@ -161,6 +161,7 @@ public abstract class BaseEcmView extends StandardView {
             }
         }
     }
+
     @Subscribe(id = "btnDownload", subject = "clickListener")
     public void onBtnDownloadClick(final ClickEvent<JmixButton> event) {
         FileDescriptor selectedFile = fileDataGird.getSingleSelectedItem();
@@ -178,7 +179,6 @@ public abstract class BaseEcmView extends StandardView {
                     .show();
             return;
         }
-
         FileRef fileRef = selectedFile.getFileRef();
         if (fileRef == null) {
             notifications.create("File này không có đường dẫn tải xuống hợp lệ.")

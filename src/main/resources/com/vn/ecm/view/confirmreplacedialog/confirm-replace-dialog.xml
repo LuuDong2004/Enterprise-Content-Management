@@ -13,6 +13,5 @@
             <button id="noBtn" text="No"/>
             <button id="yesBtn" text="Yes" themeNames="primary"/>
         </hbox>
-
     </layout>
 </view>
