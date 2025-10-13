@@ -43,21 +43,21 @@ public class AdvancedPermissionView extends StandardView {
     private JmixButton disableInheritanceBtn;
 
     @ViewComponent
-    private TextArea nameArea;
+    private TextArea pathArea;
 
     @ViewComponent
     private CollectionLoader<Permission> permissionsDl;
 
     // Target có thể là Folder hoặc File
     private Folder targetFolder;
-    private File targetFile;
+    private FileDescriptor targetFile;
 
     public void setTargetFolder(Folder folder) {
         this.targetFolder = folder;
         this.targetFile = null;
     }
 
-    public void setTargetFile(File file) {
+    public void setTargetFile(FileDescriptor file) {
         this.targetFile = file;
         this.targetFolder = null;
     }
@@ -83,7 +83,7 @@ public class AdvancedPermissionView extends StandardView {
         container.setItems(permissions);
     }
 
-    private void loadPermissionsForFile(File file) {
+    private void loadPermissionsForFile(FileDescriptor file) {
         List<Permission> permissions = dataManager.load(Permission.class)
                 .query("select p from Permission p where p.file = :file")
                 .parameter("file", file)
@@ -112,7 +112,6 @@ public class AdvancedPermissionView extends StandardView {
             disableInheritanceBtn.setText("Enable Inheritance");
             return;
         }
-
         if (Boolean.FALSE.equals(permission.getInheritEnabled())) {
             disableInheritanceBtn.setText("Enable Inheritance");
         } else {
@@ -188,11 +187,14 @@ public class AdvancedPermissionView extends StandardView {
 
     @Subscribe
     public void onBeforeShow(BeforeShowEvent event) {
+        if (path != null) {
+            pathArea.setValue(path);
+        }
         if (targetFolder != null) {
-            nameArea.setValue(targetFolder.getName());
+            pathArea.setValue(permissionService.getFullPath(targetFolder));
             loadPermissionsForFolder(targetFolder);
         } else if (targetFile != null) {
-            nameArea.setValue(targetFile.getName());
+            pathArea.setValue(permissionService.getFullPath(targetFile));
             loadPermissionsForFile(targetFile);
         }
 

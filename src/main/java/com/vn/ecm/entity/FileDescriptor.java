@@ -11,7 +11,7 @@ import java.util.UUID;
 @JmixEntity
 @Table(name = "FILE_")
 @Entity
-public class File {
+public class FileDescriptor {
     @JmixGeneratedValue
     @Id
     @Column(name = "ID", nullable = false)
@@ -33,10 +33,10 @@ public class File {
     @JoinColumn(name = "FOLDER_ID")
     private Folder folder;
 
-    public File() {
+    public FileDescriptor() {
     }
 
-    public File(UUID id, String name, String extension, Long size, LocalDateTime lastModified, Folder folder) {
+    public FileDescriptor(UUID id, String name, String extension, Long size, LocalDateTime lastModified, Folder folder) {
         this.id = id;
         this.name = name;
         this.extension = extension;

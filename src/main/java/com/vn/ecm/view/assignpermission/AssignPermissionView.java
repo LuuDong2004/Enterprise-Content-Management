@@ -63,10 +63,10 @@ public class AssignPermissionView extends StandardView {
         this.path = path;
     }
 
-    private File selectedFile;
+    private FileDescriptor selectedFile;
     private Folder selectedFolder;
 
-    public void setTargetFile(File file) {
+    public void setTargetFile(FileDescriptor file) {
         this.selectedFile = file;
         this.selectedFolder = null;
     }

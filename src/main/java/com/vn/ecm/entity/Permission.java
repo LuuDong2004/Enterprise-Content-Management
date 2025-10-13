@@ -31,7 +31,7 @@ public class Permission {
 
     @JoinColumn(name = "FILE_ID")
     @ManyToOne(fetch = FetchType.LAZY)
-    private File file;
+    private FileDescriptor file;
 
     @JoinColumn(name = "USER_ID")
     @ManyToOne(fetch = FetchType.LAZY)
@@ -55,11 +55,11 @@ public class Permission {
     @Transient
     private Boolean allow;
 
-    public File getFile() {
+    public FileDescriptor getFile() {
         return file;
     }
 
-    public void setFile(File file) {
+    public void setFile(FileDescriptor file) {
         this.file = file;
     }
 

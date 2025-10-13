@@ -7,7 +7,7 @@ import io.jmix.core.DataManager;
 import io.jmix.flowui.view.StandardView;
 import io.jmix.flowui.view.ViewController;
 import io.jmix.flowui.view.ViewDescriptor;
-import com.vn.ecm.entity.File;
+import com.vn.ecm.entity.FileDescriptor;
 import com.vn.ecm.entity.Folder;
 import com.vn.ecm.entity.User;
 import com.vn.ecm.service.PermissionService;
@@ -35,7 +35,7 @@ public class ConfirmReplaceDialog extends StandardView {
     private String objectName;
     private Integer permissionMask;
     private Folder targetFolder;
-    private File targetFile;
+    private FileDescriptor targetFile;
 
     private UUID userId;  // Thay đổi: lưu ID thay vì entity
     private String roleCode;
@@ -48,22 +48,18 @@ public class ConfirmReplaceDialog extends StandardView {
         this.targetFile = null;
     }
 
-    public void setTargetFile(File file) {
+    public void setTargetFile(FileDescriptor file) {
         this.targetFile = file;
         this.targetFolder = null;
     }
 
     public void setUser(User user) {
-        System.out.println("DEBUG ConfirmReplaceDialog.setUser called with: " + user);
         this.userId = user != null ? user.getId() : null;
-        System.out.println("DEBUG ConfirmReplaceDialog.setUser set userId to: " + this.userId);
         this.roleCode = null;
     }
 
     public void setRole(ResourceRoleEntity role) {
-        System.out.println("DEBUG ConfirmReplaceDialog.setRole called with: " + role);
         this.roleCode = role != null ? role.getCode() : null;
-        System.out.println("DEBUG ConfirmReplaceDialog.setRole set roleCode to: " + this.roleCode);
         this.userId = null;
     }
 
@@ -74,8 +70,8 @@ public class ConfirmReplaceDialog extends StandardView {
     @Subscribe
     public void onBeforeShow(BeforeShowEvent event) {
         if (messageSpan != null && objectName != null) {
-            messageSpan.setText("Do you want to replace all child object permissions of \""
-                    + objectName + "\" with inheritable permissions from this object?");
+            messageSpan.setText("This will replace explicitly defined permissions on all descendants of this object with inheritable permissions from "
+            + objectName + ".");
         }
     }
 

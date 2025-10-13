@@ -27,7 +27,7 @@ public class Folder {
     private List<Folder> children;
 
     @OneToMany(mappedBy = "folder")
-    private List<File> file;
+    private List<FileDescriptor> file;
 
     @Column(name = "createdDate")
     private LocalDateTime createdDate;
@@ -35,7 +35,7 @@ public class Folder {
     public Folder() {
     }
 
-    public Folder(UUID id, String name, Folder parent, List<Folder> children, List<File> file, LocalDateTime createdDate) {
+    public Folder(UUID id, String name, Folder parent, List<Folder> children, List<FileDescriptor> file, LocalDateTime createdDate) {
         this.id = id;
         this.name = name;
         this.parent = parent;
@@ -76,11 +76,11 @@ public class Folder {
         this.children = children;
     }
 
-    public List<File> getFile() {
+    public List<FileDescriptor> getFile() {
         return file;
     }
 
-    public void setFile(List<File> file) {
+    public void setFile(List<FileDescriptor> file) {
         this.file = file;
     }
 
@@ -91,4 +91,5 @@ public class Folder {
     public void setCreatedDate(LocalDateTime createdDate) {
         this.createdDate = createdDate;
     }
+
 }

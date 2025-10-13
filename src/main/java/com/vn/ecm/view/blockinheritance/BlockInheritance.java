@@ -7,7 +7,7 @@ import io.jmix.flowui.view.StandardView;
 import io.jmix.flowui.view.ViewController;
 import io.jmix.flowui.view.ViewDescriptor;
 
-import com.vn.ecm.entity.File;
+import com.vn.ecm.entity.FileDescriptor;
 import com.vn.ecm.entity.Folder;
 import com.vn.ecm.entity.User;
 import com.vn.ecm.service.PermissionService;
@@ -28,7 +28,7 @@ public class BlockInheritance extends StandardView {
     private User targetUser;
     private ResourceRoleEntity targetRole;
     private Folder targetFolder;
-    private File targetFile;
+    private FileDescriptor targetFile;
 
     public void setTargetUserFolder(User user, Folder folder) {
         this.targetUser = user;
@@ -37,7 +37,7 @@ public class BlockInheritance extends StandardView {
         this.targetRole = null;
     }
 
-    public void setTargetUserFile(User user, File file) {
+    public void setTargetUserFile(User user, FileDescriptor file) {
         this.targetUser = user;
         this.targetFile = file;
         this.targetFolder = null;
@@ -51,7 +51,7 @@ public class BlockInheritance extends StandardView {
         this.targetUser = null;
     }
 
-    public void setTargetRoleFile(ResourceRoleEntity role, File file) {
+    public void setTargetRoleFile(ResourceRoleEntity role, FileDescriptor file) {
         this.targetRole = role;
         this.targetFile = file;
         this.targetFolder = null;

@@ -43,10 +43,10 @@ public class EditPermissionView extends StandardView {
         this.path = path;
     }
 
-    private File selectedFile;
+    private FileDescriptor selectedFile;
     private Folder selectedFolder;
 
-    public void setTargetFile(File file) {
+    public void setTargetFile(FileDescriptor file) {
         this.selectedFile = file;
         this.selectedFolder = null;
     }
@@ -89,17 +89,15 @@ public class EditPermissionView extends StandardView {
         }
         window.addAfterCloseListener(afterCloseEvent -> {
             if (afterCloseEvent.closedWith(StandardOutcome.SAVE)) {
-                // luôn set param, kể cả null
                 usersDl.setParameter("file", selectedFile);
                 usersDl.setParameter("folder", selectedFolder);
                 usersDl.load();
-
                 List<EcmObject> dtos = new ArrayList<>();
                 for (User u : usersDl.getContainer().getItems()) {
-                    EcmObject dto = new EcmObject(
-                            u.getId().toString(),
-                            ObjectType.USER,
-                            u.getUsername());
+                    EcmObject dto = new EcmObject();
+                    dto.setId(u.getId().toString());
+                    dto.setType(ObjectType.USER);
+                    dto.setName(u.getUsername());
                     dtos.add(dto);
                 }
                 // load role tương tự
@@ -107,10 +105,10 @@ public class EditPermissionView extends StandardView {
                 rolesDl.setParameter("folder", selectedFolder);
                 rolesDl.load();
                 for (ResourceRoleEntity r : rolesDl.getContainer().getItems()) {
-                    EcmObject dto = new EcmObject(
-                            r.getCode(),
-                            ObjectType.ROLE,
-                            r.getName());
+                    EcmObject dto = new EcmObject();
+                    dto.setId(r.getId().toString());
+                    dto.setType(ObjectType.ROLE);
+                    dto.setName(r.getName());
                     dtos.add(dto);
                 }
                 // cập nhật UI
@@ -304,21 +302,15 @@ public class EditPermissionView extends StandardView {
     @Subscribe(id = "saveBtn", subject = "clickListener")
     public void onSaveBtnClick(final ClickEvent<JmixButton> event) {
         CollectionContainer<Permission> permissionDc = getViewData().getContainer("permissionsDc");
-
-        // Guard: require a selected user or role before saving
         if (selectedUser == null && selectedRole == null) {
             Notification.show("Please select a user or role");
             return;
         }
-
-        // Guard: require a selected folder or file
         if (selectedFolder == null && selectedFile == null) {
             Notification.show("Please select a folder or file");
             return;
         }
-
         boolean saved = false;
-
         if (selectedUser != null) {
             if (selectedFolder != null) {
                 permissionService.savePermission(permissionDc.getItems(), selectedUser, selectedFolder);

@@ -9,7 +9,7 @@ import com.vaadin.flow.component.upload.SucceededEvent;
 
 import com.vaadin.flow.component.upload.Upload;
 import com.vaadin.flow.router.Route;
-import com.vn.ecm.entity.File;
+import com.vn.ecm.entity.FileDescriptor;
 import com.vn.ecm.entity.Folder;
 import com.vn.ecm.view.assignpermission.AssignPermissionView;
 import com.vn.ecm.view.main.MainView;
@@ -33,15 +33,15 @@ public class EcmView extends StandardView {
     @ViewComponent
     private CollectionContainer<Folder> foldersDc;
     @ViewComponent
-    private CollectionContainer<File> filesDc;
+    private CollectionContainer<FileDescriptor> filesDc;
     @ViewComponent
     private TreeDataGrid<Folder> foldersTree;
     @ViewComponent
     private CollectionLoader<Folder> foldersDl;
     @ViewComponent
-    private DataGrid<File> fileDataGird;
+    private DataGrid<FileDescriptor> fileDataGird;
     @ViewComponent
-    private CollectionLoader<File> filesDl;
+    private CollectionLoader<FileDescriptor> filesDl;
     @Autowired
     private Notifications notifications;
     @Autowired
@@ -88,7 +88,7 @@ public class EcmView extends StandardView {
     public void onFoldersTreeAssignPermission(final ActionPerformedEvent event) {
         Folder folder = foldersTree.getSingleSelectedItem();
         if (folder == null) {
-            Notification.show("Null");
+            Notification.show("Vui lòng chọn một folder để gán quyền.");
             return;
         }
         try {
@@ -112,6 +112,30 @@ public class EcmView extends StandardView {
             parent = parent.getParent();
         }
         return path.toString();
+    }
+
+    @Subscribe("fileDataGird.onObjectAssignPermission")
+    public void onOnObjectAssignPermission(final ActionPerformedEvent event) {
+        FileDescriptor file = fileDataGird.getSingleSelectedItem();
+        if (file == null) {
+            Notification.show("Vui lòng chọn một file để gán quyền.");
+            return;
+        }
+        try {
+            Folder folderParent = file.getFolder();
+            String path = "";
+            if (folderParent != null) {
+                path = buildFolderPath(folderParent) + "/" + file.getName();
+            } else {
+                path = file.getName();
+            }
+            DialogWindow<AssignPermissionView> window = dialogWindows.view(this, AssignPermissionView.class).build();
+            window.getView().setTargetFile(file);
+            window.getView().setPath(path);
+            window.open();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
 }
