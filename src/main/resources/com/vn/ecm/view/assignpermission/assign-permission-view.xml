@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <view xmlns="http://jmix.io/schema/flowui/view"
-      title="msg://assignPermissionView.title">
+      title="Gán quyền truy cập">
     <data>
         <collection id="objectsDc"
                     class="com.vn.ecm.entity.EcmObject">
@@ -67,27 +67,27 @@
         </collection>
     </data>
     <layout>
-        <textArea id="pathArea" label="Path: " readOnly="true" width="500px"/>
+        <textArea id="pathArea" label="Đường dẫn: " readOnly="true" width="500px"/>
         <hbox spacing="true">
-            <button id="usersBtn" text="Users"/>
-            <button id="rolesBtn" text="Roles"/>
+            <button id="usersBtn" text="Người dùng"/>
+            <button id="rolesBtn" text="Phòng ban"/>
         </hbox>
         <vbox spacing="true" width="500px" height="400px">
             <dataGrid id="objectDataGrid" dataContainer="objectsDc" width="100%" height="200px">
                 <columns>
-                    <column property="name" header="Name"/>
-                    <column property="type" header="Type"/>
+                    <column property="name" header="Tên"/>
+                    <column property="type" header="Kiểu"/>
                 </columns>
             </dataGrid>
         </vbox>
         <hbox width="100%" justifyContent="BETWEEN" alignItems="CENTER">
-            <span text="To change permissions, click Edit"/>
-            <button id="editBtn" text="Edit"/>
+            <span text="Nhấn “Chỉnh sửa” để thay đổi quyền truy cập"/>
+            <button id="editBtn" text="Chỉnh sửa"/>
         </hbox>
         <vbox width="500px" height="237px">
             <dataGrid id="permissionDataGrid" dataContainer="permissionsDc" >
                 <columns>
-                    <column property="permissionType" header="Permission" width="50%"/>
+                    <column property="permissionType" header="Quyền truy cập" width="50%"/>
                 </columns>
             </dataGrid>
         </vbox>

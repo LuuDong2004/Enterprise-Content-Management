@@ -2,8 +2,6 @@ package com.vn.ecm.entity;
 
 import io.jmix.core.metamodel.datatype.EnumClass;
 
-import org.springframework.lang.Nullable;
-
 
 public enum PermissionType implements EnumClass<Integer> {
 

@@ -148,7 +148,7 @@ public class AssignPermissionView extends StandardView {
                         permissionDataGrid.getDataProvider().refreshItem(permission);
                     });
                     return checkbox;
-                })).setHeader("Allow");
+                })).setHeader("Cho phép");
 
         // Cột Deny
         permissionDataGrid.addColumn(
@@ -162,7 +162,7 @@ public class AssignPermissionView extends StandardView {
                         }
                     });
                     return checkbox;
-                })).setHeader("Deny");
+                })).setHeader("Từ chối");
 
         objectDataGrid.addSelectionListener(selection -> {
             Optional<EcmObject> optional = selection.getFirstSelectedItem();
