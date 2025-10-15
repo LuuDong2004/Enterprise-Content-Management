@@ -10,11 +10,10 @@
             </fetchPlan>
             <loader id="foldersDl">
                 <query><![CDATA[
-            select f
-            from Folder f
-            where (:storage is null or f.sourceStorage = :storage)
-            order by f.name
-        ]]></query>
+                select f from Folder f
+                where f.sourceStorage = :storage
+
+            ]]></query>
             </loader>
         </collection>
         <collection id="filesDc" class="com.vn.ecm.entity.FileDescriptor">
@@ -28,12 +27,10 @@
             </fetchPlan>
             <loader id="filesDl">
                 <query><![CDATA[
-            select f
-            from FileDescriptor f
-            where (:folder is null or f.folder = :folder)
-            and (:storage is null or f.sourceStorage = :storage)
-            order by f.name
-        ]]></query>
+                select f from FileDescriptor f
+                where f.sourceStorage = :storage
+                and (:folder is null or f.folder = :folder)
+            ]]></query>
             </loader>
         </collection>
         <collection id="StorageDc" class="com.vn.ecm.entity.SourceStorage">
