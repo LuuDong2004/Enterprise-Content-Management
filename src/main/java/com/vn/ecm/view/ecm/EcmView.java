@@ -11,16 +11,15 @@ import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.router.*;
 import com.vn.ecm.ecm.storage.DynamicStorageManager;
-import com.vn.ecm.entity.FileDescriptor;
-import com.vn.ecm.entity.Folder;
-import com.vn.ecm.entity.SourceStorage;
-import com.vn.ecm.entity.StorageType;
+import com.vn.ecm.entity.*;
+import com.vn.ecm.service.ecm.PermissionService;
 import com.vn.ecm.view.assignpermission.AssignPermissionView;
 
 import com.vn.ecm.view.main.MainView;
 import io.jmix.core.DataManager;
 import io.jmix.core.FileRef;
 import io.jmix.core.FileStorage;
+import io.jmix.core.security.CurrentAuthentication;
 import io.jmix.flowui.DialogWindows;
 
 import io.jmix.flowui.Notifications;
@@ -86,6 +85,11 @@ public class EcmView extends StandardView implements BeforeEnterObserver,  After
     private SourceStorage currentStorage;
 
     private UUID id;
+    @Autowired
+    private PermissionService permissionService;
+
+    @Autowired
+    private CurrentAuthentication currentAuthentication;
 
     @Subscribe
     public void onInit(InitEvent event) {
@@ -106,11 +110,23 @@ public class EcmView extends StandardView implements BeforeEnterObserver,  After
 
     @Override
     public void afterNavigation(AfterNavigationEvent event) {
+        String username = currentAuthentication.getUser().getUsername();
+        if (!"admin".equalsIgnoreCase(username)) {
+            var folderAssignAction = foldersTree.getAction("assignPermission");
+            if(folderAssignAction != null) {
+                folderAssignAction.setVisible(false);
+            }
+            var objectAssignAction = fileDataGird.getAction("onObjectAssignPermission");
+            if(objectAssignAction != null) {
+                objectAssignAction.setVisible(false);
+            }
+        }
         if (currentStorage == null) {
             notifications.create("❌ Không tìm thấy kho lưu trữ!")
                     .withType(Notifications.Type.ERROR).show();
             return;
         }
+
 
         // FOLDERS
         foldersDl.setParameter("storage", currentStorage);
@@ -200,6 +216,15 @@ public class EcmView extends StandardView implements BeforeEnterObserver,  After
                     .show();
             return;
         }
+        User userCurr = (User) currentAuthentication.getUser();
+        boolean per = permissionService.hasPermission(userCurr, PermissionType.MODIFY, selectedFile);
+        if (!per) {
+            notifications.create("Bạn không có quyền tải xuống File này.")
+                    .withType(Notifications.Type.ERROR)
+                    .show();
+            return;
+        }
+
         FileRef fileRef = selectedFile.getFileRef();
         if (fileRef == null) {
             notifications.create("File này không có đường dẫn tải xuống hợp lệ.")
@@ -207,7 +232,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver,  After
                     .show();
             return;
         }
-
         try {
             String storageName = fileRef.getStorageName();
             dynamicStorageManager.ensureStorageRegistered(storageName);
