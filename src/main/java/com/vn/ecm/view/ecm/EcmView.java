@@ -2,11 +2,13 @@ package com.vn.ecm.view.ecm;
 
 import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.ItemClickEvent;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.router.*;
@@ -22,9 +24,12 @@ import io.jmix.core.FileStorage;
 import io.jmix.core.security.CurrentAuthentication;
 import io.jmix.flowui.DialogWindows;
 
+import io.jmix.flowui.Dialogs;
 import io.jmix.flowui.Notifications;
 import io.jmix.flowui.UiComponents;
 
+import io.jmix.flowui.app.inputdialog.DialogActions;
+import io.jmix.flowui.app.inputdialog.DialogOutcome;
 import io.jmix.flowui.component.grid.DataGrid;
 import io.jmix.flowui.component.grid.TreeDataGrid;
 import io.jmix.flowui.component.upload.FileStorageUploadField;
@@ -45,12 +50,15 @@ import java.io.File;
 import java.io.InputStream;
 import java.time.LocalDateTime;
 
+import java.util.List;
 import java.util.UUID;
+
+import static io.jmix.flowui.app.inputdialog.InputParameter.stringParameter;
 
 @Route(value = "source-storages/:id", layout = MainView.class)
 @ViewController("EcmView")
 @ViewDescriptor("ECM-view.xml")
-public class EcmView extends StandardView implements BeforeEnterObserver,  AfterNavigationObserver {
+public class EcmView extends StandardView implements BeforeEnterObserver, AfterNavigationObserver {
     @ViewComponent
     private CollectionContainer<Folder> foldersDc;
     @ViewComponent
@@ -91,6 +99,9 @@ public class EcmView extends StandardView implements BeforeEnterObserver,  After
     @Autowired
     private CurrentAuthentication currentAuthentication;
 
+    @Autowired
+    private Dialogs dialogs;
+
     @Subscribe
     public void onInit(InitEvent event) {
         initFolderGridColumn();
@@ -113,11 +124,11 @@ public class EcmView extends StandardView implements BeforeEnterObserver,  After
         String username = currentAuthentication.getUser().getUsername();
         if (!"admin".equalsIgnoreCase(username)) {
             var folderAssignAction = foldersTree.getAction("assignPermission");
-            if(folderAssignAction != null) {
+            if (folderAssignAction != null) {
                 folderAssignAction.setVisible(false);
             }
             var objectAssignAction = fileDataGird.getAction("onObjectAssignPermission");
-            if(objectAssignAction != null) {
+            if (objectAssignAction != null) {
                 objectAssignAction.setVisible(false);
             }
         }
@@ -349,6 +360,139 @@ public class EcmView extends StandardView implements BeforeEnterObserver,  After
         });
         return hboxMain;
     }
+
+    @Subscribe("foldersTree.createFolder")
+    public void onFoldersTreeCreateFolder(final ActionPerformedEvent event) {
+
+        dialogs.createInputDialog(this)
+                .withHeader("Tạo mới folder")
+                .withParameters(
+                        stringParameter("name")
+                                .withLabel("Tên Folder ")
+                                .withRequired(true)
+                                .withDefaultValue("New Folder")
+                )
+                .withActions(DialogActions.OK_CANCEL)
+                .withCloseListener(closeEvent -> {
+                    if (closeEvent.closedWith(DialogOutcome.OK)) {
+                        try {
+                            Folder folder = dataManager.create(Folder.class);
+                            folder.setId(UUID.randomUUID());
+                            folder.setName(closeEvent.getValue("name"));
+                            folder.setParent(foldersTree.getSingleSelectedItem());
+                            folder.setSourceStorage(currentStorage);
+                            folder.setCreatedDate(LocalDateTime.now());
+                            folder.setFullPath(buildFolderPath(folder));
+                            dataManager.save(folder);
+                            foldersDl.load();
+                            notifications.show("Tạo mới folder thành công");
+                        } catch (Exception e) {
+                            notifications.show("Không thể tạo mới folder" + e);
+                        }
+                    }
+                })
+                .open();
+
+    }
+    @Subscribe("foldersTree.delete")
+    public void onFoldersTreeDelete(final ActionPerformedEvent event) {
+        Folder selected = foldersTree.getSingleSelectedItem();
+        if(selected == null){
+            notifications.show("Vui lòng chọn folder để xóa");
+            return;
+        }
+        ConfirmDialog dlg = new ConfirmDialog();
+        dlg.setHeader("Xác nhận");
+        dlg.setText("Xóa folder '" + selected.getName() + " ?");
+        dlg.setCancelable(true);
+        dlg.setConfirmText("Xóa");
+        dlg.addConfirmListener(e2 -> {
+            try {
+                List<FileDescriptor> files = dataManager.load(FileDescriptor.class)
+                        .query("select f from FileDescriptor f where f.folder = :folder")
+                        .parameter("folder", selected)
+                        .list();
+
+                List<Folder> subFolders = dataManager.load(Folder.class)
+                        .query("select f from Folder f where f.parent = :parent")
+                        .parameter("parent", selected)
+                        .list();
+
+                if (!files.isEmpty() || !subFolders.isEmpty()) {
+                    notifications.show("Không thể xóa folder này! Vui Lòng xóa hết tệp trước");
+                    return;
+                }
+                dataManager.remove(selected);
+                Notification.show("Đã xóa folder: " + selected.getName());
+                foldersDl.load();
+            } catch (Exception ex) {
+                notifications.show("Lỗi " + ex.getMessage());
+            }
+        });
+        dlg.open();
+    }
+
+    @Subscribe("foldersTree.renameFolder")
+    public void onFoldersTreeRenameFolder(final ActionPerformedEvent event) {
+        Folder selected = foldersTree.getSingleSelectedItem();
+        if (selected == null) {
+            notifications.show("Vui lòng chọn thư mục để đổi tên");
+            return;
+        }
+        dialogs.createInputDialog(this)
+                .withHeader("Đổi tên thư mục")
+                .withParameters(
+                        stringParameter("name")
+                                .withLabel("Tên thư mục")
+                                .withDefaultValue(selected.getName())
+                                .withRequired(true)
+                )
+                .withActions(DialogActions.OK_CANCEL)
+                .withCloseListener(closeEvent -> {
+                    if (closeEvent.closedWith(DialogOutcome.OK)) {
+                        try {
+                          // xử lý logic
+                        } catch (Exception e) {
+                            notifications.show("Không thể đổi tên" + e);
+                        }
+                    }
+                })
+                .open();
+    }
+
+    @Subscribe("fileDataGird.deleteFile")
+    public void onFileDataGirdDeleteFile(final ActionPerformedEvent event) {
+        FileDescriptor selected = fileDataGird.getSingleSelectedItem();
+        if(selected == null){
+            notifications.create("Vui lòng chọn tệp để xóa").show();
+            return;
+        }
+        ConfirmDialog dlg = new ConfirmDialog();
+        dlg.setHeader("Xác nhận");
+        dlg.setText("Xóa file '" + selected.getName() + " ?");
+        dlg.setCancelable(true);
+        dlg.setConfirmText("Xóa");
+        dlg.addConfirmListener(e2 -> {
+            try{
+                FileRef fileRef = selected.getFileRef();
+                if(fileRef != null){
+                    SourceStorage sourceStorage = selected.getSourceStorage();
+                    if(sourceStorage != null){
+                        FileStorage fileStorage = dynamicStorageManager.getOrCreateFileStorage(sourceStorage);
+                        fileStorage.removeFile(fileRef);
+                        dataManager.remove(selected);
+                        notifications.show("Đã xóa "+selected.getName());
+                        filesDl.load();
+                    }
+                }
+            }catch(Exception e){
+                notifications.show("Lỗi" + e.getMessage());
+            }
+        });
+        dlg.open();
+
+    }
+
 
 
 }

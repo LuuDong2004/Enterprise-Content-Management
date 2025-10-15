@@ -65,8 +65,8 @@
                     </columns>
                     <actions>
                         <action id="createFolder" text="New Folder"/>
-                        <action id="create" text="New Bucket"/>
                         <action id="delete" text="Delete"/>
+                        <action id="renameFolder" text="Rename Folder"/>
                         <action id="assignPermission" text="Assign Permission"/>
                     </actions>
                 </treeDataGrid>
@@ -93,6 +93,7 @@
                           minHeight="20em"
                           dataContainer="filesDc">
                     <actions>
+                        <action id="deleteFile" text="Delete file"/>
                         <action id="onObjectAssignPermission" text="Assign Permission"/>
                     </actions>
 
