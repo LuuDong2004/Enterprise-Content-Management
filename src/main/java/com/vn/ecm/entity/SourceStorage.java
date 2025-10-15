@@ -1,6 +1,7 @@
 package com.vn.ecm.entity;
 
 import io.jmix.core.entity.annotation.JmixGeneratedValue;
+import io.jmix.core.metamodel.annotation.InstanceName;
 import io.jmix.core.metamodel.annotation.JmixEntity;
 import jakarta.persistence.*;
 
@@ -34,8 +35,12 @@ public class SourceStorage {
     private String endpointUrl;
 
     @Column(name = "TYPE")
-   // @Enumerated(EnumType.STRING)
+    //@Enumerated(EnumType.STRING)
     private String type;
+
+    @InstanceName
+    @Column(name = "NAME")
+    private String name;
 
     @Column(name = "ACTIVE")
     private Boolean active;
@@ -45,6 +50,14 @@ public class SourceStorage {
 
     @Column(name = "USE_PATH_STYLE")
     private Boolean usePathStyleBucketAddressing;
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
 
     public String getWebRootPath() {
         return webRootPath;

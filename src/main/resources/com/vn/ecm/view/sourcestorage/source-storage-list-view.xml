@@ -23,8 +23,8 @@
     <facets>
         <dataLoadCoordinator auto="true"/>
         <urlQueryParameters>
-            <genericFilter component="genericFilter"/>
-            <pagination component="pagination"/>
+<!--            <genericFilter component="genericFilter"/>-->
+<!--            <pagination component="pagination"/>-->
         </urlQueryParameters>
     </facets>
     <actions>
@@ -32,10 +32,10 @@
         <action id="discardAction" type="lookup_discard"/>
     </actions>
     <layout>
-        <genericFilter id="genericFilter"
-                       dataLoader="sourceStoragesDl">
-            <properties include=".*"/>
-        </genericFilter>
+<!--        <genericFilter id="genericFilter"-->
+<!--                       dataLoader="sourceStoragesDl">-->
+<!--            <properties include=".*"/>-->
+<!--        </genericFilter>-->
         <hbox id="buttonsPanel" classNames="buttons-panel">
             <button id="createButton" action="sourceStoragesDataGrid.createAction"/>
             <button id="editButton" action="sourceStoragesDataGrid.editAction"/>
@@ -53,11 +53,13 @@
                 <action id="removeAction" type="list_remove"/>
             </actions>
             <columns resizable="true">
+                <column property="name"/>
                 <column property="accessKey"/>
                 <column property="secretAccessKey"/>
                 <column property="endpointUrl"/>
                 <column property="type"/>
                 <column property="active"/>
+                <column key="actions" header="Action" />
             </columns>
         </dataGrid>
         <hbox id="lookupActions" visible="false">

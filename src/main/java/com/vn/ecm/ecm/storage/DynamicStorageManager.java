@@ -112,28 +112,28 @@ public class DynamicStorageManager {
     /**
      * Làm mới FileStorage instance (xóa cũ và tạo mới)
      */
-//    public FileStorage refreshFileStorage(SourceStorage sourceStorage) {
-//        removeFileStorageFromContext(sourceStorage);
-//        return getOrCreateFileStorage(sourceStorage);
-//    }
+    public FileStorage refreshFileStorage(SourceStorage sourceStorage) {
+        removeFileStorageFromContext(sourceStorage);
+        return getOrCreateFileStorage(sourceStorage);
+    }
 
     /**
      * Xóa FileStorage khỏi Spring context
      */
-//    public void removeFileStorageFromContext(SourceStorage sourceStorage) {
-//        String beanName = storageIdToBeanNameMap.remove(sourceStorage.getId().toString());
-//        String storageName = generateStorageName(sourceStorage);
-//
-//        // Xóa bean với prefix fs_
-//        if (beanName != null && springBeanFactory.containsSingleton(beanName)) {
-//            springBeanFactory.destroySingleton(beanName);
-//        }
-//
-//        // Xóa bean không có prefix (cho Jmix FileStorageLocator)
-//        if (springBeanFactory.containsSingleton(storageName)) {
-//            springBeanFactory.destroySingleton(storageName);
-//        }
-//    }
+    public void removeFileStorageFromContext(SourceStorage sourceStorage) {
+        String beanName = storageIdToBeanNameMap.remove(sourceStorage.getId().toString());
+        String storageName = generateStorageName(sourceStorage);
+
+        // Xóa bean với prefix fs_
+        if (beanName != null && springBeanFactory.containsSingleton(beanName)) {
+            springBeanFactory.destroySingleton(beanName);
+        }
+
+        // Xóa bean không có prefix (cho Jmix FileStorageLocator)
+        if (springBeanFactory.containsSingleton(storageName)) {
+            springBeanFactory.destroySingleton(storageName);
+        }
+    }
     /**
      * Đảm bảo storage được đăng ký trong Spring context
      * Được gọi khi Jmix cần tìm storage theo tên
