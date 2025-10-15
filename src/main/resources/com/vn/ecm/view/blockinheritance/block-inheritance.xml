@@ -1,20 +1,20 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <view xmlns="http://jmix.io/schema/flowui/view"
-      title="Block Inheritance">
+      title="Chặn kế thừa quyền">
     <layout>
         <vbox spacing="true" padding="true" width="100%">
-            <label text="⚠ What would you like to do with the current inherited permissions?"/>
-            <label text="You are about to block inheritance to this object, which means that permissions inherited from a parent object will no longer be applied to this object."/>
+            <label text="⚠ Bạn muốn xử lý các quyền kế thừa hiện tại như thế nào?"/>
+            <label text="Bạn sắp chặn việc kế thừa quyền cho đối tượng này. Điều đó có nghĩa là các quyền được kế thừa từ đối tượng cha sẽ không còn áp dụng cho đối tượng này nữa."/>
 
             <button id="convertBtn"
-                    text="-> Convert inherited permissions into explicit permissions on this object"/>
+                    text="-> Chuyển các quyền kế thừa thành quyền trực tiếp trên đối tượng này"/>
 
 
             <button id="removeBtn"
-                    text="-> Remove all inherited permissions from this object"/>
+                    text="-> Xóa tất cả quyền kế thừa khỏi đối tượng này"/>
 
             <hbox spacing="true" alignSelf="END">
-                <button id="cancelBtn" text="Cancel"/>
+                <button id="cancelBtn" text="Hủy"/>
             </hbox>
         </vbox>
     </layout>

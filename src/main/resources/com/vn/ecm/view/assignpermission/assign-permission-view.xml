@@ -92,7 +92,7 @@
             </dataGrid>
         </vbox>
         <hbox spacing="true">
-            <button id="advanceBtn" text="Advanced"/>
+            <button id="advanceBtn" text="Nâng cao"/>
         </hbox>
     </layout>
 </view>

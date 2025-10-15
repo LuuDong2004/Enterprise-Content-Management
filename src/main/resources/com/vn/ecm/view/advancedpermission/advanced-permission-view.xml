@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <view xmlns="http://jmix.io/schema/flowui/view"
-      title="msg://advancedPermissionView.title">
+      title="Phân quyền nâng cao">
     <data>
         <collection id="permissionsDc" class="com.vn.ecm.entity.Permission">
             <fetchPlan extends="_base">
@@ -21,9 +21,9 @@
         </collection>
     </data>
 
-    <layout width="100%" height="100%">
+    <layout width="900px" height="100%">
         <!-- Object name info -->
-        <textArea id="pathArea" label="Path:" readOnly="true" width="100%"/>
+        <textArea id="pathArea" label="Đường dẫn:" readOnly="true" width="100%"/>
 
         <!-- Permission entries table -->
         <dataGrid id="permissionDataGrid"
@@ -38,7 +38,7 @@
         <vbox spacing="true" width="100%">
             <button id="disableInheritanceBtn" text="Disable inheritance"/>
             <checkbox id="replaceChildPermissions"
-                      label="Replace all child object permission entries with inheritable permission entries from this object"/>
+                      label="Thay thế tất cả các quyền của đối tượng con bằng quyền kế thừa từ đối tượng này"/>
         </vbox>
 
         <!-- Bottom buttons -->

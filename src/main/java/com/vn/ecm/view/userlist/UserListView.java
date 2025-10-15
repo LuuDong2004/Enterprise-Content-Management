@@ -72,7 +72,7 @@ public class UserListView extends StandardView {
                     });
                     return checkbox;
                 })
-        ).setHeader("Add");
+        ).setHeader("Thêm");
     }
 
     @Subscribe

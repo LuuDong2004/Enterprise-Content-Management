@@ -4,11 +4,11 @@ import io.jmix.core.metamodel.datatype.EnumClass;
 
 public enum AppliesTo implements EnumClass<String> {
 
-    THIS_FOLDER_ONLY("THIS FOLDER ONLY"),
-    THIS_FOLDER_SUBFOLDERS_FILES("THIS FOLDER, SUBFOLDERS, FILES"),
-    THIS_FOLDER_SUBFOLDERS("THIS FOLDER, SUBFOLDERS"),
-    THIS_FOLDER_FILES("THIS FOLDER, FILES"),
-    SUBFOLDERS_FILES_ONLY("SUBFOLDERS, FILES_ONLY");
+    THIS_FOLDER_ONLY("Chỉ thư mục"),
+    THIS_FOLDER_SUBFOLDERS_FILES("Thư mục, các thư mục con, tệp"),
+    THIS_FOLDER_SUBFOLDERS("Thư mục, các thư mục con"),
+    THIS_FOLDER_FILES("Thư mục và tệp"),
+    SUBFOLDERS_FILES_ONLY("Chỉ các thư mục con và tệp");
 
     private final String id;
 
