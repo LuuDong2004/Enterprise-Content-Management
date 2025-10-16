@@ -43,7 +43,7 @@ public class SourceStorageListView extends StandardListView<SourceStorage> {
             viewStorageButton.setText("Open");
             viewStorageButton.addClickListener(e -> {
                 UI.getCurrent().navigate(EcmView.class,
-                        new RouteParameters("id", sourcestorage.getId().toString()));
+                        new RouteParameters("id",reloadedStorage.getId().toString()));
                 // cập nhập lại kho vào bean
                 dynamicStorageManager.refreshFileStorage(reloadedStorage);
             });
