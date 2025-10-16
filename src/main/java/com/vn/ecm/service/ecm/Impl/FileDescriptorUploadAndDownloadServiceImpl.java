@@ -1,4 +1,4 @@
-package com.vn.ecm.service.ecm;
+package com.vn.ecm.service.ecm.Impl;
 
 import com.vn.ecm.ecm.storage.DynamicStorageManager;
 import com.vn.ecm.entity.FileDescriptor;
@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Service
-public class FileDescriptorService {
+public class FileDescriptorUploadAndDownloadServiceImpl {
     @Autowired
     private DataManager dataManager;
     @Autowired

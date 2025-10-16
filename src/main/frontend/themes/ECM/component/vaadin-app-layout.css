@@ -1,0 +1,35 @@
+
+/*vaadin-app-layout {*/
+/*    --_vaadin-app-layout-drawer-width: var(--vaadin-app-layout-drawer-width, 20rem);*/
+/*    --_vaadin-app-layout-drawer-offset-size: 20rem;*/
+/*    --_vaadin-app-layout-navbar-offset-size: 3.5rem !important;*/
+
+/*}*/
+/*vaadin-app-layout [drawer-opened] {*/
+/*    --vaadin-app-layout-drawer-offset-left: var(--_vaadin-app-layout-drawer-offset-size) !important;*/
+/*}*/
+
+/*vaadin-app-layout::part(drawer) {*/
+/*    !*background: #F6F6F6;*!*/
+
+/*    transform: translateX(0%);*/
+/*    visibility: visible;*/
+/*    max-width: 100%;*/
+/*    top: var(--lumo-size-xl);*/
+
+/*}*/
+
+/*!*THu gọn menu sidebar*!*/
+/*vaadin-app-layout:not([drawer-opened]){*/
+/*    padding-inline-start: 4.75rem;*/
+/*    --_vaadin-app-layout-drawer-width: 4.75rem;*/
+/*}*/
+/*!*Ẩn menu chính*!*/
+/*vaadin-app-layout:not([drawer-opened]) > section.jmix-main-view-section {*/
+/*    display: none;*/
+/*}*/
+/*!*Hiện menu phụ*!*/
+/*vaadin-app-layout:not([drawer-opened])  {*/
+/*    --custom-mini-sidebar-display: flex;*/
+/*}*/
+

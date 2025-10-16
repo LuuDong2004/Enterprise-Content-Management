@@ -1,7 +1,7 @@
 package com.vn.ecm.view.ecm;
 
 
-import com.vn.ecm.service.ecm.FileDescriptorService;
+import com.vn.ecm.service.ecm.Impl.FileDescriptorUploadAndDownloadServiceImpl;
 import io.jmix.flowui.action.ActionType;
 import io.jmix.flowui.action.list.ItemTrackingAction;
 import io.jmix.flowui.component.upload.FileStorageUploadField;
@@ -38,9 +38,10 @@ public class UploadAndUploadFileAction extends ItemTrackingAction<FileDescriptor
     private Mode mode = Mode.UPLOAD;
 
     @Autowired
-    private FileDescriptorService fileDescriptorService;
+    private FileDescriptorUploadAndDownloadServiceImpl fileDescriptorService;
 
     private Supplier<Folder> folderSupplier;
+
     private Supplier<SourceStorage> storageSupplier;
 
     private FileUploadSucceededEvent<FileStorageUploadField> uploadEvent;
@@ -56,9 +57,11 @@ public class UploadAndUploadFileAction extends ItemTrackingAction<FileDescriptor
         this.folderSupplier = folderSupplier;
     }
     public void setStorageSupplier(Supplier<SourceStorage> storageSupplier) {
+
         this.storageSupplier = storageSupplier;
     }
-    public UploadAndUploadFileAction(String id) {
+    public UploadAndUploadFileAction(String id)
+    {
         super(id);
     }
     public UploadAndUploadFileAction() {

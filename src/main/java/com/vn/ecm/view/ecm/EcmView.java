@@ -1,24 +1,22 @@
 package com.vn.ecm.view.ecm;
 
-import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
-import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.ItemClickEvent;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.router.*;
 import com.vn.ecm.ecm.storage.DynamicStorageManager;
 import com.vn.ecm.entity.*;
+import com.vn.ecm.service.ecm.IFileDescriptorService;
+import com.vn.ecm.service.ecm.Impl.FolderServiceImpl;
 import com.vn.ecm.view.assignpermission.AssignPermissionView;
 import com.vn.ecm.view.main.MainView;
 import io.jmix.core.DataManager;
-import io.jmix.core.FileRef;
-import io.jmix.core.FileStorage;
+import io.jmix.core.security.CurrentAuthentication;
 import io.jmix.flowui.*;
 import io.jmix.flowui.app.inputdialog.DialogActions;
 import io.jmix.flowui.app.inputdialog.DialogOutcome;
@@ -35,8 +33,7 @@ import io.jmix.flowui.view.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
-import java.time.LocalDateTime;
-import java.util.List;
+
 import java.util.UUID;
 import static io.jmix.flowui.app.inputdialog.InputParameter.stringParameter;
 @Route(value = "source-storages/:id", layout = MainView.class)
@@ -64,11 +61,8 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     private UiComponents uiComponents;
     @Autowired
     private DialogWindows dialogWindows;
-
     private SourceStorage currentStorage;
-
     private UUID id;
-
     @Autowired
     private Dialogs dialogs;
     @ViewComponent
@@ -81,9 +75,12 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     private UploadAndUploadFileAction downloadAction;
     @ViewComponent
     private JmixButton btnDownload;
-
-
-
+    @Autowired
+    private FolderServiceImpl folderService;
+    @Autowired
+    private CurrentAuthentication currentAuthentication;
+    @Autowired
+    private IFileDescriptorService fileDescriptorService;
     @Subscribe
     public void onInit(InitEvent event) {
         initFolderGridColumn();
@@ -97,7 +94,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
             btnDownload.setAction(downloadAction);
         }
     }
-
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
         String idParam = event.getRouteParameters().get("id").orElseThrow();
@@ -215,6 +211,8 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         });
         return hboxMain;
     }
+
+
     @Subscribe("foldersTree.createFolder")
     public void onFoldersTreeCreateFolder(final ActionPerformedEvent event) {
         dialogs.createInputDialog(this)
@@ -228,24 +226,18 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
                 .withActions(DialogActions.OK_CANCEL)
                 .withCloseListener(closeEvent -> {
                     if (closeEvent.closedWith(DialogOutcome.OK)) {
-                        try {
-                            Folder folder = dataManager.create(Folder.class);
-                            folder.setId(UUID.randomUUID());
-                            folder.setName(closeEvent.getValue("name"));
-                            folder.setParent(foldersTree.getSingleSelectedItem());
-                            folder.setSourceStorage(currentStorage);
-                            folder.setCreatedDate(LocalDateTime.now());
-                            folder.setFullPath(buildFolderPath(folder));
-                            dataManager.save(folder);
-                            foldersDl.load();
-                            notifications.show("Tạo mới folder thành công");
-                        } catch (Exception e) {
-                            notifications.show("Không thể tạo mới folder" + e);
-                        }
+                        Folder folder = new Folder();
+                        folder.setName(closeEvent.getValue("name"));
+                        folder.setParent(foldersTree.getSingleSelectedItem());
+                        folder.setSourceStorage(currentStorage);
+                        folderService.createFolder(folder);
+                        foldersDl.load();
+                        notifications.show(messageBundle.getMessage("ecmCreateFolderAlert"));
                     }
                 })
                 .open();
     }
+    //xóa vào thùng rác
     @Subscribe("foldersTree.delete")
     public void onFoldersTreeDelete(final ActionPerformedEvent event) {
         Folder selected = foldersTree.getSingleSelectedItem();
@@ -255,35 +247,20 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         }
         ConfirmDialog dlg = new ConfirmDialog();
         dlg.setHeader("Xác nhận");
-        dlg.setText("Xóa folder '" + selected.getName() + " ?");
+        dlg.setText("Xóa thư mục '" + selected.getName() + "' ?" + " (Đưa vào thùng rác)");
         dlg.setCancelable(true);
         dlg.setConfirmText("Xóa");
         dlg.addConfirmListener(e2 -> {
             try {
-                List<FileDescriptor> files = dataManager.load(FileDescriptor.class)
-                        .query("select f from FileDescriptor f where f.folder = :folder")
-                        .parameter("folder", selected)
-                        .list();
-
-                List<Folder> subFolders = dataManager.load(Folder.class)
-                        .query("select f from Folder f where f.parent = :parent")
-                        .parameter("parent", selected)
-                        .list();
-
-                if (!files.isEmpty() || !subFolders.isEmpty()) {
-                    notifications.show(messageBundle.getMessage("ecmDeleteFolderAlert"));
-                    return;
-                }
-                dataManager.remove(selected);
-                Notification.show("Đã xóa folder: " + selected.getName());
+                folderService.moveToTrash(selected , currentAuthentication.getUser().getUsername());
                 foldersDl.load();
+                notifications.show(messageBundle.getMessage("ecmDeleteFolderAlert"));
             } catch (Exception ex) {
                 notifications.show("Lỗi " + ex.getMessage());
             }
         });
         dlg.open();
     }
-
     @Subscribe("foldersTree.renameFolder")
     public void onFoldersTreeRenameFolder(final ActionPerformedEvent event) {
         Folder selected = foldersTree.getSingleSelectedItem();
@@ -303,7 +280,9 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
                 .withCloseListener(closeEvent -> {
                     if (closeEvent.closedWith(DialogOutcome.OK)) {
                         try {
-                          // xử lý logic
+                            folderService.renameFolder(selected , closeEvent.getValue("name"));
+                            foldersDl.load();
+                            notifications.show(messageBundle.getMessage("ecmRenameFolderAlert"));
                         } catch (Exception e) {
                             notifications.show("Không thể đổi tên" + e);
                         }
@@ -311,7 +290,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
                 })
                 .open();
     }
-
     @Subscribe("fileDataGird.deleteFile")
     public void onFileDataGirdDeleteFile(final ActionPerformedEvent event) {
         FileDescriptor selected = fileDataGird.getSingleSelectedItem();
@@ -321,22 +299,14 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         }
         ConfirmDialog dlg = new ConfirmDialog();
         dlg.setHeader("Xác nhận");
-        dlg.setText("Xóa file '" + selected.getName() + " ?");
+        dlg.setText("Xóa file '" + selected.getName() + " ?" + "(Đưa vào thùng rác)");
         dlg.setCancelable(true);
         dlg.setConfirmText("Xóa");
         dlg.addConfirmListener(e2 -> {
             try{
-                FileRef fileRef = selected.getFileRef();
-                if(fileRef != null){
-                    SourceStorage sourceStorage = selected.getSourceStorage();
-                    if(sourceStorage != null){
-                        FileStorage fileStorage = dynamicStorageManager.getOrCreateFileStorage(sourceStorage);
-                        fileStorage.removeFile(fileRef);
-                        dataManager.remove(selected);
-                        notifications.show("Đã xóa "+selected.getName());
-                        filesDl.load();
-                    }
-                }
+               fileDescriptorService.removeFileToTrash(selected, currentAuthentication.getUser().getUsername());
+               filesDl.load();
+               notifications.show(messageBundle.getMessage("ecmDeleteFileAlert"));
             }catch(Exception e){
                 notifications.show("Lỗi" + e.getMessage());
             }

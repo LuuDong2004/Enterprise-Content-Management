@@ -1,0 +1,170 @@
+vaadin-grid::part(row):hover {
+    --vaadin-grid-cell-background: #feffe0;
+    --lumo-display-action-button:inline-block;
+}
+vaadin-grid::part(row ) {
+    --lumo-display-action-button:inline-block;
+}
+vaadin-grid::part(last-row){
+   border-bottom: solid 1px var(--lumo-shade-10pct);
+}
+
+.my-grid-row-action{
+    display: var(--lumo-display-action-button);
+}
+.my-grid-row-button {
+    color: var(--lumo-primary-color);
+    padding: 2px;
+}
+.my-grid-row-button:hover {
+    background: var(--lumo-primary-color-10pct);
+    padding-right: 0px;
+}
+/*Merger Header Column cell*/
+vaadin-grid::part(column-top) {
+    border-bottom: none;
+}
+vaadin-grid::part(column-default) {
+    border-top: none;
+    margin-top: -10px;
+}
+/**/
+vaadin-grid > vaadin-grid-cell-content {
+    padding: 0.5rem 1rem;
+    line-height: unset;
+}
+vaadin-grid::part(header-cell) {
+    background: #FFEDCC!important;
+    /*background: var(--lumo-contrast-5pct)!important;*/
+}
+
+vaadin-grid::part(normal-header-hightlight) {
+    background-color: #fff3f3;
+    /*border: 1px solid #0041ff;*/
+    padding: 0px;
+    text-align: center;
+}
+
+vaadin-grid::part(source-header-hightlight) {
+    background-color: #f3f3ff;
+    /*border: 1px solid #0041ff;*/
+    padding: 0px;
+    text-align: center;
+}
+vaadin-grid::part(destination-header-hightlight) {
+    background-color: #f5fff5;
+    /*border: 1px solid #00ff00;*/
+    padding: 0px;
+    text-align: center;
+}
+
+vaadin-grid::part(datagrid-row-error) {
+    /*background-color: #ffe9e9;*/
+    color: red;
+}
+
+/*Inline edit grid style*/
+.grid-data-edit-inline > vaadin-grid-cell-content {
+    align-self: start;
+    padding: 0 0.2rem!important;
+    line-height: unset;
+
+}
+/*Inline edit grid style*/
+.grid-data-input-field {
+   alignment-baseline: top!important;
+}
+.grid-data-input-field::part(normal-header-hightlight) {
+    background-color: #f3f6ff;
+    /*border: 1px solid #0041ff;*/
+    padding: 0px;
+    text-align: center;
+}
+
+.grid-data-input-field::part(input-field) {
+    border-radius: 0;
+    box-shadow:inset 0 0 0 0.5px var(--lumo-contrast-10pct);
+    background-color:var(--lumo-base-color);
+    border-bottom: solid 1px var(--lumo-contrast-20pct)!important;
+}
+.grid-data-input-field[readonly]::part(input-field)  {
+    border-radius: 0;
+    border:0px!important;
+    box-shadow:inset 0 0 0 0px var(--lumo-contrast-10pct);
+    background-color:var(--lumo-base-color);
+    --vaadin-input-field-readonly-border: none;
+}
+.grid-data-input-field[required]:not([has-value])::part(input-field){
+    border-bottom: solid 1px red!important;
+}
+
+.grid-data-input-field[invalid]::part(input-field){
+    border-bottom: solid 2px red;
+    background: #ffebef;
+}
+.grid-data-input-field::part(error-message) {
+    display: none;
+}
+
+/*TREE DATA GRID*/
+vaadin-grid-tree-toggle::part(toggle)::before {
+    content: var(--lumo-icons-plus);
+    font-family: lumo-icons;
+}
+vaadin-grid-tree-toggle[expanded]::part(toggle)::before {
+    content: var(--lumo-icons-minus);
+    font-family: lumo-icons;
+    transform: rotate(0deg);
+}
+vaadin-grid-tree-toggle {
+    --vaadin-grid-tree-toggle-level-offset: 1em;
+}
+
+/* Equipment Category Name Badge Styling */
+.equipment-category-name-badge {
+    background-color: var(--lumo-primary-color-10pct);
+    color: var(--lumo-success-contrast-color);
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    display: inline-block;
+    text-align: center;
+    min-width: 8rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.equipment-category-name-badge:hover {
+    background-color: var(--lumo-success-color-90pct);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+/* Specific styling for the equipment category name column in data grid */
+vaadin-grid vaadin-grid-cell-content[part~="equipment-category-name"] {
+    padding: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+vaadin-grid vaadin-grid-cell-content[part~="equipment-category-name"] .equipment-category-name-badge {
+    width: 100%;
+    max-width: 18em;
+    margin: 0 auto;
+}
+
+
+/*DATA GRID PART NAME GENERATOR*/
+vaadin-grid::part(highlight-column) {
+    background-color: var(--lumo-primary-color-10pct);
+    font-weight: bold;
+}
+
+vaadin-grid::part(font-weight-bold) {
+    font-weight: bold;
+}
