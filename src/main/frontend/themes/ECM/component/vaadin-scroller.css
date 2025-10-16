@@ -1,0 +1,21 @@
+
+
+#scroller::-webkit-scrollbar {
+    width: 12px;
+    background-color: #f0f0f0;
+}
+
+#scroller::-webkit-scrollbar-thumb {
+    background-color: #81f424;
+    border-radius: 6px;
+}
+
+:host #scroller::-webkit-scrollbar {
+    width: 12px;
+    background-color: #f0f0f0;
+}
+
+:host #scroller::-webkit-scrollbar-thumb {
+    background-color: #888;
+    border-radius: 6px;
+}

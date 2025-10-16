@@ -43,8 +43,8 @@
 
         <!-- Bottom buttons -->
         <hbox spacing="true" alignSelf="END">
-            <button id="cancelBtn" text="Cancel"/>
-            <button id="applyBtn" text="Apply"/>
+            <button id="cancelBtn" text="Hủy"/>
+            <button id="applyBtn" text="Xác nhận"/>
         </hbox>
     </layout>
 </view>

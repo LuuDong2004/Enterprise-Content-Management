@@ -1,11 +1,16 @@
 /* Predefined styles for the MainView */
-
 .jmix-main-view-header {
   box-sizing: border-box;
   display: flex;
-  height: var(--lumo-size-xl);
+  height: 40px;
   align-items: center;
   width: 100%;
+  background-image: url('images/header_background.png');
+  background-size: cover; /* Scales image to cover element */
+  background-position: center; /* Centers the image */
+  background-repeat: no-repeat; /* Prevents tiling */
+  border-bottom: solid 1px var(--lumo-primary-color-50pct);
+
 }
 
 .jmix-main-view-drawer-toggle {
@@ -14,9 +19,11 @@
 
 .jmix-main-view-title {
   margin: 0;
-  font-size: var(--lumo-font-size-l);
-}
+  font-size: var(--lumo-font-size-xl);
+  font-weight:700;
+  color: var(--lumo-primary-color);
 
+}
 .jmix-main-view-section {
   display: flex;
   flex-direction: column;

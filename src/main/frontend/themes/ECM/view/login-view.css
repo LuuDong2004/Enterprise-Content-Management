@@ -1,5 +1,20 @@
 /* Predefined styles for the LoginView */
 
 .jmix-login-main-layout {
-  background-color: var(--lumo-shade-5pct);
+  /*background-color: var(--lumo-shade-5pct);*/
+  /*background-color: none;*/
+  /*background-color:red;*/
+  background-image: url('images/login_background.png');
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+
+vaadin-login-form-wrapper{
+  max-width: 100%;
+
+}
+vaadin-login-form-wrapper::part(form){
+  width: 500px;
+  height:30%;
 }

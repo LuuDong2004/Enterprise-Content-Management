@@ -1,0 +1,122 @@
+
+/*Browser Scroll*/
+/* width */
+::-webkit-scrollbar {
+    width: 5px;
+    height: 10px;
+}
+/*Document Commited state*/
+.committed{
+    color: var(--lumo-success-color);
+}
+.uncommitted{
+    color: var( --lumo-secondary-color);
+}
+/* Track */
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+    background: #fde9e9;
+}
+/*Edit form*/
+.screen-view {
+    overflow-y:auto;
+}
+
+/*Folder item in Tree datagrid*/
+.folder-item {
+    color: #cccc00;
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+.folder-text {
+    flex: 1 1 auto; /* Chiếm phần còn lại, có thể co */
+    overflow: hidden; /* Ẩn nội dung tràn */
+    text-overflow: ellipsis; /* Hiện dấu ... */
+    white-space: nowrap; /* Không xuống dòng */
+}
+/**/
+.icon-tab {
+    margin-right: 8px;
+}
+
+/*Edit view styles*/
+.edit-view-title {
+    font-size: 24px;
+    font-weight: 700;
+}
+.edit-view-header-container{
+    /*background: #fdf7ef;*/
+}
+/*Menu Icons styles*/
+.menu-icon .purple {
+    color: rgb(147 51 234 / var(--tw-text-opacity, 1));
+}
+
+/*Folder item in Tree datagrid*/
+.set-item {
+    color: var(--lumo-primary-color);
+}
+
+.field-item {
+    color: var(--lumo-primary-color);
+}
+
+.field-item-link {
+    color: #df0070;
+}
+.header-column{
+    border-bottom: solid 1px var(--lumo-shade-10pct);
+    text-align: center;
+}
+.header-group{
+    font-weight: 700;
+    text-align: center;
+    align-self: center;
+}
+
+/*multiSelectComboBox*/
+vaadin-multi-select-combo-box-chip.pink{
+    background:  var(--lumo-primary-color-10pct);
+    color:  var(--lumo-primary-color);
+    border-radius: 8px;
+
+}
+
+/*Định dạng số*/
+vaadin-integer-field input[type="number"] {
+    text-align: end;
+    --_lumo-text-field-overflow-mask-image:null;
+}
+vaadin-big-decimal-field input[type="text"] {
+    text-align: end;
+    --_lumo-text-field-overflow-mask-image:null;
+}
+
+
+.badge-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.filter-count-badge {
+    position: absolute;
+    top: -12px;
+    right: -8px;
+    font-weight: bold;
+    border-radius: 50%;
+    padding: 10px;
+    width: 30px;
+    height: 30px;
+}
+
+/*Action bar for wizard*/
+.hbox-actions {
+    position: absolute;
+    bottom: 0px;
+}

@@ -1,0 +1,226 @@
+/* Styles for MetaSetListView */
+
+:host {
+    --summary-card-bg: var(--lumo-base-color);
+    --summary-card-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    --card-border-radius: 16px;
+    --filter-bg: var(--lumo-contrast-5pct);
+}
+
+/* Header styles */
+.homepage-list-view-header-container {
+    margin-bottom: var(--lumo-space-l);
+}
+
+.homepage-list-view-screen-title {
+    margin: 0;
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--lumo-primary-text-color);
+}
+
+.homepage-list-view-screen-subtitle {
+    font-size: 0.9rem;
+    margin-top: var(--lumo-space-xs);
+    color: var(--lumo-secondary-text-color);
+}
+
+/* Summary panel styles */
+.homepage-list-view-summary-panel {
+    display: flex;
+    gap: var(--lumo-space-l);
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.homepage-list-view-summary-card {
+    background-color: var(--summary-card-bg);
+    border-radius: 16px;
+    padding: var(--lumo-space-m);
+    box-shadow: var(--summary-card-shadow);
+
+    flex: 1;
+    min-width: 200px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    transition: transform 0.2s ease;
+
+
+}
+.homepage-list-view-summary-panel .totalallgroup{
+    background: linear-gradient(135deg, rgb(127, 183, 249) 0%, rgb(163, 203, 255) 100%);
+    box-shadow: rgba(0, 0, 0, 0.08) 0px 2px 8px;
+    transform: perspective(1000px) rotateY(4deg);
+    transform-style: preserve-3d;
+    border-bottom: 1px solid  rgb(163, 203, 255);
+}
+.homepage-list-view-summary-panel .processgroup{
+    background: linear-gradient(135deg, rgb(77, 190, 122) 0%, rgb(110, 211, 142) 100%);
+    box-shadow: rgba(0, 0, 0, 0.2) 0px 6px 12px;
+    transform: perspective(1000px) translateZ(6px);
+    transform-style: preserve-3d;
+    border-bottom: 1px solid  rgb(110, 211, 142);
+}
+.homepage-list-view-summary-panel .publicgroup{
+    background: linear-gradient(135deg, rgb(247, 126, 126) 0%, rgb(251, 164, 164) 100%);
+    box-shadow: rgba(0, 0, 0, 0.08) 0px 2px 8px, rgba(0, 0, 0, 0.2) 0px 0px 20px;
+    transform: perspective(1000px) translateZ(8px);
+    transform-style: preserve-3d;
+    border: 1px solid rgb(224, 80, 80);
+    border-bottom: 1px solid rgb(251, 164, 164) ;
+}
+.homepage-list-view-summary-panel .cancelgroud{
+    background: linear-gradient(135deg, rgb(246, 212, 124) 0%, rgb(248, 225, 160) 100%);
+    box-shadow: rgba(0, 0, 0, 0.08) 0px 2px 8px;
+    transform: perspective(1000px) rotateX(3deg);
+    transform-style: preserve-3d;
+    border-bottom: 1px solid  rgb(248, 225, 160) ;
+}
+
+
+.homepage-list-view-summary-card:hover {
+    transform: translateY(-2px);
+}
+
+.homepage-list-view-summary-card h4 {
+    margin: 0 0 var(--lumo-space-s) 0;
+    color: var(--lumo-secondary-text-color);
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.homepage-list-view-summary-card .summary-value {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: var(--lumo-primary-color);
+}
+
+/* Responsive layout for domain fragments */
+.homepage-list-view-summary-card {
+    flex: 0 0 calc(25% - 2*var(--lumo-space-m));
+    max-width: calc(25% - 2*var(--lumo-space-m));
+    box-sizing: border-box;
+
+}
+
+/* Tablet view */
+@media screen and (max-width: 1024px) {
+    .homepage-list-view-summary-card {
+        flex: 0 0 calc(50% - var(--lumo-space-s));
+        max-width: calc(50% - var(--lumo-space-s));
+    }
+}
+
+/* Mobile view */
+@media screen and (max-width: 600px) {
+    .homepage-list-view-summary-card {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+}
+
+/* Filter panel styles */
+.homepage-list-view-filter-panel {
+    display: flex;
+    gap: var(--lumo-space-m);
+    flex-wrap: wrap;
+    align-items: center;
+    background-color: var(--filter-bg);
+    border-radius: var(--card-border-radius);
+    padding: var(--lumo-space-m);
+    padding-top: 0px;
+
+}
+
+.homepage-list-view-filter-panel > * {
+    flex: 1;
+    min-width: 200px;
+}
+
+.homepage-list-view-filter-panel .search-field {
+    background-color: var(--lumo-base-color);
+    border-radius: var(--lumo-border-radius-m);
+}
+
+.homepage-list-view-filter-panel .search-advanced-button {
+    max-width: 200px;
+    margin-left: auto;
+}
+
+/* Quick filter styles */
+.homepage-list-view-quick-filter {
+    display: flex;
+    gap: var(--lumo-space-s);
+    margin-bottom: var(--lumo-space-m);
+    flex-wrap: wrap;
+}
+
+.homepage-list-view-quick-filter > button {
+    background-color: transparent;
+    border: 1px solid var(--lumo-contrast-20pct);
+    border-radius: var(--lumo-border-radius-m);
+    color: var(--lumo-secondary-text-color);
+    font-weight: 500;
+    padding: var(--lumo-space-xs) var(--lumo-space-m);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.homepage-list-view-quick-filter > button:hover {
+    background-color: var(--lumo-contrast-5pct);
+}
+
+.homepage-list-view-quick-filter > button.active {
+    background-color: var(--lumo-primary-color-10pct);
+    border-color: var(--lumo-primary-color);
+    color: var(--lumo-primary-text-color);
+}
+
+/* DataGrid styles */
+.homepage-list-view-meta-sets-grid {
+    border-radius: var(--card-border-radius);
+    box-shadow: var(--summary-card-shadow);
+    overflow: hidden;
+}
+
+/* Make header row stand out */
+.homepage-list-view-meta-sets-grid::part(header-cell) {
+    background-color: var(--lumo-primary-color-10pct);
+    font-weight: 600;
+}
+
+/* Alternate row colors for better readability */
+.homepage-list-view-meta-sets-grid::part(row):nth-child(even) {
+    background-color: var(--lumo-contrast-5pct);
+}
+
+/* Buttons panel styles */
+.homepage-list-view-buttons-panel {
+    display: flex;
+    gap: var(--lumo-space-s);
+    margin-top: var(--lumo-space-m);
+    justify-content: space-between;
+    align-items: center;
+}
+
+.homepage-list-view-buttons-panel > :first-child {
+    margin-right: auto;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .homepage-list-view-filter-panel > * {
+        min-width: 100%;
+    }
+
+    .homepage-list-view-summary-card {
+        min-width: 100%;
+    }
+
+    .homepage-list-view-search-advanced-button {
+        max-width: 100%;
+    }
+}

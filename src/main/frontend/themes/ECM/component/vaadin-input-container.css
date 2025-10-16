@@ -1,0 +1,14 @@
+::part(toggle-button)::before {
+    display: var(--lumo-disply-picker-action-part);
+}
+::part(action-part) {
+    display: var(--lumo-disply-picker-action-part);
+}
+::part(input-field):hover {
+    --lumo-disply-picker-action-part: flex;
+}
+::part(input-field)[required]{
+    border-bottom: solid 1px #B00020;
+}
+
+

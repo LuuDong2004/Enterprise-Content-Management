@@ -1,0 +1,389 @@
+/* Fixed Asset Detail Components - Specific Styling */
+
+/* Main Tab Sheet */
+.main-tab-sheet {
+    --vaadin-tabsheet-tab-background: var(--lumo-tint-5pct);
+    --vaadin-tabsheet-tab-border-color: var(--lumo-contrast-10pct);
+    --vaadin-tabsheet-tab-border-width: 1px;
+    --vaadin-tabsheet-tab-border-radius: 0.5rem 0.5rem 0 0;
+}
+
+.main-tab-sheet vaadin-tab {
+    margin-right: 0.25rem;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.main-tab-sheet vaadin-tab:hover {
+    background: var(--lumo-tint-10pct);
+    transform: translateY(-1px);
+}
+
+.main-tab-sheet vaadin-tab[selected] {
+    background: var(--lumo-base-color);
+    border-bottom-color: var(--lumo-primary-color);
+    color: var(--lumo-primary-color);
+    font-weight: 600;
+}
+
+/* Tab Content Panels */
+.tab-content-panel {
+    padding: 1.5rem;
+    background: var(--lumo-base-color);
+    border-radius: 0 0 0.75rem 0.75rem;
+    min-height: 400px;
+}
+
+/* Main Content Layout */
+.main-content-layout {
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.left-content-panel {
+    flex: 1;
+    min-width: 0;
+}
+
+/* Form Layouts */
+.batch-info-form {
+    background: linear-gradient(135deg, var(--lumo-warning-color-10pct) 0%, var(--lumo-warning-color-5pct) 100%);
+    border: 1px solid var(--lumo-warning-color-30pct);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    position: relative;
+}
+
+.batch-info-form::before {
+    content: "📦 Thông tin Lô";
+    display: block;
+    font-weight: 600;
+    color: var(--lumo-warning-color);
+    margin-bottom: 1rem;
+    font-size: var(--lumo-font-size-s);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.main-asset-form {
+    background: var(--lumo-base-color);
+    border: 1px solid var(--lumo-contrast-10pct);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.detail-form-layout {
+    background: var(--lumo-base-color);
+    border: 1px solid var(--lumo-contrast-10pct);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* Asset Images Fragment */
+.asset-images-fragment {
+    min-width: 300px;
+    max-width: 400px;
+    background: var(--lumo-base-color);
+    border: 1px solid var(--lumo-contrast-10pct);
+    border-radius: 0.75rem;
+    padding: 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* Asset Detail Section */
+.asset-detail-section {
+    margin-top: 1.5rem;
+}
+
+.detail-split-layout {
+    border-radius: 0.75rem;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--lumo-contrast-10pct);
+}
+
+.detail-left-panel {
+    background: var(--lumo-base-color);
+    border-right: 1px solid var(--lumo-contrast-10pct);
+}
+
+.detail-right-panel {
+    background: linear-gradient(135deg, var(--lumo-tint-5pct) 0%, var(--lumo-tint-10pct) 100%);
+    position: relative;
+}
+
+.additional-info-title {
+    font-size: var(--lumo-font-size-l);
+    font-weight: 600;
+    color: var(--lumo-header-text-color);
+    margin-bottom: 1rem;
+    display: block;
+    padding: 1rem;
+    background: var(--lumo-base-color);
+    border-radius: 0.5rem;
+    border: 1px solid var(--lumo-contrast-10pct);
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* Form Field Specific Styling */
+.asset-group-field,
+.asset-classification-field {
+    --vaadin-input-field-border-color: var(--lumo-primary-color-30pct);
+    --vaadin-input-field-hover-border-color: var(--lumo-primary-color-50pct);
+}
+
+.asset-code-field,
+.asset-name-field {
+    --vaadin-input-field-border-color: var(--lumo-success-color-30pct);
+    --vaadin-input-field-hover-border-color: var(--lumo-success-color-50pct);
+}
+
+.asset-serial-field,
+.asset-qr-field {
+    --vaadin-input-field-border-color: var(--lumo-secondary-color-30pct);
+    --vaadin-input-field-hover-border-color: var(--lumo-secondary-color-50pct);
+}
+
+.asset-unit-field,
+.asset-unit-secondary-field {
+    --vaadin-input-field-border-color: var(--lumo-warning-color-30pct);
+    --vaadin-input-field-hover-border-color: var(--lumo-warning-color-50pct);
+}
+
+.asset-description-field {
+    --vaadin-text-area-border-color: var(--lumo-contrast-20pct);
+    --vaadin-text-area-hover-border-color: var(--lumo-contrast-30pct);
+    min-height: 80px;
+}
+
+.asset-batch-checkbox {
+    --vaadin-checkbox-size: 1.25rem;
+    --vaadin-checkbox-border-radius: 0.25rem;
+}
+
+.asset-manage-kind-group {
+    --vaadin-radio-button-size: 1.25rem;
+    --vaadin-radio-button-border-radius: 50%;
+}
+
+.asset-origin-field {
+    --vaadin-select-border-color: var(--lumo-contrast-20pct);
+    --vaadin-select-hover-border-color: var(--lumo-contrast-30pct);
+}
+
+.asset-manufacturer-field,
+.asset-country-field {
+    --vaadin-input-field-border-color: var(--lumo-contrast-20pct);
+    --vaadin-input-field-hover-border-color: var(--lumo-contrast-30pct);
+}
+
+.asset-year-field {
+    --vaadin-date-picker-border-color: var(--lumo-contrast-20pct);
+    --vaadin-date-picker-hover-border-color: var(--lumo-contrast-30pct);
+}
+
+/* Warranty Form */
+.warranty-form-layout {
+    background: linear-gradient(135deg, var(--lumo-success-color-5pct) 0%, var(--lumo-success-color-10pct) 100%);
+    border: 1px solid var(--lumo-success-color-30pct);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+}
+
+.warranty-form-layout::before {
+    content: "🛡️ Thông tin Bảo hành";
+    display: block;
+    font-weight: 600;
+    color: var(--lumo-success-color);
+    margin-bottom: 1rem;
+    font-size: var(--lumo-font-size-s);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.warranty-start-date,
+.warranty-end-date {
+    --vaadin-date-picker-border-color: var(--lumo-success-color-30pct);
+    --vaadin-date-picker-hover-border-color: var(--lumo-success-color-50pct);
+}
+
+.warranty-number,
+.warranty-provider,
+.warranty-type,
+.warranty-phone,
+.warranty-email {
+    --vaadin-input-field-border-color: var(--lumo-success-color-30pct);
+    --vaadin-input-field-hover-border-color: var(--lumo-success-color-50pct);
+}
+
+.warranty-terms,
+.warranty-description {
+    --vaadin-text-area-border-color: var(--lumo-success-color-30pct);
+    --vaadin-text-area-hover-border-color: var(--lumo-success-color-50pct);
+    min-height: 100px;
+}
+
+/* Members Tab */
+.members-tab-content {
+    padding: 1.5rem;
+    background: var(--lumo-base-color);
+    border-radius: 0 0 0.75rem 0.75rem;
+}
+
+.members-data-grid {
+    border-radius: 0.75rem;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--lumo-contrast-10pct);
+}
+
+.members-data-grid vaadin-grid {
+    --vaadin-grid-border-color: var(--lumo-contrast-10pct);
+    --vaadin-grid-row-hover-background-color: var(--lumo-tint-10pct);
+    --vaadin-grid-selected-row-background-color: var(--lumo-primary-color-10pct);
+}
+
+.members-data-grid vaadin-grid-column {
+    font-weight: 500;
+}
+
+.members-data-grid vaadin-grid-column-header {
+    background: var(--lumo-tint-5pct);
+    font-weight: 600;
+    color: var(--lumo-header-text-color);
+    padding: 0.75rem;
+}
+
+.member-name-column {
+    min-width: 200px;
+}
+
+.member-code-column {
+    min-width: 150px;
+}
+
+.member-serial-column {
+    min-width: 150px;
+}
+
+.member-description-column {
+    min-width: 250px;
+}
+
+/* Tech Spec Editor */
+.tech-spec-editor {
+    border-radius: 0.75rem;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--lumo-contrast-10pct);
+}
+
+.tech-spec-editor vaadin-rich-text-editor {
+    --vaadin-rich-text-editor-border-color: var(--lumo-contrast-10pct);
+    --vaadin-rich-text-editor-background: var(--lumo-base-color);
+}
+
+/* Fragment Styling */
+.depreciation-fragment,
+.attachment-fragment,
+.related-doc-fragment {
+    background: var(--lumo-base-color);
+    border-radius: 0.75rem;
+    padding: 1rem;
+    border: 1px solid var(--lumo-contrast-10pct);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .main-content-layout {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .asset-images-fragment {
+        min-width: 100%;
+        max-width: none;
+    }
+    
+    .detail-split-layout {
+        flex-direction: column;
+    }
+    
+    .detail-left-panel {
+        border-right: none;
+        border-bottom: 1px solid var(--lumo-contrast-10pct);
+    }
+}
+
+@media (max-width: 768px) {
+    .tab-content-panel,
+    .warranty-form-layout,
+    .members-tab-content {
+        padding: 1rem;
+    }
+    
+    .batch-info-form,
+    .main-asset-form,
+    .detail-form-layout {
+        padding: 1rem;
+    }
+    
+    .main-tab-sheet vaadin-tab {
+        padding: 0.75rem 1rem;
+        font-size: var(--lumo-font-size-s);
+    }
+}
+
+/* Loading States */
+.formLayout[loading] {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.formLayout[loading]::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 2rem;
+    height: 2rem;
+    margin: -1rem 0 0 -1rem;
+    border: 2px solid var(--lumo-primary-color-30pct);
+    border-top-color: var(--lumo-primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Focus Management */
+.formLayout vaadin-text-field:focus-within,
+.formLayout vaadin-text-area:focus-within,
+.formLayout vaadin-select:focus-within,
+.formLayout vaadin-date-picker:focus-within {
+    z-index: 1;
+}
+
+/* Print Styles */
+@media print {
+    .edit-view-header-container,
+    #tabSheet vaadin-tab {
+        display: none;
+    }
+    
+    .formLayout,
+    .tab-content-panel {
+        box-shadow: none;
+        border: 1px solid #ccc;
+    }
+}
+

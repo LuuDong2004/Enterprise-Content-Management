@@ -1,0 +1,40 @@
+/*nav.breadcrumb li + li::before {*/
+/*    content: var(--lumo-icons-angle-right);*/
+/*    display: block;*/
+/*    font-family: 'lumo-icons';*/
+/*    margin: 0 var(--lumo-space-xs);*/
+/*}*/
+
+breadcrumb li + li::before {
+    content: url("icons/ic_slash.svg");
+    display: block;
+    /*font-size: 12px;*/
+    /*font-family: 'lumo-icons';*/
+    /*margin: 0 3px;*/
+    /*line-height: var(--lumo-space-xs);*/
+    line-height: 1.5rem;
+}
+
+breadcrumb a {
+    font-size: var(--lumo-font-size-xxxs);
+    color: var(--primitive-pri-color-neutral-modern-600);
+    line-height: 1rem;
+    font-family: 'InterVariable', sans-serif;
+    font-weight: 500;
+    padding: 0.25rem 0.5rem;
+}
+
+breadcrumb label {
+    font-size: var(--lumo-font-size-xxxs);
+    font-family: 'InterVariable', sans-serif;
+    font-weight: 500;
+    letter-spacing: -0.15px;
+    color: var(--primitive-pri-color-neutral-modern-600);
+    line-height: 1rem;
+    padding: 0.25rem 0.5rem;
+}
+
+.icon-home-breadcrumb {
+    cursor: pointer;
+    letter-spacing: -0.15px;
+}
