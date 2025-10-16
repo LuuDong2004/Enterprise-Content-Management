@@ -132,6 +132,8 @@ public class FolderServiceImpl {
 
         return saved;
     }
+
+
     // cập nhập full path đệ quy của các folder con
     private void updateChildFullPaths(Folder parentFolder) {
         List<Folder> children = dataManager.load(Folder.class)

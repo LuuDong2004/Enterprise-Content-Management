@@ -11,6 +11,7 @@
                 <property name="deletedBy"/>
                 <property name="inTrash"/>
                 <property name="fullPath"/>
+                <property name="createdDate"/>
             </fetchPlan>
             <loader id="foldersDl">
                 <query><![CDATA[
