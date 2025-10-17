@@ -84,15 +84,17 @@
                       spacing="true"
                       width="100%"
                       alignItems="CENTER">
+
                     <fileStorageUploadField id="fileRefField"
                                             property="fileRef"
                                             dropAllowed="true"
                                             clearButtonVisible="true"
                                             maxFileSize="1073741824"
                                             fileStoragePutMode="MANUAL"/>
-                    <button id="btnDownload"
-                            text="Download" action="downloadAction"/>
+                    <button id="btnDownload" text="Download" action="downloadAction"/>
+                    <fragment id="viewModeFragment" class="com.vn.ecm.view.viewmode.ViewModeFragment"/>
                 </hbox>
+                <hbox id="iconTiles" visible="false" classNames="icon-tiles"/>
                 <dataGrid id="fileDataGird"
                           width="100%"
                           minHeight="20em"

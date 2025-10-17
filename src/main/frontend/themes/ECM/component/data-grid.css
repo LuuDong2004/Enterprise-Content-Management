@@ -168,3 +168,56 @@ vaadin-grid::part(highlight-column) {
 vaadin-grid::part(font-weight-bold) {
     font-weight: bold;
 }
+
+/* Windows-like file tiles */
+.file-tile {
+    width: 120px;
+    min-height: 120px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 6px;
+    border-radius: 6px;
+    padding: 6px 4px;
+}
+
+.file-name {
+    max-width: 120px;
+    text-align: center;
+    white-space: normal;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.file-list-cell span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.icon-tiles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+}
+
+.file-tile-selected {
+    outline: 2px solid var(--lumo-primary-color);
+    background: var(--lumo-primary-color-10pct);
+}
+
+/* Windows-like colors for file icons */
+.file-icon.ext-folder { color: #c19a00; } /* gold-ish folder */
+.file-icon.folder { color: #c19a00; } /* support 'folder' class from Java */
+.file-icon.ext-word { color: #185ABD; } /* Word blue */
+.file-icon.ext-excel { color: #107C41; } /* Excel green */
+.file-icon.ext-powerpoint { color: #D24726; } /* PowerPoint orange */
+.file-icon.ext-pdf { color: #D32F2F; } /* Adobe red */
+.file-icon.ext-image { color: #1E88E5; } /* Image blue */
+.file-icon.ext-archive { color: #6D4C41; } /* Brown for archives */
+.file-icon.ext-audio { color: #8E24AA; } /* Purple for audio */
+.file-icon.ext-video { color: #00ACC1; } /* Teal for video */
+.file-icon.ext-text { color: #546E7A; } /* Slate for text */
+.file-icon.ext-file { color: var(--lumo-contrast-50pct); } /* Default */

@@ -1,6 +1,4 @@
 package com.vn.ecm.view.ecm;
-
-
 import com.vn.ecm.service.ecm.Impl.FileDescriptorUploadAndDownloadService;
 import io.jmix.flowui.action.ActionType;
 import io.jmix.flowui.action.list.ItemTrackingAction;
@@ -11,8 +9,6 @@ import io.jmix.flowui.kit.component.upload.event.FileUploadSucceededEvent;
 import io.jmix.flowui.upload.TemporaryStorage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
-
-
 import com.vn.ecm.entity.FileDescriptor;
 import com.vn.ecm.entity.Folder;
 import com.vn.ecm.entity.SourceStorage;
@@ -21,7 +17,6 @@ import org.springframework.stereotype.Component;
 import java.io.File;
 import java.util.UUID;
 import java.util.function.Supplier;
-
 
 @ActionType("UploadDownloadFile")
 @Component("ecm_UploadAndUploadFileAction")

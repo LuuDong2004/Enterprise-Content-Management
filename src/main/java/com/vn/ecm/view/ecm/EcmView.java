@@ -14,16 +14,20 @@ import com.vaadin.flow.router.*;
 import com.vn.ecm.entity.*;
 import com.vn.ecm.service.ecm.IFileDescriptorService;
 import com.vn.ecm.service.ecm.IFolderService;
+import com.vn.ecm.service.ecm.viewmode.Impl.ViewModeApdapterImpl;
 import com.vn.ecm.view.main.MainView;
+import com.vn.ecm.view.viewmode.ViewModeFragment;
 import io.jmix.core.DataManager;
 import io.jmix.core.security.CurrentAuthentication;
 import io.jmix.flowui.*;
 import io.jmix.flowui.app.inputdialog.DialogActions;
 import io.jmix.flowui.app.inputdialog.DialogOutcome;
+import io.jmix.flowui.component.combobox.JmixComboBox;
 import io.jmix.flowui.component.grid.DataGrid;
 import io.jmix.flowui.component.grid.TreeDataGrid;
 import io.jmix.flowui.component.upload.FileStorageUploadField;
 import io.jmix.flowui.Actions;
+import io.jmix.flowui.fragment.Fragment;
 import io.jmix.flowui.kit.action.ActionPerformedEvent;
 import io.jmix.flowui.kit.component.button.JmixButton;
 import io.jmix.flowui.kit.component.upload.event.FileUploadSucceededEvent;
@@ -85,8 +89,17 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     @ViewComponent
     private FileStorageUploadField fileRefField;
 
+    @ViewComponent
+    private ViewModeFragment viewModeFragment;
+    @ViewComponent
+    private com.vaadin.flow.component.orderedlayout.HorizontalLayout iconTiles;
+
+
     @Subscribe
     public void onInit(InitEvent event) {
+        // mode view
+        viewModeFragment.bind(fileDataGird, filesDc, iconTiles);
+
         initFolderGridColumn();
         // Mặc định ẩn upload nếu chưa chọn thư mục
         fileRefField.setEnabled(false);
@@ -213,7 +226,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
                 })
                 .open();
     }
-
     //xóa vào thùng rác
     @Subscribe("foldersTree.delete")
     public void onFoldersTreeDelete(final ActionPerformedEvent event) {
@@ -268,6 +280,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
                 })
                 .open();
     }
+
     @Subscribe("fileDataGird.deleteFile")
     public void onFileDataGirdDeleteFile(final ActionPerformedEvent event) {
         FileDescriptor selected = fileDataGird.getSingleSelectedItem();
