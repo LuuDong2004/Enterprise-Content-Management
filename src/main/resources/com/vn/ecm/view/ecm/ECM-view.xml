@@ -12,7 +12,6 @@
                 <query><![CDATA[
                 select f from Folder f
                 where f.sourceStorage = :storage
-
             ]]></query>
             </loader>
         </collection>
@@ -60,7 +59,8 @@
                     <actions>
                         <action id="createFolder" text="Tạo thư mục"/>
                         <action id="delete" text="Xóa"/>
-                        <action id="assignPermission" text="Phân quyền"/>
+                        <action id="rename" text="Đổi tên"/>
+                        <action id="assignPermission" text="Phân quyền" type="assignPermission"/>
                     </actions>
                 </treeDataGrid>
             </vbox>
@@ -72,6 +72,7 @@
                       width="100%"
                       alignItems="CENTER">
                     <fileStorageUploadField id="fileRefField"
+                                            uploadText="Tải lên"
                                             property="fileRef"
                                             dropAllowed="true"
                                             clearButtonVisible="true"
@@ -85,7 +86,8 @@
                           minHeight="20em"
                           dataContainer="filesDc">
                     <actions>
-                        <action id="onObjectAssignPermission" text="Phân quyền"/>
+                        <action id="deleteFile" text="Xóa"/>
+                        <action id="onObjectAssignPermission" text="Phân quyền" type="onObjectAssignPermission"/>
                     </actions>
                     <columns>
                         <column property="name" header="Tên"/>

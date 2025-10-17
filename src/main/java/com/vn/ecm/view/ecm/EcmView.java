@@ -2,7 +2,7 @@ package com.vn.ecm.view.ecm;
 
 import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.Component;
-import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.grid.ItemClickEvent;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
@@ -22,9 +22,12 @@ import io.jmix.core.FileStorage;
 import io.jmix.core.security.CurrentAuthentication;
 import io.jmix.flowui.DialogWindows;
 
+import io.jmix.flowui.Dialogs;
 import io.jmix.flowui.Notifications;
 import io.jmix.flowui.UiComponents;
 
+import io.jmix.flowui.app.inputdialog.DialogActions;
+import io.jmix.flowui.app.inputdialog.DialogOutcome;
 import io.jmix.flowui.component.grid.DataGrid;
 import io.jmix.flowui.component.grid.TreeDataGrid;
 import io.jmix.flowui.component.upload.FileStorageUploadField;
@@ -45,7 +48,10 @@ import java.io.File;
 import java.io.InputStream;
 import java.time.LocalDateTime;
 
+import java.util.List;
 import java.util.UUID;
+
+import static io.jmix.flowui.app.inputdialog.InputParameter.stringParameter;
 
 @Route(value = "source-storages/:id", layout = MainView.class)
 @ViewController("EcmView")
@@ -85,6 +91,8 @@ public class EcmView extends StandardView implements BeforeEnterObserver,  After
     private CurrentAuthentication currentAuthentication;
     @Autowired
     private PermissionService permissionService;
+    @Autowired
+    private Dialogs dialogs;
     private SourceStorage currentStorage;
 
     private UUID id;
@@ -96,17 +104,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver,  After
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
-        String username = currentAuthentication.getUser().getUsername();
-        if (!"admin".equalsIgnoreCase(username)) {
-            var folderAssignAction = foldersTree.getAction("assignPermission");
-            if(folderAssignAction != null) {
-                folderAssignAction.setVisible(false);
-            }
-            var objectAssignAction = fileDataGird.getAction("onObjectAssignPermission");
-            if(objectAssignAction != null) {
-                objectAssignAction.setVisible(false);
-            }
-        }
         String idParam = event.getRouteParameters().get("id").orElseThrow();
         this.id = UUID.fromString(idParam);
 
@@ -116,7 +113,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver,  After
                 .orElse(null);
     }
 
-
     @Override
     public void afterNavigation(AfterNavigationEvent event) {
         if (currentStorage == null) {
@@ -124,28 +120,23 @@ public class EcmView extends StandardView implements BeforeEnterObserver,  After
                     .withType(Notifications.Type.ERROR).show();
             return;
         }
-
-        // FOLDERS
-        foldersDl.setParameter("storage", currentStorage);
-        foldersDl.load();
-        foldersTree.expandRecursively(foldersDc.getItems(), 1);
-
-        // FILES (gốc)
-        filesDl.setParameter("storage", currentStorage);
-        filesDl.setParameter("folder", null);
-
-
+        User currentUser = (User) currentAuthentication.getUser();
+        loadAccessibleFolders(currentUser);
+        loadAccessibleFiles(currentUser, null);
     }
-
 
     @Subscribe("foldersTree")
     public void onFoldersTreeItemClick(ItemClickEvent<Folder> e) {
         Folder selected = e.getItem();
-        SourceStorage storage = currentStorage;
-        if (storage == null) return;
-        filesDl.setParameter("storage", storage);
-        filesDl.setParameter("folder", selected);
-        filesDl.load();
+        User currentUser = (User) currentAuthentication.getUser();
+        // Check quyền READ trước khi hiển thị files
+        if (!permissionService.hasPermission(currentUser, PermissionType.READ, selected)) {
+            notifications.create("Bạn không có quyền truy cập thư mục này.")
+                    .withType(Notifications.Type.WARNING)
+                    .show();
+            return;
+        }
+        loadAccessibleFiles(currentUser, selected);
     }
 
     @Subscribe("fileRefField")
@@ -257,67 +248,12 @@ public class EcmView extends StandardView implements BeforeEnterObserver,  After
         }
     }
 
-    @Subscribe("foldersTree.assignPermission")
-    public void onFoldersTreeAssignPermission(final ActionPerformedEvent event) {
-        Folder folder = foldersTree.getSingleSelectedItem();
-        if (folder == null) {
-            notifications.show("Vui lòng chọn một folder để gán quyền.");
-            return;
-        }
-        try {
-            String path = buildFolderPath(folder);
-            DialogWindow<AssignPermissionView> window = dialogWindows.view(this, AssignPermissionView.class).build();
-            window.getView().setTargetFolder(folder);
-            window.getView().setPath(path);
-            window.open();
-        } catch (Exception e) {
-            e.printStackTrace();
-            notifications.show("Lỗi khi mở popup: " + e.getMessage());
-        }
-    }
-
-    // đệ quy lấy path
-    private String buildFolderPath(Folder folder) {
-        StringBuilder path = new StringBuilder(folder.getName());
-        Folder parent = folder.getParent();
-        while (parent != null) {
-            path.insert(0, parent.getName() + "/");
-            parent = parent.getParent();
-        }
-        return path.toString();
-    }
-
-    @Subscribe("fileDataGird.onObjectAssignPermission")
-    public void onOnObjectAssignPermission(final ActionPerformedEvent event) {
-        FileDescriptor file = fileDataGird.getSingleSelectedItem();
-        if (file == null) {
-            notifications.show("Vui lòng chọn một file để gán quyền.");
-            return;
-        }
-        try {
-            Folder folderParent = file.getFolder();
-            String path = "";
-            if (folderParent != null) {
-                path = buildFolderPath(folderParent) + "/" + file.getName();
-            } else {
-                path = file.getName();
-            }
-            DialogWindow<AssignPermissionView> window = dialogWindows.view(this, AssignPermissionView.class).build();
-            window.getView().setTargetFile(file);
-            window.getView().setPath(path);
-            window.open();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
     //css
     private void initFolderGridColumn() {
         //remove column by key
         if (foldersTree.getColumnByKey("name") != null) {
             foldersTree.removeColumn(foldersTree.getColumnByKey("name"));
         }
-
         //Add hierarchy column
         TreeDataGrid.Column<Folder> nameColumn = foldersTree.addComponentHierarchyColumn(item -> renderFolderItem(item));
         nameColumn.setHeader("Name");
@@ -353,5 +289,156 @@ public class EcmView extends StandardView implements BeforeEnterObserver,  After
         return hboxMain;
     }
 
+    @Subscribe("foldersTree.createFolder")
+    public void onFoldersTreeCreateFolder(final ActionPerformedEvent event) {
+        dialogs.createInputDialog(this)
+                .withHeader("Tạo mới folder")
+                .withParameters(
+                        stringParameter("name")
+                                .withLabel("Tên Folder ")
+                                .withRequired(true)
+                                .withDefaultValue("New Folder")
+                )
+                .withActions(DialogActions.OK_CANCEL)
+                .withCloseListener(closeEvent -> {
+                    if (closeEvent.closedWith(DialogOutcome.OK)) {
+                        try {
+                            Folder folder = dataManager.create(Folder.class);
+                            folder.setId(UUID.randomUUID());
+                            folder.setName(closeEvent.getValue("name"));
+                            folder.setParent(foldersTree.getSingleSelectedItem());
+                            folder.setSourceStorage(currentStorage);
+                            folder.setCreatedDate(LocalDateTime.now());
+                            folder.setFullPath(buildFolderPath(folder));
+                            dataManager.save(folder);
+                            foldersDl.load();
+                            notifications.show("Tạo mới folder thành công");
+                        } catch (Exception e) {
+                            notifications.show("Không thể tạo mới folder" + e);
+                        }
+                    }
+                })
+                .open();
+    }
+    @Subscribe("foldersTree.delete")
+    public void onFoldersTreeDelete(final ActionPerformedEvent event) {
+        Folder selected = foldersTree.getSingleSelectedItem();
+        if(selected == null){
+            notifications.show("Vui lòng chọn folder để xóa");
+            return;
+        }
+        ConfirmDialog dlg = new ConfirmDialog();
+        dlg.setHeader("Xác nhận");
+        dlg.setText("Xóa folder '" + selected.getName() + " ?");
+        dlg.setCancelText("Hủy");
+        dlg.setCancelable(true);
+        dlg.setConfirmText("Xóa");
+        dlg.addConfirmListener(e2 -> {
+            try {
+                List<FileDescriptor> files = dataManager.load(FileDescriptor.class)
+                        .query("select f from FileDescriptor f where f.folder = :folder")
+                        .parameter("folder", selected)
+                        .list();
 
+                List<Folder> subFolders = dataManager.load(Folder.class)
+                        .query("select f from Folder f where f.parent = :parent")
+                        .parameter("parent", selected)
+                        .list();
+
+                if (!files.isEmpty() || !subFolders.isEmpty()) {
+                    notifications.show("Không thể xóa folder này! Vui Lòng xóa hết tệp trước");
+                    return;
+                }
+                dataManager.remove(selected);
+                notifications.show("Đã xóa folder: " + selected.getName());
+                foldersDl.load();
+            } catch (Exception ex) {
+                notifications.show("Lỗi " + ex.getMessage());
+            }
+        });
+        dlg.open();
+    }
+
+    @Subscribe("foldersTree.rename")
+    public void onFoldersTreeRenameFolder(final ActionPerformedEvent event) {
+        Folder selected = foldersTree.getSingleSelectedItem();
+        if (selected == null) {
+            notifications.show("Vui lòng chọn thư mục để đổi tên");
+            return;
+        }
+        dialogs.createInputDialog(this)
+                .withHeader("Đổi tên thư mục")
+                .withParameters(
+                        stringParameter("name")
+                                .withLabel("Tên thư mục")
+                                .withDefaultValue(selected.getName())
+                                .withRequired(true)
+                )
+                .withActions(DialogActions.OK_CANCEL)
+                .withCloseListener(closeEvent -> {
+                    if (closeEvent.closedWith(DialogOutcome.OK)) {
+                        try {
+                            // xử lý logic
+                        } catch (Exception e) {
+                            notifications.show("Không thể đổi tên" + e);
+                        }
+                    }
+                })
+                .open();
+    }
+
+    @Subscribe("fileDataGird.deleteFile")
+    public void onFileDataGirdDeleteFile(final ActionPerformedEvent event) {
+        FileDescriptor selected = fileDataGird.getSingleSelectedItem();
+        if(selected == null){
+            notifications.create("Vui lòng chọn tệp để xóa").show();
+            return;
+        }
+        ConfirmDialog dlg = new ConfirmDialog();
+        dlg.setHeader("Xác nhận");
+        dlg.setText("Xóa file '" + selected.getName() + " ?");
+        dlg.setCancelText("Hủy");
+        dlg.setCancelable(true);
+        dlg.setConfirmText("Xóa");
+        dlg.addConfirmListener(e2 -> {
+            try{
+                FileRef fileRef = selected.getFileRef();
+                if(fileRef != null){
+                    SourceStorage sourceStorage = selected.getSourceStorage();
+                    if(sourceStorage != null){
+                        FileStorage fileStorage = dynamicStorageManager.getOrCreateFileStorage(sourceStorage);
+                        fileStorage.removeFile(fileRef);
+                        dataManager.remove(selected);
+                        notifications.show("Đã xóa "+selected.getName());
+                        filesDl.load();
+                    }
+                }
+            }catch(Exception e){
+                notifications.show("Lỗi" + e.getMessage());
+            }
+        });
+        dlg.open();
+    }
+    // Đệ quy lấy path
+    private String buildFolderPath(Folder folder) {
+        if (folder == null) return "";
+        StringBuilder path = new StringBuilder(folder.getName());
+        Folder parent = folder.getParent();
+        while (parent != null) {
+            path.insert(0, parent.getName() + "/");
+            parent = parent.getParent();
+        }
+        return path.toString();
+    }
+
+    private void loadAccessibleFolders(User user) {
+        List<Folder> accessibleFolders = permissionService.getAccessibleFolders(user, currentStorage);
+        foldersDc.setItems(accessibleFolders);
+        foldersTree.expandRecursively(accessibleFolders, 1);
+    }
+
+    private void loadAccessibleFiles(User user, Folder folder) {
+        List<FileDescriptor> accessibleFiles = permissionService.getAccessibleFiles(user, currentStorage, folder);
+        filesDc.setItems(accessibleFiles);
+    }
 }

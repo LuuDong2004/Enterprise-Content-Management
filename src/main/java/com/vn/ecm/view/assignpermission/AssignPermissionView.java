@@ -176,7 +176,6 @@ public class AssignPermissionView extends StandardView {
                 return;
             }
             EcmObject dto = optional.get();
-            // Build Permission items list (one per PermissionType) and set into
             // permissionsDc
             List<Permission> list = new ArrayList<>();
 

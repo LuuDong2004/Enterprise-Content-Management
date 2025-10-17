@@ -36,6 +36,8 @@ public class EditPermissionView extends StandardView {
     private User selectedUser;
     String path = "";
     private EcmObject target;
+    @ViewComponent
+    private MessageBundle messageBundle;
 
     public void setTarget(EcmObject target) {
         this.target = target;
@@ -281,7 +283,7 @@ public class EditPermissionView extends StandardView {
         List<EcmObject> dtos = new ArrayList<>();
         for (User u : users) {
             EcmObject dto = new EcmObject();
-            dto.setId(u.getId().toString()); // để sau này load User
+            dto.setId(u.getId().toString());
             dto.setName(u.getUsername());
             dto.setType(ObjectType.USER);
             dtos.add(dto);
@@ -337,7 +339,6 @@ public class EditPermissionView extends StandardView {
                 saved = true;
             }
         }
-
         if (saved) {
             Notification.show("Permission saved");
             close(StandardOutcome.SAVE);
