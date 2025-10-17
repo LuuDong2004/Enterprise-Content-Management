@@ -763,29 +763,6 @@ public class PermissionService {
                 .orElse(null);
     }
 
-    public List<Folder> getAccessibleFolders(User user) {
-        if (user == null) return Collections.emptyList();
-
-        // Nếu là admin thì trả hết
-        if ("admin".equalsIgnoreCase(user.getUsername())) {
-            return dataManager.load(Folder.class)
-                    .query("select f from Folder f")
-                    .list();
-        }
-
-        // User thường: chỉ trả folder có quyền READ+
-        return dataManager.load(Folder.class)
-                .query("""
-                    select distinct f from Folder f
-                    join Permission p on p.folder = f
-                    where p.user = :user
-                    and p.permissionMask >= :minMask
-                """)
-                .parameter("user", user)
-                .parameter("minMask", PermissionType.READ.getValue())
-                .list();
-    }
-
     public List<Folder> getAccessibleFolders(User user, SourceStorage sourceStorage) {
         if (user == null || sourceStorage == null) return Collections.emptyList();
 
