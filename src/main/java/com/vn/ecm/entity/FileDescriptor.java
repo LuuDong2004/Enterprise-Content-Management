@@ -1,8 +1,10 @@
 package com.vn.ecm.entity;
+
 import io.jmix.core.FileRef;
 import io.jmix.core.entity.annotation.JmixGeneratedValue;
 import io.jmix.core.metamodel.annotation.JmixEntity;
 import jakarta.persistence.*;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -37,6 +39,39 @@ public class FileDescriptor {
 
     @Column(name = "FILE_REF")
     private FileRef fileRef;
+
+    @Column(name = "IN_TRASH")
+    private Boolean inTrash;
+
+    @Column(name = "DELETED_BY")
+    private String deletedBy;
+
+    @Column(name = "DELETE_DATE")
+    private LocalDateTime deleteDate;
+
+    public LocalDateTime getDeleteDate() {
+        return deleteDate;
+    }
+
+    public void setDeleteDate(LocalDateTime deleteDate) {
+        this.deleteDate = deleteDate;
+    }
+
+    public String getDeletedBy() {
+        return deletedBy;
+    }
+
+    public void setDeletedBy(String deletedBy) {
+        this.deletedBy = deletedBy;
+    }
+
+    public Boolean getInTrash() {
+        return inTrash;
+    }
+
+    public void setInTrash(Boolean inTrash) {
+        this.inTrash = inTrash;
+    }
 
     public SourceStorage getSourceStorage() {
         return sourceStorage;

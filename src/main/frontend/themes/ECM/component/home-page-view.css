@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /* Tiêu đề chính: Dashboard */
 
 /* Sticky header for detail view */
@@ -471,3 +472,478 @@ vaadin-vertical-layout.card-box > label.text-red { color: #e53935; }
     border-color: #D71920;
   }
 }
+=======
+/*!* Tiêu đề chính: Dashboard *!*/
+
+/*!* Sticky header for detail view *!*/
+/*.dashboard-detail-header,*/
+/*vaadin-vertical-layout.dashboard-detail-header,*/
+/*vbox.dashboard-detail-header {*/
+/*  position: sticky;*/
+/*  top: 0;*/
+/*  z-index: 1000;*/
+/*  width: 100%;*/
+/*  background: var(--lumo-base-color, #ffffff);*/
+/*  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);*/
+/*  border-bottom: 1px solid rgba(0, 0, 0, 0.06);*/
+/*  padding-bottom: 8px;*/
+/*}*/
+
+/*#mainFlexLayout > vaadin-vertical-layout > label.dashBoard {*/
+/*  font-size: 1.875rem; !* 30px *!*/
+/*  font-weight: bold;*/
+/*  color: #D71920;*/
+/*}*/
+
+/*!* Mô tả phụ *!*/
+/*#mainFlexLayout > vaadin-vertical-layout > label.overview-description {*/
+/*  color: #4B5563;*/
+/*  margin-top: 0.25rem;*/
+/*  font-size: 1rem; !* 16px *!*/
+/*}*/
+
+/*!* Layout chứa 4 thẻ dashboard *!*/
+/*#mainFlexLayout > vaadin-vertical-layout > vaadin-horizontal-layout.card-grid {*/
+/*  display: flex;*/
+/*  justify-content: space-between;*/
+/*  gap: 24px;*/
+/*  margin-top: 24px;*/
+/*}*/
+
+/*!* Thẻ thống kê màu xanh dương *!*/
+/*.dashboardCards > vaadin-vertical-layout.card-box.bg-blue {*/
+/*  background-color: #e8f1fe;*/
+/*}*/
+
+/*!* Thẻ thống kê màu xanh lá *!*/
+/*.dashboardCards > vaadin-vertical-layout.card-box.bg-green {*/
+/*  background-color: #e7fbee;*/
+/*}*/
+
+/*!* Thẻ thống kê màu cam *!*/
+/*.dashboardCards > vaadin-vertical-layout.card-box.bg-orange {*/
+/*  background-color: #fff3e0;*/
+/*}*/
+
+/*!* Thẻ thống kê màu đỏ *!*/
+/*.dashboardCards > vaadin-vertical-layout.card-box.bg-red {*/
+/*  background-color: #ffe5e5;*/
+/*}*/
+
+/*!* Style chung cho từng thẻ *!*/
+/*.dashboardCards > vaadin-vertical-layout.card-box {*/
+/*  border-radius: 12px;*/
+/*  padding: 16px;*/
+/*  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);*/
+/*  width: 100%;*/
+/*}*/
+
+/*!* Tiêu đề nhỏ trong từng card *!*/
+/*vaadin-vertical-layout.card-box > label.card-title {*/
+/*  font-size: 16px;*/
+/*  font-weight: 600;*/
+/*  margin-bottom: 0px;*/
+/*}*/
+
+/*!* Số liệu chính *!*/
+/*vaadin-vertical-layout.card-box > label.card-number {*/
+/*  font-size: 28px;*/
+/*  font-weight: bold;*/
+/*}*/
+
+/*!* Phụ đề mô tả *!*/
+/*vaadin-vertical-layout.card-box > label.card-sub {*/
+/*  font-size: 13px;*/
+/*  margin-top: 6px;*/
+/*}*/
+
+/*!* Màu chữ từng thẻ *!*/
+/*vaadin-vertical-layout.card-box > label.text-blue-dark { color: #0b5394; }*/
+/*vaadin-vertical-layout.card-box > label.text-green-dark { color: #1a7f37; }*/
+/*vaadin-vertical-layout.card-box > label.text-orange-dark { color: #b3541e; }*/
+/*vaadin-vertical-layout.card-box > label.text-red-dark { color: #a61d24; }*/
+
+/*vaadin-vertical-layout.card-box > label.text-blue { color: #2f75cb; }*/
+/*vaadin-vertical-layout.card-box > label.text-green { color: #32a852; }*/
+/*vaadin-vertical-layout.card-box > label.text-orange { color: #ef6c00; }*/
+/*vaadin-vertical-layout.card-box > label.text-red { color: #e53935; }*/
+
+
+/*.dashboardCards {*/
+/*    display: flex;*/
+/*    gap: 16px;*/
+/*    justify-content: space-between;*/
+/*    width: 100%;*/
+/*}*/
+
+/*.dashboardCards > .card-box {*/
+/*    flex: 1;*/
+/*    padding: 1rem;*/
+/*    border-radius: 12px;*/
+/*    box-shadow: 0 2px 6px rgba(0,0,0,0.05);*/
+/*    background: white;*/
+/*}*/
+
+/*!* Các màu nền tương ứng *!*/
+/*.card-box.bg-blue {*/
+/*    background: linear-gradient(to bottom right, #eff6ff, #dbeafe);*/
+/*    border: 1px solid #bfdbfe;*/
+/*    color: #1e3a8a;*/
+/*}*/
+
+/*.card-box.bg-green {*/
+/*    background: linear-gradient(to bottom right, #ecfdf5, #d1fae5);*/
+/*    border: 1px solid #bbf7d0;*/
+/*    color: #065f46;*/
+/*}*/
+
+/*.card-box.bg-orange {*/
+/*    background: linear-gradient(to bottom right, #fff7ed, #ffedd5);*/
+/*    border: 1px solid #fdba74;*/
+/*    color: #92400e;*/
+/*}*/
+
+/*.card-box.bg-red {*/
+/*    background: linear-gradient(to bottom right, #fef2f2, #fecaca);*/
+/*    border: 1px solid #fca5a5;*/
+/*    color: #991b1b;*/
+/*}*/
+
+/*.card-box.bg-purple {*/
+/*    background: linear-gradient(to bottom right, #f5f3ff, #ede9fe);*/
+/*    border: 1px solid #c4b5fd;*/
+/*    color: #4c1d95;*/
+/*}*/
+
+/*.card-box.bg-yellow {*/
+/*    background: linear-gradient(to bottom right, #fefce8, #fef9c3);*/
+/*    border: 1px solid #fde68a;*/
+/*    color: #92400e;*/
+/*}*/
+/*!*------------------Component 2 ----------------*!*/
+
+/*.dashboard-container {*/
+/*    margin-top: 12px;*/
+/*    padding: 24px;*/
+/*    border-radius: 0.5rem;         !* rounded-lg *!*/
+/*    color: var(--lumo-body-text-color); !* text-card-foreground (tuỳ hệ màu Jmix) *!*/
+/*    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); !* shadow-lg *!*/
+/*    border: 0;                     !* border-0 *!*/
+/*    background-color: rgba(255, 255, 255, 0.8); !* bg-white/80 *!*/
+/*    backdrop-filter: blur(4px);   !* backdrop-blur-sm *!*/
+/*}*/
+
+/*.dashboard-title {*/
+/*    font-size: 20px;*/
+/*    font-weight: bold;*/
+/*    color: #1e293b;*/
+/*    margin: 12px 0px;*/
+/*}*/
+
+/*.asset-section {*/
+/*    width: 100%;*/
+/*    background-color: #f8fafc;*/
+/*    border-radius: 8px;*/
+/*    padding: 16px;*/
+/*    margin-bottom: 20px;*/
+/*    transition: background-color 0.3s ease;*/
+/*}*/
+
+/*.asset-section:hover {*/
+/*    background-color: #f1f5f9;*/
+/*}*/
+
+/*.section-header {*/
+/*    display: flex;*/
+/*    align-items: center;*/
+/*    gap: 12px;*/
+/*    margin-bottom: 16px;*/
+/*}*/
+
+/*.icon {*/
+/*    width: 40px;*/
+/*    height: 40px;*/
+/*    border-radius: 8px;*/
+/*}*/
+
+/*.bg-blue {*/
+/*    background-color: #dbeafe;*/
+/*}*/
+
+/*.bg-green {*/
+/*    background-color: #d1fae5;*/
+/*}*/
+
+/*.bg-purple {*/
+/*    background-color: #ede9fe;*/
+/*}*/
+
+/*.section-title {*/
+/*    font-size: 16px;*/
+/*    font-weight: 600;*/
+/*    color: #1e293b;*/
+/*}*/
+
+/*.status-row {*/
+/*    display: flex;*/
+/*    flex-wrap: wrap;*/
+/*    gap: 12px;*/
+/*    width: 100%*/
+/*}*/
+
+/*.status-box {*/
+/*    flex: 1;*/
+/*    min-width: 100px;*/
+/*    background-color: white;*/
+/*    border-radius: 6px;*/
+/*    border: 1px solid #e5e7eb;*/
+/*    padding: 12px;*/
+/*    text-align: center;*/
+/*}*/
+
+/*.status-value {*/
+/*    font-size: 20px;*/
+/*    font-weight: bold;*/
+/*    color: #1e293b;*/
+/*}*/
+
+/*.status-value.green {*/
+/*    color: #059669;*/
+/*}*/
+
+/*.status-value.orange {*/
+/*    color: #ea580c;*/
+/*}*/
+
+/*.status-value.red {*/
+/*    color: #dc2626;*/
+/*}*/
+
+/*.status-value.gray {*/
+/*    color: #4b5563;*/
+/*}*/
+
+/*.status-label {*/
+/*    font-size: 12px;*/
+/*    color: #64748b;*/
+/*}*/
+
+/*.circle-icon-green {*/
+/*  width: 12px;*/
+/*  height: 12px;*/
+/*  border-radius: 50%;*/
+/*  background-color: #00C49F;*/
+/*  display: inline-block;*/
+/*  margin-right: 8px;*/
+/*}*/
+
+/*.circle-icon-orange {*/
+/*  width: 12px;*/
+/*  height: 12px;*/
+/*  border-radius: 50%;*/
+/*  background-color: #FFBB28;*/
+/*  display: inline-block;*/
+/*  margin-right: 8px;*/
+/*}*/
+
+/*.circle-icon-red {*/
+/*  width: 12px;*/
+/*  height: 12px;*/
+/*  border-radius: 50%;*/
+/*  background-color: #FF4C4C;*/
+/*  display: inline-block;*/
+/*  margin-right: 8px;*/
+/*}*/
+
+/*.circle-icon-grey {*/
+/*  width: 12px;*/
+/*  height: 12px;*/
+/*  border-radius: 50%;*/
+/*  background-color: #A9A9A9;*/
+/*  display: inline-block;*/
+/*  margin-right: 8px;*/
+/*}*/
+
+/*!*----------------Component 3 ----------------*!*/
+/*.activity-card {*/
+/*  border: solid 1px #ebe5e5;*/
+/*  box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); !* shadow-lg *!*/
+/*  border-radius: 0.5rem;         !* rounded-lg *!*/
+/*  background-color: rgba(255, 255, 255, 0.8);*/
+/*  backdrop-filter: blur(8px);*/
+/*  padding: 0.5rem;*/
+/*  color: var(--lumo-body-text-color); !* text-card-foreground (tuỳ hệ màu Jmix) *!*/
+/*}*/
+
+/*.activity-title {*/
+/*  margin: 12px 0px;*/
+/*  font-weight: bold;*/
+/*  font-size: 1.25rem;*/
+/*  color: #1e293b;*/
+/*}*/
+
+/*.activity-item {*/
+/*  background-color: #f8fafc;*/
+/*  border-radius: $border-radius-lg;*/
+/*  padding: 0.75rem;*/
+/*  margin-bottom: 0.75rem;*/
+/*  transition: background-color 0.3s;*/
+
+/*  &:hover {*/
+/*    background-color: #f1f5f9;*/
+/*  }*/
+/*}*/
+
+/*.activity-icon {*/
+/*  padding-top: 1rem;*/
+/*  width: 50px;*/
+/*  height: 50px;*/
+/*  border-radius: $border-radius-lg;*/
+/*  display: flex;*/
+/*  align-items: center;*/
+/*  justify-content: center;*/
+/*  flex-shrink: 0;*/
+
+/*  &.blue-icon {*/
+/*    background-color: #dbeafe;*/
+/*  }*/
+
+/*  &.green-icon {*/
+/*    background-color: #d1fae5;*/
+/*  }*/
+
+/*  &.orange-icon {*/
+/*    background-color: #ffedd5;*/
+/*  }*/
+
+/*  &.red-icon {*/
+/*    background-color: #fee2e2;*/
+/*  }*/
+/*}*/
+
+/*.activity-heading {*/
+/*  font-weight: 700;*/
+/*  color: #1e293b;*/
+/*  font-size: 1rem;*/
+/*}*/
+
+/*.activity-desc {*/
+/*  color: #475569;*/
+/*  font-size: 0.875rem;*/
+/*  margin-top: 0.25rem;*/
+/*}*/
+
+/*.activity-time {*/
+/*  color: #64748b;*/
+/*  font-size: 0.75rem;*/
+/*  margin-top: 0.5rem;*/
+/*}*/
+
+/*.activity-more {*/
+/*  text-align: center;*/
+/*  color: #dc2626;*/
+/*  font-size: 0.875rem;*/
+/*  font-weight: 500;*/
+/*  margin-top: 1rem;*/
+/*  cursor: pointer;*/
+
+/*  &:hover {*/
+/*    text-decoration: underline;*/
+/*  }*/
+/*}*/
+
+/*.quick-actions-card {*/
+/*  border-radius: 0.75rem;*/
+/*  border: 1px solid #e2e8f0;*/
+/*  background-color: #fff;*/
+/*  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);*/
+/*  padding: 1.5rem;*/
+/*  width: 100%;*/
+/*}*/
+
+/*.card-header {*/
+/*  padding-bottom: 1rem;*/
+/*}*/
+
+/*.card-header-title {*/
+/*  font-size: 1.25rem;*/
+/*  font-weight: 600;*/
+/*  color: #1e293b;*/
+/*  display: flex;*/
+/*  align-items: center;*/
+/*  gap: 0.5rem;*/
+/*}*/
+
+/*.card-header-icon {*/
+/*  background-image: url("../icons/users.svg");*/
+/*  background-repeat: no-repeat;*/
+/*  background-size: 20px;*/
+/*  width: 20px;*/
+/*  height: 20px;*/
+/*  color: #D71920;*/
+/*}*/
+
+/*.card-subtitle {*/
+/*  font-size: 0.875rem;*/
+/*  color: #64748b;*/
+/*  margin-top: 0.25rem;*/
+/*}*/
+
+/*.card-body > .action-btn {*/
+/*  display: flex;*/
+/*  align-items: center;*/
+/*  padding: 0.5rem 0.75rem;*/
+/*  border-radius: 0.5rem;*/
+/*  font-size: 0.875rem;*/
+/*  font-weight: 500;*/
+/*  gap: 0.5rem;*/
+/*  transition: all 0.2s ease;*/
+/*  cursor: pointer;*/
+/*  width: 100%;*/
+/*}*/
+
+/*.action-icon {*/
+/*  width: 16px;*/
+/*  height: 16px;*/
+/*  background-repeat: no-repeat;*/
+/*  background-size: contain;*/
+/*  flex-shrink: 0;*/
+/*  margin-right: 0.5rem;*/
+/*}*/
+
+/*.package-icon {*/
+/*  background-image: url("icons/package.svg");*/
+/*}*/
+/*.check-icon {*/
+/*  background-image: url("icons/check-circle.svg");*/
+/*}*/
+/*.alert-icon {*/
+/*  background-image: url("icons/alert-triangle.svg");*/
+/*}*/
+/*.clock-icon {*/
+/*  background-image: url("icons/clock.svg");*/
+/*}*/
+
+/*.red-action {*/
+/*  background-color: #D71920;*/
+/*  color: white;*/
+
+/*  &:hover {*/
+/*    background-color: #B91C1C;*/
+/*  }*/
+/*}*/
+
+
+
+
+/*.outline-action {*/
+/*  border: 1px solid #e2e8f0;*/
+/*  color: #0f172a;*/
+
+/*  &:hover {*/
+/*    background-color: #D71920;*/
+/*    color: white;*/
+/*    border-color: #D71920;*/
+/*  }*/
+/*}*/
+>>>>>>> 9b538074d7a64e2d9f25e422097e8c2f406520f9

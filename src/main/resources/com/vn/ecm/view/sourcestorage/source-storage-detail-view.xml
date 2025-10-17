@@ -22,18 +22,6 @@
                 <responsiveStep minWidth="0" columns="1"/>
                 <responsiveStep minWidth="40em" columns="2"/>
             </responsiveSteps>
-<!--            <textField id="nameField" property="name"/>-->
-<!--            <textField id="accessKeyField" property="accessKey"/>-->
-<!--            <textField id="secretAccessKeyField" property="secretAccessKey"/>-->
-<!--            <textField id="regionField" property="region"/>-->
-<!--            <textField id="bucketField" property="bucket"/>-->
-<!--            <textField id="chunkSizeField" property="chunkSize"/>-->
-<!--            <textField id="endpointUrlField" property="endpointUrl"/>-->
-<!--            <select id="typeField" property="type"/>-->
-<!--            <checkbox id="activeField" property="active"/>-->
-<!--            <textField id="webRootPathField" property="webRootPath"/>-->
-<!--            <checkbox id="usePathStyleBucketAddressingField" property="usePathStyleBucketAddressing"/>-->
-<!--        </formLayout>-->
         <textField id="nameField" required="true" property="name"/>
         <select id="typeField"  required="true" property="type"/>
         </formLayout>

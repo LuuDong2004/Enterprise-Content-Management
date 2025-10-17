@@ -33,6 +33,39 @@ public class Folder {
     @Column(name = "createdDate")
     private LocalDateTime createdDate;
 
+    @Column(name = "IN_TRASH")
+    private Boolean inTrash;
+
+    @Column(name = "DELETE_DATE")
+    private LocalDateTime deleteDate;
+
+    @Column(name = "DELETED_BY")
+    private String deletedBy;
+
+    public String getDeletedBy() {
+        return deletedBy;
+    }
+
+    public void setDeletedBy(String deletedBy) {
+        this.deletedBy = deletedBy;
+    }
+
+    public LocalDateTime getDeleteDate() {
+        return deleteDate;
+    }
+
+    public void setDeleteDate(LocalDateTime deleteDate) {
+        this.deleteDate = deleteDate;
+    }
+
+    public Boolean getInTrash() {
+        return inTrash;
+    }
+
+    public void setInTrash(Boolean inTrash) {
+        this.inTrash = inTrash;
+    }
+
     public SourceStorage getSourceStorage() {
         return sourceStorage;
     }
@@ -48,8 +81,6 @@ public class Folder {
     public void setFullPath(String fullPath) {
         this.fullPath = fullPath;
     }
-
-
 
 
     public UUID getId() {
@@ -71,14 +102,9 @@ public class Folder {
     public Folder getParent() {
         return parent;
     }
-
     public void setParent(Folder parent) {
         this.parent = parent;
     }
-
-
-
-
     public LocalDateTime getCreatedDate() {
         return createdDate;
     }
