@@ -419,6 +419,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver,  After
         });
         dlg.open();
     }
+
     // Đệ quy lấy path
     private String buildFolderPath(Folder folder) {
         if (folder == null) return "";
