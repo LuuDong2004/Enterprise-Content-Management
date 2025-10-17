@@ -20,10 +20,7 @@
                 and f.inTrash = false
             ]]></query>
             </loader>
-
         </collection>
-
-
         <collection id="filesDc" class="com.vn.ecm.entity.FileDescriptor">
             <fetchPlan>
                 <property name="name"/>
@@ -81,7 +78,6 @@
                     </actions>
                 </treeDataGrid>
             </vbox>
-
             <!--            right-->
             <vbox classNames="right" width="100%" height="100%">
                 <hbox id="rightHbox"
@@ -96,7 +92,6 @@
                                             fileStoragePutMode="MANUAL"/>
                     <button id="btnDownload"
                             text="Download" action="downloadAction"/>
-
                 </hbox>
                 <dataGrid id="fileDataGird"
                           width="100%"

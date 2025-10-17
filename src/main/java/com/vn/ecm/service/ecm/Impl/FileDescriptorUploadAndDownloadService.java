@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Service
-public class FileDescriptorUploadAndDownloadServiceImpl {
+public class FileDescriptorUploadAndDownloadService {
     @Autowired
     private DataManager dataManager;
     @Autowired

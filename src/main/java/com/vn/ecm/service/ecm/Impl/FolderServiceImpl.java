@@ -2,6 +2,7 @@ package com.vn.ecm.service.ecm.Impl;
 
 import com.vn.ecm.entity.FileDescriptor;
 import com.vn.ecm.entity.Folder;
+import com.vn.ecm.service.ecm.IFolderService;
 import io.jmix.core.DataManager;
 import io.jmix.core.Messages;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,7 +13,8 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
-public class FolderServiceImpl {
+public class FolderServiceImpl implements IFolderService {
+    @Autowired
     private final Messages messages;
     @Autowired
     private DataManager dataManager;
@@ -23,6 +25,7 @@ public class FolderServiceImpl {
 
 
     // tạo mới folder
+    @Override
     public Folder createFolder(Folder folder) {
         Folder f = dataManager.create(Folder.class);
         f.setId(UUID.randomUUID());
@@ -37,6 +40,7 @@ public class FolderServiceImpl {
 
 
     //xóa cứng
+    @Override
     public boolean deleteFolderFromTrash(Folder folder){
         if(folder == null)  return false;
 
@@ -61,6 +65,7 @@ public class FolderServiceImpl {
 
 
     // xử lý logic xóa folder - đệ quy khỏi thùng rác
+    @Override
     public int deleteFolderRecursivelyFromTrash(Folder folder) {
         if (folder == null) return 0;
 
@@ -95,6 +100,7 @@ public class FolderServiceImpl {
 
 
     //xóa vào thùng rác
+    @Override
     public void moveToTrash(Folder folder, String username) {
         if (folder == null)
             return;
@@ -105,6 +111,7 @@ public class FolderServiceImpl {
     }
 
     //  khôi phục từ thùng rác
+    @Override
     public Folder restoreFromTrash(Folder folder) {
         if (folder == null) return null;
         folder.setInTrash(false);
@@ -115,6 +122,7 @@ public class FolderServiceImpl {
 
 
     // đổi tên folder
+    @Override
     public Folder renameFolder(Folder folder , String newName){
         if(folder == null || newName == null || newName.isBlank()){
             return null;
@@ -147,6 +155,7 @@ public class FolderServiceImpl {
             updateChildFullPaths(child); // đệ quy tiếp
         }
     }
+    @Override
     public String buildFolderPath(Folder folder){
         StringBuilder path = new StringBuilder();
         Folder parent = folder.getParent();
