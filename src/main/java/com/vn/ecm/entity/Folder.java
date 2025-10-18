@@ -1,12 +1,11 @@
 package com.vn.ecm.entity;
-
+//v1
 import io.jmix.core.entity.annotation.JmixGeneratedValue;
 import io.jmix.core.metamodel.annotation.JmixEntity;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
-
 @JmixEntity
 @Table(name = "FOLDER")
 @Entity
