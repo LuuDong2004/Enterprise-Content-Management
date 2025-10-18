@@ -264,6 +264,14 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
             notifications.show("Vui lòng chọn folder để xóa");
             return;
         }
+        User userCurr = (User) currentAuthentication.getUser();
+        boolean per = permissionService.hasPermission(userCurr, PermissionType.FULL, selected);
+        if (!per) {
+            notifications.create("Bạn không có quyền xóa thư mục này.")
+                    .withType(Notifications.Type.ERROR)
+                    .show();
+            return;
+        }
         ConfirmDialog dlg = new ConfirmDialog();
         dlg.setHeader("Xác nhận");
         dlg.setText("Xóa thư mục '" + selected.getName() + "' ?" + " (Đưa vào thùng rác)");
@@ -286,6 +294,14 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         Folder selected = foldersTree.getSingleSelectedItem();
         if (selected == null) {
             notifications.show("Vui lòng chọn thư mục để đổi tên");
+            return;
+        }
+        User userCurr = (User) currentAuthentication.getUser();
+        boolean per = permissionService.hasPermission(userCurr, PermissionType.MODIFY, selected);
+        if (!per) {
+            notifications.create("Bạn không có quyền đổi tên thư mục này.")
+                    .withType(Notifications.Type.ERROR)
+                    .show();
             return;
         }
         dialogs.createInputDialog(this)
@@ -316,6 +332,14 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         FileDescriptor selected = fileDataGird.getSingleSelectedItem();
         if (selected == null) {
             notifications.create("Vui lòng chọn tệp để xóa").show();
+            return;
+        }
+        User userCurr = (User) currentAuthentication.getUser();
+        boolean per = permissionService.hasPermission(userCurr, PermissionType.FULL, selected);
+        if (!per) {
+            notifications.create("Bạn không có quyền xóa File này.")
+                    .withType(Notifications.Type.ERROR)
+                    .show();
             return;
         }
         ConfirmDialog dlg = new ConfirmDialog();
