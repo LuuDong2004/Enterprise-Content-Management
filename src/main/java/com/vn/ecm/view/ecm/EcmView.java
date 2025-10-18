@@ -171,13 +171,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     public void onFoldersTreeItemClick(ItemClickEvent<Folder> e) {
         Folder selected = e.getItem();
         User currentUser = (User) currentAuthentication.getUser();
-        // Check quyền READ trước khi hiển thị files
-        if (!permissionService.hasPermission(currentUser, PermissionType.READ, selected)) {
-            notifications.create("Bạn không có quyền truy cập thư mục này.")
-                    .withType(Notifications.Type.WARNING)
-                    .show();
-            return;
-        }
         loadAccessibleFiles(currentUser, selected);
     }
 
