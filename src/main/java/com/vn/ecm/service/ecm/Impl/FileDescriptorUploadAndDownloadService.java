@@ -29,7 +29,8 @@ public class FileDescriptorUploadAndDownloadService {
                                      String fileName,
                                      Long contentLength,
                                      Folder folder,
-                                     SourceStorage sourceStorage){
+                                     SourceStorage sourceStorage,
+                                     String username){
 
         FileStorage fileStorage = storageManager.getOrCreateFileStorage(sourceStorage);
         FileRef fileRef = tempStorage.putFileIntoStorage(fileId, fileName, fileStorage);
@@ -45,6 +46,8 @@ public class FileDescriptorUploadAndDownloadService {
         fileDescriptor.setFolder(folder);
         fileDescriptor.setFileRef(fileRef);
         fileDescriptor.setSourceStorage(sourceStorage);
+        fileDescriptor.setInTrash(false);
+        fileDescriptor.setCreateBy(username);
         return dataManager.save(fileDescriptor);
     }
 

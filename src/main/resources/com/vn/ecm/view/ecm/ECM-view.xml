@@ -12,6 +12,7 @@
                 <property name="inTrash"/>
                 <property name="fullPath"/>
                 <property name="createdDate"/>
+
             </fetchPlan>
             <loader id="foldersDl">
                 <query><![CDATA[
@@ -32,6 +33,7 @@
                 <property name="inTrash"/>
                 <property name="deletedBy"/>
                 <property name="deleteDate"/>
+                <property name="createBy"/>
             </fetchPlan>
             <loader id="filesDl">
                 <query><![CDATA[

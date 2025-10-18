@@ -103,7 +103,7 @@ public class FolderServiceImpl implements IFolderService {
     @Override
     public void moveToTrash(Folder folder, String username) {
         if (folder == null)
-            return;
+            return ;
         folder.setInTrash(true);
         folder.setDeleteDate(LocalDateTime.now());
         folder.setDeletedBy(username);

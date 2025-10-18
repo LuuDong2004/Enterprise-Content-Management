@@ -769,7 +769,7 @@ public class PermissionService {
         // Nếu là admin thì trả hết folder của storage này
         if ("admin".equalsIgnoreCase(user.getUsername())) {
             return dataManager.load(Folder.class)
-                    .query("select f from Folder f where f.sourceStorage = :storage")
+                    .query("select f from Folder f where f.sourceStorage = :storage and f.inTrash = false")
                     .parameter("storage", sourceStorage)
                     .list();
         }
@@ -777,10 +777,11 @@ public class PermissionService {
         // User thường: chỉ trả folder có quyền READ+ trong storage này
         return dataManager.load(Folder.class)
                 .query("""
-                select distinct f from Folder f
+                select distinct f from Folder f   
                 join Permission p on p.folder = f
                 where p.user = :user
                 and f.sourceStorage = :storage
+                and f.inTrash = false
                 and p.permissionMask >= :minMask
             """)
                 .parameter("user", user)
@@ -796,12 +797,12 @@ public class PermissionService {
         if ("admin".equalsIgnoreCase(user.getUsername())) {
             if (folder == null) {
                 return dataManager.load(FileDescriptor.class)
-                        .query("select o from FileDescriptor o where o.sourceStorage = :storage and o.folder is null")
+                        .query("select o from FileDescriptor o where o.sourceStorage = :storage and o.inTrash = false and o.folder is null")
                         .parameter("storage", sourceStorage)
                         .list();
             } else {
                 return dataManager.load(FileDescriptor.class)
-                        .query("select o from FileDescriptor o where o.folder = :folder")
+                        .query("select o from FileDescriptor o where o.folder = :folder and o.inTrash = false")
                         .parameter("folder", folder)
                         .list();
             }
@@ -817,6 +818,7 @@ public class PermissionService {
                     where p.user = :user
                     and o.sourceStorage = :storage
                     and o.folder is null
+                    and o.inTrash = false
                     and p.permissionMask >= :minMask
                 """)
                     .parameter("user", user)
@@ -831,6 +833,7 @@ public class PermissionService {
                     join Permission p on p.file = o
                     where p.user = :user
                     and o.folder = :folder
+                    and o.inTrash = false
                     and p.permissionMask >= :minMask
                 """)
                     .parameter("user", user)

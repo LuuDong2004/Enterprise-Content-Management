@@ -86,10 +86,20 @@ public class UploadAndUploadFileAction extends ItemTrackingAction<FileDescriptor
         return mode == Mode.UPLOAD
                 || (getTarget() != null && getTarget().getSingleSelectedItem() != null);
     }
+
+
     private void upload() {
+
         Folder folder = folderSupplier != null ? folderSupplier.get() : null;
         if (folder == null) return;
-
+        User user = (User) currentAuthentication.getUser();
+        boolean per = permissionService.hasPermission(user,PermissionType.CREATE,folder);
+        if (!per) {
+            notifications.create("Bạn không có quyền tải file này lên hệ thống.")
+                    .withType(Notifications.Type.ERROR)
+                    .show();
+            return;
+        }
         SourceStorage storage = storageSupplier != null ? storageSupplier.get() : null;
         if (storage == null) return;
 
@@ -97,7 +107,6 @@ public class UploadAndUploadFileAction extends ItemTrackingAction<FileDescriptor
         Object receiver = uploadEvent.getReceiver();
         if (!(receiver instanceof FileTemporaryStorageBuffer)) return;
         FileTemporaryStorageBuffer buf = (FileTemporaryStorageBuffer) receiver;
-
         try {
             UUID fileId = buf.getFileData().getFileInfo().getId();
             File tmp = tempStorage.getFile(fileId);
@@ -108,7 +117,8 @@ public class UploadAndUploadFileAction extends ItemTrackingAction<FileDescriptor
                     uploadEvent.getFileName(),
                     uploadEvent.getContentLength() > 0 ? uploadEvent.getContentLength() : null,
                     folder,
-                    storage
+                    storage,
+                    user.getUsername()
             );
         } catch (Exception e) {
             throw new RuntimeException("Upload failed for: " + uploadEvent.getFileName(), e);
@@ -141,6 +151,5 @@ public class UploadAndUploadFileAction extends ItemTrackingAction<FileDescriptor
             throw new RuntimeException("Download failed for: " + selected.getName(), e);
         }
     }
-
 }
 

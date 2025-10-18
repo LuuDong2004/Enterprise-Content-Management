@@ -141,14 +141,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         User currentUser = (User) currentAuthentication.getUser();
         loadAccessibleFolders(currentUser);
         loadAccessibleFiles(currentUser, null);
-        // FOLDERS
-        foldersDl.setParameter("storage", currentStorage);
-//        foldersDl.load();
-        foldersTree.expandRecursively(foldersDc.getItems(), 1);
-
-        filesDl.setParameter("storage", currentStorage);
-        filesDl.setParameter("folder", null);
-
     }
 
     @Subscribe(id = "foldersTree", subject = "selectionListener")
@@ -156,37 +148,29 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         Folder selected = event.getFirstSelectedItem().orElse(null);
         boolean selection = selected != null;
         fileRefField.setEnabled(selection);
+        User user = (User) currentAuthentication.getUser();
         if (selection) {
-            filesDl.setParameter("storage", currentStorage);
-            filesDl.setParameter("folder", selected);
-            filesDl.load();
+            loadAccessibleFiles(user, selected);
         } else {
-            filesDl.setParameter("folder", null);
             filesDc.getMutableItems().clear();
         }
-    }
-
-
-    @Subscribe("foldersTree")
-    public void onFoldersTreeItemClick(ItemClickEvent<Folder> e) {
-        Folder selected = e.getItem();
-        User currentUser = (User) currentAuthentication.getUser();
-        // Check quyền READ trước khi hiển thị files
-        if (!permissionService.hasPermission(currentUser, PermissionType.READ, selected)) {
-            notifications.create("Bạn không có quyền truy cập thư mục này.")
-                    .withType(Notifications.Type.WARNING)
-                    .show();
-            return;
-        }
-        loadAccessibleFiles(currentUser, selected);
     }
 
     //upload file
     @Subscribe("fileRefField")
     public void onFileRefFieldFileUploadSucceeded(final FileUploadSucceededEvent<FileStorageUploadField> event) {
+        User user = (User) currentAuthentication.getUser();
+        boolean per = permissionService.hasPermission(user,PermissionType.CREATE,foldersTree.getSingleSelectedItem());
+        if (!per) {
+            notifications.create("Bạn không có quyền tải file này lên hệ thống.")
+                    .withType(Notifications.Type.ERROR)
+                    .show();
+            return;
+        }
         uploadAction.setUploadEvent(event);
         uploadAction.execute();
-        filesDl.load();
+        loadAccessibleFiles(user, foldersTree.getSingleSelectedItem());
+
         notifications.show(messageBundle.getMessage("ecmUploadFileAlert"));
     }
 
@@ -233,6 +217,8 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
 
     @Subscribe("foldersTree.createFolder")
     public void onFoldersTreeCreateFolder(final ActionPerformedEvent event) {
+        User user = (User) currentAuthentication.getUser();
+//
         dialogs.createInputDialog(this)
                 .withHeader("Tạo mới folder")
                 .withParameters(
@@ -249,7 +235,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
                         folder.setParent(foldersTree.getSingleSelectedItem());
                         folder.setSourceStorage(currentStorage);
                         folderService.createFolder(folder);
-                        foldersDl.load();
+                        loadAccessibleFolders(user);
                         notifications.show(messageBundle.getMessage("ecmCreateFolderAlert"));
                     }
                 })
@@ -260,10 +246,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     @Subscribe("foldersTree.delete")
     public void onFoldersTreeDelete(final ActionPerformedEvent event) {
         Folder selected = foldersTree.getSingleSelectedItem();
-        if (selected == null) {
-            notifications.show("Vui lòng chọn folder để xóa");
-            return;
-        }
         User userCurr = (User) currentAuthentication.getUser();
         boolean per = permissionService.hasPermission(userCurr, PermissionType.FULL, selected);
         if (!per) {
@@ -279,8 +261,9 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         dlg.setConfirmText("Xóa");
         dlg.addConfirmListener(e2 -> {
             try {
-                folderService.moveToTrash(selected, currentAuthentication.getUser().getUsername());
-                foldersDl.load();
+                String useName = userCurr.getUsername();
+                folderService.moveToTrash(selected, useName);
+                loadAccessibleFolders(userCurr);
                 notifications.show(messageBundle.getMessage("ecmDeleteFolderAlert"));
             } catch (Exception ex) {
                 notifications.show("Lỗi " + ex.getMessage());
@@ -288,7 +271,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         });
         dlg.open();
     }
-
     @Subscribe("foldersTree.renameFolder")
     public void onFoldersTreeRenameFolder(final ActionPerformedEvent event) {
         Folder selected = foldersTree.getSingleSelectedItem();
@@ -317,7 +299,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
                     if (closeEvent.closedWith(DialogOutcome.OK)) {
                         try {
                             folderService.renameFolder(selected, closeEvent.getValue("name"));
-                            foldersDl.load();
                             notifications.show(messageBundle.getMessage("ecmRenameFolderAlert"));
                         } catch (Exception e) {
                             notifications.show("Không thể đổi tên" + e);
@@ -350,7 +331,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         dlg.addConfirmListener(e2 -> {
             try {
                 fileDescriptorService.removeFileToTrash(selected, currentAuthentication.getUser().getUsername());
-                filesDl.load();
+                loadAccessibleFiles(userCurr, foldersTree.getSingleSelectedItem());
                 notifications.show(messageBundle.getMessage("ecmDeleteFileAlert"));
             } catch (Exception e) {
                 notifications.show("Lỗi" + e.getMessage());
@@ -362,7 +343,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     private void loadAccessibleFolders(User user) {
         List<Folder> accessibleFolders = permissionService.getAccessibleFolders(user, currentStorage);
         foldersDc.setItems(accessibleFolders);
-        foldersTree.expandRecursively(accessibleFolders, 1);
     }
 
     private void loadAccessibleFiles(User user, Folder folder) {
