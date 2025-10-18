@@ -71,14 +71,14 @@
                         <column property="name"/>
                     </columns>
                     <actions>
-                        <action id="createFolder" text="New Folder"/>
-                        <action id="delete" text="Delete" type="folderActionSelected"/>
-                        <action id="renameFolder" text="Rename Folder" type="folderActionSelected"/>
-                        <action id="assignPermission" text="Assign Permission" type="assignPermission"/>
+                        <action id="createFolder" text="Tạo thư mục"/>
+                        <action id="delete" text="Xóa" type="folderActionSelected"/>
+                        <action id="renameFolder" text="Đổi tên" type="folderActionSelected"/>
+                        <action id="assignPermission" text="Phân quyền" type="assignPermission"/>
                     </actions>
                 </treeDataGrid>
             </vbox>
-            <!--            right-->
+            <!--right-->
             <vbox classNames="right" width="100%" height="100%">
                 <hbox id="rightHbox"
                       spacing="true"
@@ -87,11 +87,12 @@
 
                     <fileStorageUploadField id="fileRefField"
                                             property="fileRef"
+                                            uploadText="Tải lên"
                                             dropAllowed="true"
                                             clearButtonVisible="true"
                                             maxFileSize="1073741824"
                                             fileStoragePutMode="MANUAL"/>
-                    <button id="btnDownload" text="Download" action="downloadAction"/>
+                    <button id="btnDownload" text="Tải xuống" action="downloadAction"/>
                     <fragment id="viewModeFragment" class="com.vn.ecm.view.viewmode.ViewModeFragment"/>
                 </hbox>
                 <hbox id="iconTiles" visible="false" classNames="icon-tiles"/>
@@ -100,15 +101,15 @@
                           minHeight="20em"
                           dataContainer="filesDc" themeNames="compact">
                     <actions>
-                        <action id="deleteFile" type="fileActionSelected" text="Delete file"/>
-                        <action id="renameFile" type="fileActionSelected" text="Rename file"/>
-                        <action id="onObjectAssignPermission" text="Assign Permission" type="onObjectAssignPermission"/>
+                        <action id="deleteFile" type="fileActionSelected" text="Xóa"/>
+                        <action id="renameFile" type="fileActionSelected" text="Đổi tên"/>
+                        <action id="onObjectAssignPermission" text="Phân quyền" type="onObjectAssignPermission"/>
                     </actions>
                     <columns>
-                        <column property="name"/>
-                        <column property="size"/>
-                        <column property="extension"/>
-                        <column property="lastModified"/>
+                        <column property="name" header="Tên"/>
+                        <column property="size" header="Kích thước"/>
+                        <column property="extension" header="Kiểu"/>
+                        <column property="lastModified" header="Ngày tạo"/>
                     </columns>
                 </dataGrid>
             </vbox>

@@ -198,7 +198,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         }
         //Add hierarchy column
         TreeDataGrid.Column<Folder> nameColumn = foldersTree.addComponentHierarchyColumn(item -> renderFolderItem(item));
-        nameColumn.setHeader("Name");
+        nameColumn.setHeader("Thư mục");
         nameColumn.setWidth("500px");
         //set position for hierarchy column
         foldersTree.setColumnPosition(nameColumn, 0);
