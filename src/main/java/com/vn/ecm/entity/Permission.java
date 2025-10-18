@@ -19,6 +19,9 @@ public class Permission {
     @Id
     private UUID id;
 
+    @Column(name = "PERMISSION_TYPE")
+    private Integer permissionType;
+
     @Column(name = "INHERITED_FROM")
     private String inheritedFrom;
 
@@ -43,9 +46,6 @@ public class Permission {
     @Column(name = "INHERIT_ENABLED")
     private Boolean inheritEnabled;
 
-    @Column(name = "PERMISSION_TYPE")
-    private Integer permissionType;
-
     @Column(name = "PERMISSION_MASK")
     private Integer permissionMask;
 
@@ -54,6 +54,14 @@ public class Permission {
 
     @Transient
     private Boolean allow;
+
+    public PermissionType getPermissionType() {
+        return permissionType == null ? null : PermissionType.fromId(permissionType);
+    }
+
+    public void setPermissionType(PermissionType permissionType) {
+        this.permissionType = permissionType == null ? null : permissionType.getId();
+    }
 
     public FileDescriptor getFile() {
         return file;
@@ -111,13 +119,6 @@ public class Permission {
         this.permissionMask = permissionMask;
     }
 
-    public void setPermissionType(PermissionType permissionType) {
-        this.permissionType = permissionType == null ? null : permissionType.getId();
-    }
-
-    public PermissionType getPermissionType() {
-        return permissionType == null ? null : PermissionType.fromId(permissionType);
-    }
 
     public Boolean getInheritEnabled() {
         return inheritEnabled;

@@ -1,8 +1,8 @@
 package com.vn.ecm.view.ecm;
 
+
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
-import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.ItemClickEvent;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
@@ -12,22 +12,24 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.data.selection.SelectionEvent;
 import com.vaadin.flow.router.*;
 import com.vn.ecm.entity.*;
+import com.vn.ecm.service.ecm.PermissionService;
 import com.vn.ecm.service.ecm.IFileDescriptorService;
 import com.vn.ecm.service.ecm.IFolderService;
-import com.vn.ecm.service.ecm.viewmode.Impl.ViewModeApdapterImpl;
 import com.vn.ecm.view.main.MainView;
 import com.vn.ecm.view.viewmode.ViewModeFragment;
 import io.jmix.core.DataManager;
+
 import io.jmix.core.security.CurrentAuthentication;
-import io.jmix.flowui.*;
+import io.jmix.flowui.DialogWindows;
+import io.jmix.flowui.Dialogs;
+import io.jmix.flowui.Notifications;
+import io.jmix.flowui.UiComponents;
 import io.jmix.flowui.app.inputdialog.DialogActions;
 import io.jmix.flowui.app.inputdialog.DialogOutcome;
-import io.jmix.flowui.component.combobox.JmixComboBox;
 import io.jmix.flowui.component.grid.DataGrid;
 import io.jmix.flowui.component.grid.TreeDataGrid;
 import io.jmix.flowui.component.upload.FileStorageUploadField;
 import io.jmix.flowui.Actions;
-import io.jmix.flowui.fragment.Fragment;
 import io.jmix.flowui.kit.action.ActionPerformedEvent;
 import io.jmix.flowui.kit.component.button.JmixButton;
 import io.jmix.flowui.kit.component.upload.event.FileUploadSucceededEvent;
@@ -37,6 +39,8 @@ import io.jmix.flowui.view.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
+
+import java.util.List;
 
 import java.util.UUID;
 
@@ -66,10 +70,14 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     private UiComponents uiComponents;
     @Autowired
     private DialogWindows dialogWindows;
-    private SourceStorage currentStorage;
-    private UUID id;
+    @Autowired
+    private CurrentAuthentication currentAuthentication;
+    @Autowired
+    private PermissionService permissionService;
     @Autowired
     private Dialogs dialogs;
+    private SourceStorage currentStorage;
+    private UUID id;
     @ViewComponent
     private MessageBundle messageBundle;
     @Autowired
@@ -82,8 +90,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     private JmixButton btnDownload;
     @Autowired
     private IFolderService folderService;
-    @Autowired
-    private CurrentAuthentication currentAuthentication;
     @Autowired
     private IFileDescriptorService fileDescriptorService;
     @ViewComponent
@@ -132,37 +138,42 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
                     .withType(Notifications.Type.ERROR).show();
             return;
         }
-        // FOLDERS
-        foldersDl.setParameter("storage", currentStorage);
-        foldersDl.load();
-        foldersTree.expandRecursively(foldersDc.getItems(), 1);
-
-        filesDl.setParameter("storage", currentStorage);
-        filesDl.setParameter("folder", null);
+        User currentUser = (User) currentAuthentication.getUser();
+        loadAccessibleFolders(currentUser);
+        loadAccessibleFiles(currentUser, null);
     }
+
     @Subscribe(id = "foldersTree", subject = "selectionListener")
     public void onFoldersTreeSelectionChange(SelectionEvent<TreeDataGrid<Folder>, Folder> event) {
         Folder selected = event.getFirstSelectedItem().orElse(null);
         boolean selection = selected != null;
         fileRefField.setEnabled(selection);
-
+        User user = (User) currentAuthentication.getUser();
         if (selection) {
-            filesDl.setParameter("storage", currentStorage);
-            filesDl.setParameter("folder", selected);
-            filesDl.load();
+            loadAccessibleFiles(user, selected);
         } else {
-            filesDl.setParameter("folder", null);
             filesDc.getMutableItems().clear();
         }
     }
+
     //upload file
     @Subscribe("fileRefField")
     public void onFileRefFieldFileUploadSucceeded(final FileUploadSucceededEvent<FileStorageUploadField> event) {
+        User user = (User) currentAuthentication.getUser();
+        boolean per = permissionService.hasPermission(user,PermissionType.CREATE,foldersTree.getSingleSelectedItem());
+        if (!per) {
+            notifications.create("Bạn không có quyền tải file này lên hệ thống.")
+                    .withType(Notifications.Type.ERROR)
+                    .show();
+            return;
+        }
         uploadAction.setUploadEvent(event);
         uploadAction.execute();
-        filesDl.load();
+        loadAccessibleFiles(user, foldersTree.getSingleSelectedItem());
+
         notifications.show(messageBundle.getMessage("ecmUploadFileAlert"));
     }
+
     //css
     private void initFolderGridColumn() {
         //remove column by key
@@ -171,11 +182,12 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         }
         //Add hierarchy column
         TreeDataGrid.Column<Folder> nameColumn = foldersTree.addComponentHierarchyColumn(item -> renderFolderItem(item));
-        nameColumn.setHeader("Name");
+        nameColumn.setHeader("Thư mục");
         nameColumn.setWidth("500px");
         //set position for hierarchy column
         foldersTree.setColumnPosition(nameColumn, 0);
     }
+
     private Component renderFolderItem(Folder item) {
         HorizontalLayout hboxMain = uiComponents.create(HorizontalLayout.class);
         hboxMain.setAlignItems(FlexComponent.Alignment.CENTER);
@@ -202,8 +214,11 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         });
         return hboxMain;
     }
+
     @Subscribe("foldersTree.createFolder")
     public void onFoldersTreeCreateFolder(final ActionPerformedEvent event) {
+        User user = (User) currentAuthentication.getUser();
+//
         dialogs.createInputDialog(this)
                 .withHeader("Tạo mới folder")
                 .withParameters(
@@ -220,18 +235,23 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
                         folder.setParent(foldersTree.getSingleSelectedItem());
                         folder.setSourceStorage(currentStorage);
                         folderService.createFolder(folder);
-                        foldersDl.load();
+                        loadAccessibleFolders(user);
                         notifications.show(messageBundle.getMessage("ecmCreateFolderAlert"));
                     }
                 })
                 .open();
     }
+
     //xóa vào thùng rác
     @Subscribe("foldersTree.delete")
     public void onFoldersTreeDelete(final ActionPerformedEvent event) {
         Folder selected = foldersTree.getSingleSelectedItem();
-        if (selected == null) {
-            notifications.show("Vui lòng chọn folder để xóa");
+        User userCurr = (User) currentAuthentication.getUser();
+        boolean per = permissionService.hasPermission(userCurr, PermissionType.FULL, selected);
+        if (!per) {
+            notifications.create("Bạn không có quyền xóa thư mục này.")
+                    .withType(Notifications.Type.ERROR)
+                    .show();
             return;
         }
         ConfirmDialog dlg = new ConfirmDialog();
@@ -241,8 +261,9 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         dlg.setConfirmText("Xóa");
         dlg.addConfirmListener(e2 -> {
             try {
-                folderService.moveToTrash(selected, currentAuthentication.getUser().getUsername());
-                foldersDl.load();
+                String useName = userCurr.getUsername();
+                folderService.moveToTrash(selected, useName);
+                loadAccessibleFolders(userCurr);
                 notifications.show(messageBundle.getMessage("ecmDeleteFolderAlert"));
             } catch (Exception ex) {
                 notifications.show("Lỗi " + ex.getMessage());
@@ -250,12 +271,19 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         });
         dlg.open();
     }
-
     @Subscribe("foldersTree.renameFolder")
     public void onFoldersTreeRenameFolder(final ActionPerformedEvent event) {
         Folder selected = foldersTree.getSingleSelectedItem();
         if (selected == null) {
             notifications.show("Vui lòng chọn thư mục để đổi tên");
+            return;
+        }
+        User userCurr = (User) currentAuthentication.getUser();
+        boolean per = permissionService.hasPermission(userCurr, PermissionType.MODIFY, selected);
+        if (!per) {
+            notifications.create("Bạn không có quyền đổi tên thư mục này.")
+                    .withType(Notifications.Type.ERROR)
+                    .show();
             return;
         }
         dialogs.createInputDialog(this)
@@ -271,7 +299,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
                     if (closeEvent.closedWith(DialogOutcome.OK)) {
                         try {
                             folderService.renameFolder(selected, closeEvent.getValue("name"));
-                            foldersDl.load();
                             notifications.show(messageBundle.getMessage("ecmRenameFolderAlert"));
                         } catch (Exception e) {
                             notifications.show("Không thể đổi tên" + e);
@@ -288,6 +315,14 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
             notifications.create("Vui lòng chọn tệp để xóa").show();
             return;
         }
+        User userCurr = (User) currentAuthentication.getUser();
+        boolean per = permissionService.hasPermission(userCurr, PermissionType.FULL, selected);
+        if (!per) {
+            notifications.create("Bạn không có quyền xóa File này.")
+                    .withType(Notifications.Type.ERROR)
+                    .show();
+            return;
+        }
         ConfirmDialog dlg = new ConfirmDialog();
         dlg.setHeader("Xác nhận");
         dlg.setText("Xóa file '" + selected.getName() + " ?" + "(Đưa vào thùng rác)");
@@ -296,7 +331,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         dlg.addConfirmListener(e2 -> {
             try {
                 fileDescriptorService.removeFileToTrash(selected, currentAuthentication.getUser().getUsername());
-                filesDl.load();
+                loadAccessibleFiles(userCurr, foldersTree.getSingleSelectedItem());
                 notifications.show(messageBundle.getMessage("ecmDeleteFileAlert"));
             } catch (Exception e) {
                 notifications.show("Lỗi" + e.getMessage());
@@ -304,4 +339,17 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         });
         dlg.open();
     }
+
+    private void loadAccessibleFolders(User user) {
+        List<Folder> accessibleFolders = permissionService.getAccessibleFolders(user, currentStorage);
+        foldersDc.setItems(accessibleFolders);
+    }
+
+    private void loadAccessibleFiles(User user, Folder folder) {
+        List<FileDescriptor> accessibleFiles = permissionService.getAccessibleFiles(user, currentStorage, folder);
+        filesDc.setItems(accessibleFiles);
+    }
+
 }
+
+

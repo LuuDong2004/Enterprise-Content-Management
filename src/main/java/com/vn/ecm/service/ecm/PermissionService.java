@@ -94,11 +94,7 @@ public class PermissionService {
         permission.setInherited(false);
         dataManager.save(permission);
     }
-
-
     // LOAD permission
-
-
     public Permission loadPermission(User user, Folder folder) {
         return dataManager.load(Permission.class)
                 .query("select p from Permission p where p.user = :user and p.folder = :folder")
@@ -766,4 +762,85 @@ public class PermissionService {
                 .optional()
                 .orElse(null);
     }
+
+    public List<Folder> getAccessibleFolders(User user, SourceStorage sourceStorage) {
+        if (user == null || sourceStorage == null) return Collections.emptyList();
+
+        // Nếu là admin thì trả hết folder của storage này
+        if ("admin".equalsIgnoreCase(user.getUsername())) {
+            return dataManager.load(Folder.class)
+                    .query("select f from Folder f where f.sourceStorage = :storage and f.inTrash = false")
+                    .parameter("storage", sourceStorage)
+                    .list();
+        }
+
+        // User thường: chỉ trả folder có quyền READ+ trong storage này
+        return dataManager.load(Folder.class)
+                .query("""
+                select distinct f from Folder f   
+                join Permission p on p.folder = f
+                where p.user = :user
+                and f.sourceStorage = :storage
+                and f.inTrash = false
+                and p.permissionMask >= :minMask
+            """)
+                .parameter("user", user)
+                .parameter("storage", sourceStorage)
+                .parameter("minMask", PermissionType.READ.getValue())
+                .list();
+    }
+
+    public List<FileDescriptor> getAccessibleFiles(User user, SourceStorage sourceStorage, Folder folder) {
+        if (user == null || sourceStorage == null) return Collections.emptyList();
+
+        // Nếu là admin thì trả hết
+        if ("admin".equalsIgnoreCase(user.getUsername())) {
+            if (folder == null) {
+                return dataManager.load(FileDescriptor.class)
+                        .query("select o from FileDescriptor o where o.sourceStorage = :storage and o.inTrash = false and o.folder is null")
+                        .parameter("storage", sourceStorage)
+                        .list();
+            } else {
+                return dataManager.load(FileDescriptor.class)
+                        .query("select o from FileDescriptor o where o.folder = :folder and o.inTrash = false")
+                        .parameter("folder", folder)
+                        .list();
+            }
+        }
+
+        // User thường: chỉ trả file có quyền READ+
+        if (folder == null) {
+            // Files ở root (không có folder)
+            return dataManager.load(FileDescriptor.class)
+                    .query("""
+                    select distinct o from FileDescriptor o
+                    join Permission p on p.file = o
+                    where p.user = :user
+                    and o.sourceStorage = :storage
+                    and o.folder is null
+                    and o.inTrash = false
+                    and p.permissionMask >= :minMask
+                """)
+                    .parameter("user", user)
+                    .parameter("storage", sourceStorage)
+                    .parameter("minMask", PermissionType.READ.getValue())
+                    .list();
+        } else {
+            // Files trong folder cụ thể
+            return dataManager.load(FileDescriptor.class)
+                    .query("""
+                    select distinct o from FileDescriptor o
+                    join Permission p on p.file = o
+                    where p.user = :user
+                    and o.folder = :folder
+                    and o.inTrash = false
+                    and p.permissionMask >= :minMask
+                """)
+                    .parameter("user", user)
+                    .parameter("folder", folder)
+                    .parameter("minMask", PermissionType.READ.getValue())
+                    .list();
+        }
+    }
+
 }

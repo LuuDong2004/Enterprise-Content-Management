@@ -2,7 +2,7 @@ package com.vn.ecm.entity;
 
 import io.jmix.core.metamodel.datatype.EnumClass;
 
-import org.springframework.lang.Nullable;
+
 
 
 public enum PermissionType implements EnumClass<Integer> {
@@ -51,13 +51,13 @@ public enum PermissionType implements EnumClass<Integer> {
     public String toString() {
         switch (this) {
             case READ:
-                return "READ";
+                return "Xem";
             case CREATE:
-                return "CREATE";
+                return "Thêm";
             case MODIFY:
-                return "MODIFY";
+                return "Chỉnh sửa";
             case FULL:
-                return "FULL ACCESS";
+                return "Toàn quyền";
             default:
                 return super.toString();
         }

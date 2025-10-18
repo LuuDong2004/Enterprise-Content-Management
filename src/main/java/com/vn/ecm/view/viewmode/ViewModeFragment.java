@@ -71,6 +71,7 @@ public class ViewModeFragment extends Fragment<HorizontalLayout> {
 
     @Subscribe
     public void onReady(Fragment.ReadyEvent event) {
+        viewMode.setItemLabelGenerator(ViewModeType::toString);
         viewMode.setValue(ViewModeType.DEFAULT);
         if (iconTiles != null) iconTiles.setVisible(false);
         // global context menu attached to tiles container so user can right/left click anywhere

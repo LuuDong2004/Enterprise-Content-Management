@@ -168,6 +168,8 @@ vaadin-grid::part(highlight-column) {
 vaadin-grid::part(font-weight-bold) {
     font-weight: bold;
 }
+<<<<<<< HEAD
+=======
 
 /* Windows-like file tiles */
 .file-tile {
@@ -221,3 +223,4 @@ vaadin-grid::part(font-weight-bold) {
 .file-icon.ext-video { color: #00ACC1; } /* Teal for video */
 .file-icon.ext-text { color: #546E7A; } /* Slate for text */
 .file-icon.ext-file { color: var(--lumo-contrast-50pct); } /* Default */
+>>>>>>> 9b538074d7a64e2d9f25e422097e8c2f406520f9

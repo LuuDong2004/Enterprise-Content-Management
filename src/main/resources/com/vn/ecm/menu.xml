@@ -13,7 +13,7 @@
 <!--        <item view="UserListView" title="msg://com.vn.ecm.view.userlist/userListView.title"/>-->
     </menu>
     <menu id="storage" title="msg://com.vn.ecm.view.ecm/ecmView.title">
-        <item view="SourceStorage.list" title="msg://com.vn.ecm.view.sourcestorage/sourceStorageListView.title"/>
+        <item view="SourceStorage.list" title="Kho dữ liệu"/>
     </menu>
 
 

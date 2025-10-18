@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <view xmlns="http://jmix.io/schema/flowui/view"
-      title="msg://editPermissionView.title">
+      title="Chỉnh sửa quyền truy cập">
     <data>
         <collection id="objectsDc"
                     class="com.vn.ecm.entity.EcmObject">
@@ -67,17 +67,17 @@
         </collection>
     </data>
     <layout>
-        <textArea id="pathArea" label="Path: " readOnly="true" width="500px"/>
+        <textArea id="pathArea" label="Đường dẫn: " readOnly="true" width="500px"/>
         <hbox spacing="true">
-            <button id="usersBtn" text="Users"/>
-            <button id="rolesBtn" text="Roles"/>
-            <button id="addBtn" text="Add"/>
+            <button id="usersBtn" text="Người dùng"/>
+            <button id="rolesBtn" text="Phòng ban"/>
+            <button id="addBtn" text="Thêm"/>
         </hbox>
         <vbox spacing="true" width="500px" height="400px">
             <dataGrid id="objectDataGrid" dataContainer="objectsDc" width="100%" height="200px">
                 <columns>
-                    <column property="name" header="Name"/>
-                    <column property="type" header="Type"/>
+                    <column property="name" header="Tên"/>
+                    <column property="type" header="Kiểu"/>
                 </columns>
             </dataGrid>
         </vbox>
@@ -86,12 +86,12 @@
         <vbox width="500px" height="237px">
             <dataGrid id="permissionDataGrid" dataContainer="permissionsDc" >
                 <columns>
-                    <column property="permissionType" header="Permission" width="50%"/>
+                    <column property="permissionType" header="Quyền truy cập" width="50%"/>
                 </columns>
             </dataGrid>
         </vbox>
         <hbox spacing="true" alignSelf="END">
-            <button id="saveBtn" text="Save"/>
+            <button id="saveBtn" text="Lưu"/>
         </hbox>
     </layout>
 </view>

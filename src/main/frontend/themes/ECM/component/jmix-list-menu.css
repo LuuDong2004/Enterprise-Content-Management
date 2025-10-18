@@ -1,0 +1,50 @@
+.jmix-main-view-section {
+    background: white;
+}
+
+.jmix-list-menu .jmix-menu-item-link:hover {
+    background: #ffeeee;
+}
+.jmix-list-menu vaadin-details-summary:hover{
+    background: #ffeeee;
+}
+
+.jmix-list-menu vaadin-details-summary{
+   padding-top: 24px;
+    padding-bottom: 24px;
+}
+
+.jmix-list-menu .jmix-menubar-item {
+    padding: var(--lumo-space-m) 0;
+    margin: 0;
+}
+
+.jmix-list-menu .jmix-menu-item-link {
+    gap: var(--lumo-space-s);
+    padding: var(--lumo-space-m);
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+    align-items: center;
+}
+
+.header-menu-sidebar{
+    background-color: var(--lumo-primary-color);
+    color: white;
+    height:100px;
+}
+.jmix-main-view-application-title {
+    color: white!important;
+}
+.jmix-main-view-application-title-base-link {
+    color: white;
+}
+
+.jmix-list-menu .jmix-menu-item-link vaadin-icon.prefix-component,
+.jmix-list-menu .jmix-menubar-item .jmix-menubar-summary-icon-container vaadin-icon.prefix-component,
+.jmix-horizontal-menu-content-item vaadin-icon.prefix-component {
+    width: var(--lumo-icon-size-s);
+    height: var(--lumo-icon-size-s);
+    color: var(--lumo-primary-color-90pct);
+}
+

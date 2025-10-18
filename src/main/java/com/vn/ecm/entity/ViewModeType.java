@@ -29,4 +29,18 @@ public enum ViewModeType implements EnumClass<String> {
         }
         return null;
     }
+
+    @Override
+    public String toString() {
+        switch (this) {
+            case DEFAULT:
+                return "Mặc định";
+            case LIST:
+                return "Danh sách";
+            case MEDIUM_ICONS:
+                return "Biểu tượng";
+            default:
+                return super.toString();
+        }
+    }
 }

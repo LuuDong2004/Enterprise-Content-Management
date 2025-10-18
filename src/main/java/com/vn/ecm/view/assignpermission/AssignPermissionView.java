@@ -5,6 +5,7 @@ import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
+import com.vaadin.flow.data.renderer.TextRenderer;
 import com.vaadin.flow.router.Route;
 import com.vn.ecm.entity.*;
 
@@ -132,7 +133,11 @@ public class AssignPermissionView extends StandardView {
 
     @Subscribe
     public void onInit(InitEvent event) {
-
+        permissionDataGrid.getColumnByKey("permissionType")
+                .setRenderer(new TextRenderer<>(permission -> {
+                    PermissionType type = permission.getPermissionType();
+                    return type != null ? type.toString() : "";
+                }));
         // Cột Allow
         permissionDataGrid.addColumn(
                 new ComponentRenderer<>(permission -> {
@@ -148,7 +153,7 @@ public class AssignPermissionView extends StandardView {
                         permissionDataGrid.getDataProvider().refreshItem(permission);
                     });
                     return checkbox;
-                })).setHeader("Allow");
+                })).setHeader("Cho phép");
 
         // Cột Deny
         permissionDataGrid.addColumn(
@@ -162,7 +167,7 @@ public class AssignPermissionView extends StandardView {
                         }
                     });
                     return checkbox;
-                })).setHeader("Deny");
+                })).setHeader("Từ chối");
 
         objectDataGrid.addSelectionListener(selection -> {
             Optional<EcmObject> optional = selection.getFirstSelectedItem();
@@ -171,8 +176,6 @@ public class AssignPermissionView extends StandardView {
                 return;
             }
             EcmObject dto = optional.get();
-
-            // Build Permission items list (one per PermissionType) and set into
             // permissionsDc
             List<Permission> list = new ArrayList<>();
 
@@ -181,7 +184,6 @@ public class AssignPermissionView extends StandardView {
                 User user = dataManager.load(User.class)
                         .id(UUID.fromString(dto.getId()))
                         .one();
-
                 // load DB permission for this principal on selected target (file or folder)
                 Permission dbPerm = null;
                 if (selectedFile != null) {
@@ -189,9 +191,7 @@ public class AssignPermissionView extends StandardView {
                 } else if (selectedFolder != null) {
                     dbPerm = permissionService.loadPermission(user, selectedFolder);
                 }
-
                 int mask = dbPerm != null && dbPerm.getPermissionMask() != null ? dbPerm.getPermissionMask() : 0;
-
                 for (PermissionType type : PermissionType.values()) {
                     Permission p = dataManager.create(Permission.class);
                     p.setUser(user);
@@ -216,9 +216,7 @@ public class AssignPermissionView extends StandardView {
                 } else if (selectedFolder != null) {
                     dbPerm = permissionService.loadPermission(role, selectedFolder);
                 }
-
                 int mask = dbPerm != null && dbPerm.getPermissionMask() != null ? dbPerm.getPermissionMask() : 0;
-
                 for (PermissionType type : PermissionType.values()) {
                     Permission p = dataManager.create(Permission.class);
                     p.setRoleCode(role.getCode());
@@ -231,7 +229,6 @@ public class AssignPermissionView extends StandardView {
                     list.add(p);
                 }
             }
-
             permissionsDc.setItems(list);
         });
     }

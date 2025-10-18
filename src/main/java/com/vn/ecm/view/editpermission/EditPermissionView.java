@@ -5,6 +5,7 @@ import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
+import com.vaadin.flow.data.renderer.TextRenderer;
 import com.vaadin.flow.router.Route;
 import com.vn.ecm.entity.*;
 
@@ -35,6 +36,8 @@ public class EditPermissionView extends StandardView {
     private User selectedUser;
     String path = "";
     private EcmObject target;
+    @ViewComponent
+    private MessageBundle messageBundle;
 
     public void setTarget(EcmObject target) {
         this.target = target;
@@ -134,6 +137,11 @@ public class EditPermissionView extends StandardView {
 
     @Subscribe
     public void onInit(InitEvent event) {
+        permissionDataGrid.getColumnByKey("permissionType")
+                .setRenderer(new TextRenderer<>(permission -> {
+                    PermissionType type = permission.getPermissionType();
+                    return type != null ? type.toString() : "";
+                }));
 
         // Cột Allow
         permissionDataGrid.addColumn(
@@ -160,7 +168,7 @@ public class EditPermissionView extends StandardView {
                         permissionDataGrid.getDataProvider().refreshItem(permission);
                     });
                     return checkbox;
-                })).setHeader("Allow");
+                })).setHeader("Cho phép");
 
         // Cột Deny
         permissionDataGrid.addColumn(
@@ -187,7 +195,7 @@ public class EditPermissionView extends StandardView {
                         permissionDataGrid.getDataProvider().refreshItem(permission);
                     });
                     return checkbox;
-                })).setHeader("Deny");
+                })).setHeader("Từ chối");
 
         objectDataGrid.addSelectionListener(selection -> {
             Optional<EcmObject> optional = selection.getFirstSelectedItem();
@@ -275,7 +283,7 @@ public class EditPermissionView extends StandardView {
         List<EcmObject> dtos = new ArrayList<>();
         for (User u : users) {
             EcmObject dto = new EcmObject();
-            dto.setId(u.getId().toString()); // để sau này load User
+            dto.setId(u.getId().toString());
             dto.setName(u.getUsername());
             dto.setType(ObjectType.USER);
             dtos.add(dto);
@@ -331,7 +339,6 @@ public class EditPermissionView extends StandardView {
                 saved = true;
             }
         }
-
         if (saved) {
             Notification.show("Permission saved");
             close(StandardOutcome.SAVE);

@@ -71,7 +71,7 @@ public class ConfirmReplaceDialog extends StandardView {
     @Subscribe
     public void onBeforeShow(BeforeShowEvent event) {
         if (messageSpan != null && objectName != null) {
-            messageSpan.setText("This will replace explicitly defined permissions on all descendants of this object with inheritable permissions from "
+            messageSpan.setText("Thao tác này sẽ thay thế tất cả các quyền được gán trực tiếp trên các đối tượng con bằng các quyền kế thừa từ đối tượng "
                     + objectName + ".");
         }
     }

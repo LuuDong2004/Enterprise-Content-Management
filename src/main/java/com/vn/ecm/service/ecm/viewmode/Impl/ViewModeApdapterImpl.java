@@ -42,22 +42,22 @@ public class ViewModeApdapterImpl<T> implements IViewModeAdapter<T> {
                 HorizontalLayout row = new HorizontalLayout(icon, name);
                 row.setAlignItems(FlexComponent.Alignment.CENTER);
                 return row;
-            }).setHeader("Name").setAutoWidth(true);
-
-            grid.addColumn(item -> {
-                FileDescriptor fd = (FileDescriptor) item;
-                return fd.getExtension();
-            }).setHeader("Extention").setAutoWidth(true);
-
-            grid.addColumn(item -> {
-                FileDescriptor fd = (FileDescriptor) item;
-                return fd.getSize() != null ? nf.format(fd.getSize()) : "";
-            }).setHeader("Size").setAutoWidth(true);
+            }).setHeader("Tên").setAutoWidth(true);
 
             grid.addColumn(item -> {
                 FileDescriptor fd = (FileDescriptor) item;
                 return fd.getLastModified() != null ? dtf.format(fd.getLastModified()) : "";
-            }).setHeader("Modified").setAutoWidth(true);
+            }).setHeader("Ngày tạo").setAutoWidth(true);
+
+            grid.addColumn(item -> {
+                FileDescriptor fd = (FileDescriptor) item;
+                return fd.getExtension();
+            }).setHeader("Kiểu").setAutoWidth(true);
+
+            grid.addColumn(item -> {
+                FileDescriptor fd = (FileDescriptor) item;
+                return fd.getSize() != null ? nf.format(fd.getSize()) : "";
+            }).setHeader("Kích thước").setAutoWidth(true);
 
         } else { // FOLDER
             grid.addComponentColumn(item -> {
@@ -92,7 +92,7 @@ public class ViewModeApdapterImpl<T> implements IViewModeAdapter<T> {
                 row.setAlignItems(FlexComponent.Alignment.CENTER);
                 row.addClassName("file-list-cell");
                 return row;
-            }).setHeader("Name").setAutoWidth(true).setResizable(true).setKey("name");
+            }).setHeader("Tên").setAutoWidth(true).setResizable(true).setKey("name");
         } else { // FOLDER
             grid.addComponentColumn(item -> {
                 Folder f = (Folder) item;

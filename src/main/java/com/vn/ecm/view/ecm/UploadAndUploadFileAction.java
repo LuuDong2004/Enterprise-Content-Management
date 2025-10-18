@@ -1,5 +1,9 @@
 package com.vn.ecm.view.ecm;
+import com.vn.ecm.entity.*;
 import com.vn.ecm.service.ecm.Impl.FileDescriptorUploadAndDownloadService;
+import com.vn.ecm.service.ecm.PermissionService;
+import io.jmix.core.security.CurrentAuthentication;
+import io.jmix.flowui.Notifications;
 import io.jmix.flowui.action.ActionType;
 import io.jmix.flowui.action.list.ItemTrackingAction;
 import io.jmix.flowui.component.upload.FileStorageUploadField;
@@ -9,9 +13,6 @@ import io.jmix.flowui.kit.component.upload.event.FileUploadSucceededEvent;
 import io.jmix.flowui.upload.TemporaryStorage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
-import com.vn.ecm.entity.FileDescriptor;
-import com.vn.ecm.entity.Folder;
-import com.vn.ecm.entity.SourceStorage;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
@@ -29,6 +30,15 @@ public class UploadAndUploadFileAction extends ItemTrackingAction<FileDescriptor
 
     @Autowired
     private Downloader downloader;
+
+    @Autowired
+    private CurrentAuthentication currentAuthentication;
+
+    @Autowired
+    private PermissionService permissionService;
+
+    @Autowired
+    private Notifications notifications;
 
     private Mode mode = Mode.UPLOAD;
 
@@ -76,19 +86,27 @@ public class UploadAndUploadFileAction extends ItemTrackingAction<FileDescriptor
         return mode == Mode.UPLOAD
                 || (getTarget() != null && getTarget().getSingleSelectedItem() != null);
     }
+
+
     private void upload() {
+
         Folder folder = folderSupplier != null ? folderSupplier.get() : null;
         if (folder == null) return;
-
+        User user = (User) currentAuthentication.getUser();
+        boolean per = permissionService.hasPermission(user,PermissionType.CREATE,folder);
+        if (!per) {
+            notifications.create("Bạn không có quyền tải file này lên hệ thống.")
+                    .withType(Notifications.Type.ERROR)
+                    .show();
+            return;
+        }
         SourceStorage storage = storageSupplier != null ? storageSupplier.get() : null;
         if (storage == null) return;
 
         if (uploadEvent == null) return;
-
         Object receiver = uploadEvent.getReceiver();
         if (!(receiver instanceof FileTemporaryStorageBuffer)) return;
         FileTemporaryStorageBuffer buf = (FileTemporaryStorageBuffer) receiver;
-
         try {
             UUID fileId = buf.getFileData().getFileInfo().getId();
             File tmp = tempStorage.getFile(fileId);
@@ -99,7 +117,8 @@ public class UploadAndUploadFileAction extends ItemTrackingAction<FileDescriptor
                     uploadEvent.getFileName(),
                     uploadEvent.getContentLength() > 0 ? uploadEvent.getContentLength() : null,
                     folder,
-                    storage
+                    storage,
+                    user.getUsername()
             );
         } catch (Exception e) {
             throw new RuntimeException("Upload failed for: " + uploadEvent.getFileName(), e);
@@ -117,6 +136,14 @@ public class UploadAndUploadFileAction extends ItemTrackingAction<FileDescriptor
         if (selected.getSourceStorage() == null) {
             return;
         }
+        User userCurr = (User) currentAuthentication.getUser();
+        boolean per = permissionService.hasPermission(userCurr, PermissionType.MODIFY, selected);
+        if (!per) {
+            notifications.create("Bạn không có quyền tải xuống File này.")
+                    .withType(Notifications.Type.ERROR)
+                    .show();
+            return;
+        }
         try {
             byte[] bytes = fileDescriptorService.downloadFile(selected);
             downloader.download(bytes, selected.getName());
@@ -124,6 +151,5 @@ public class UploadAndUploadFileAction extends ItemTrackingAction<FileDescriptor
             throw new RuntimeException("Download failed for: " + selected.getName(), e);
         }
     }
-
 }
 

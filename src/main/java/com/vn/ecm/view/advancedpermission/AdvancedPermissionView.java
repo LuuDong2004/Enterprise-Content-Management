@@ -110,13 +110,13 @@ public class AdvancedPermissionView extends StandardView {
         }
         if (permission == null) {
             // Không có permission => coi như inheritance đã bị remove
-            disableInheritanceBtn.setText("Enable Inheritance");
+            disableInheritanceBtn.setText("Bật kế thừa");
             return;
         }
         if (Boolean.FALSE.equals(permission.getInheritEnabled())) {
-            disableInheritanceBtn.setText("Enable Inheritance");
+            disableInheritanceBtn.setText("Bật kế thừa");
         } else {
-            disableInheritanceBtn.setText("Disable Inheritance");
+            disableInheritanceBtn.setText("Ngắt kế thừa");
         }
     }
 
@@ -129,11 +129,11 @@ public class AdvancedPermissionView extends StandardView {
                 return permission.getRoleCode();
             }
             return "";
-        }).setHeader("Principal");
+        }).setHeader("Đối tượng");
 
         permissionDataGrid.addColumn(
-                permission -> "Allow"
-        ).setHeader("Type");
+                permission -> "Cho phép"
+        ).setHeader("Trạng thái");
 
         permissionDataGrid.addColumn(permission -> {
             if (permission.getPermissionMask() == null) return "";
@@ -156,29 +156,29 @@ public class AdvancedPermissionView extends StandardView {
             }
 
             return sb.toString();
-        }).setHeader("Access");
+        }).setHeader("Quyền truy cập");
 
         permissionDataGrid.addColumn(
                 permission -> {
                     if (permission.getInheritedFrom() == null) return "";
                     return permission.getInheritedFrom();
                 }
-        ).setHeader("Inherited from");
+        ).setHeader("Kế thừa từ");
 
         permissionDataGrid.addColumn(
                 permission -> {
                     AppliesTo applies = permission.getAppliesTo();
                     if (applies == null) return "";
                     switch (applies) {
-                        case THIS_FOLDER_ONLY: return "This folder only";
-                        case THIS_FOLDER_SUBFOLDERS_FILES: return "This folder, subfolders and files";
-                        case THIS_FOLDER_SUBFOLDERS: return "This folder and subfolders";
-                        case THIS_FOLDER_FILES: return "This folder and files";
-                        case SUBFOLDERS_FILES_ONLY: return "Subfolders and files only";
+                        case THIS_FOLDER_ONLY: return "Chỉ thư mục";
+                        case THIS_FOLDER_SUBFOLDERS_FILES: return "Thư mục, các thư mục con, tệp";
+                        case THIS_FOLDER_SUBFOLDERS: return "Thư mục, các thư mục con";
+                        case THIS_FOLDER_FILES: return "Thư mục và tệp";
+                        case SUBFOLDERS_FILES_ONLY: return "Chỉ các thư mục con và tệp";
                         default: return "";
                     }
                 }
-        ).setHeader("Applies to");
+        ).setHeader("Áp dụng cho");
 
         permissionDataGrid.addSelectionListener(selectionEvent -> {
             Permission selected = permissionDataGrid.getSingleSelectedItem();
