@@ -49,7 +49,7 @@ import static io.jmix.flowui.app.inputdialog.InputParameter.stringParameter;
 @Route(value = "source-storages/:id", layout = MainView.class)
 @ViewController("EcmView")
 @ViewDescriptor("ECM-view.xml")
-public class EcmView extends StandardView implements BeforeEnterObserver, AfterNavigationObserver {
+public class  EcmView extends StandardView implements BeforeEnterObserver, AfterNavigationObserver {
     @ViewComponent
     private CollectionContainer<Folder> foldersDc;
     @ViewComponent
