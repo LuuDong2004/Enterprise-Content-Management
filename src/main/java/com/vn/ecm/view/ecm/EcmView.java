@@ -3,7 +3,6 @@ package com.vn.ecm.view.ecm;
 //v1
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
-import com.vaadin.flow.component.grid.ItemClickEvent;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;

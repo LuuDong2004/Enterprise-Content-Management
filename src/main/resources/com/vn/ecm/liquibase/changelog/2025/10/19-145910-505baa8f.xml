@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="1" author="ECM">
+        <dropColumn columnName="DELETED_BY" tableName="FILE_Descriptor"/>
+
+        <dropColumn columnName="DELETE_DATE" tableName="FILE_Descriptor"/>
+
+        <dropColumn columnName="IN_TRASH" tableName="FILE_Descriptor"/>
+    </changeSet>
+    <changeSet id="2" author="ECM">
+        <dropColumn columnName="DELETED_BY" tableName="FOLDER"/>
+
+        <dropColumn columnName="DELETE_DATE" tableName="FOLDER"/>
+
+        <dropColumn columnName="IN_TRASH" tableName="FOLDER"/>
+    </changeSet>
+    <changeSet id="3" author="ECM">
+        <dropColumn columnName="NAME" tableName="SOURCE_STORAGE"/>
+    </changeSet>
+</databaseChangeLog>
