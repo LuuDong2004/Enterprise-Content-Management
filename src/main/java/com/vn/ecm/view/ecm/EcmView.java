@@ -1,9 +1,7 @@
 package com.vn.ecm.view.ecm;
-
 //v1
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
-import com.vaadin.flow.component.grid.ItemClickEvent;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -13,8 +11,8 @@ import com.vaadin.flow.data.selection.SelectionEvent;
 import com.vaadin.flow.router.*;
 import com.vn.ecm.entity.*;
 import com.vn.ecm.service.ecm.PermissionService;
-import com.vn.ecm.service.ecm.IFileDescriptorService;
-import com.vn.ecm.service.ecm.IFolderService;
+import com.vn.ecm.service.ecm.folderandfile.IFolderService;
+import com.vn.ecm.service.ecm.folderandfile.Impl.FileDescriptorService;
 import com.vn.ecm.view.main.MainView;
 import com.vn.ecm.view.viewmode.ViewModeFragment;
 import io.jmix.core.DataManager;
@@ -49,7 +47,7 @@ import static io.jmix.flowui.app.inputdialog.InputParameter.stringParameter;
 @Route(value = "source-storages/:id", layout = MainView.class)
 @ViewController("EcmView")
 @ViewDescriptor("ECM-view.xml")
-public class  EcmView extends StandardView implements BeforeEnterObserver, AfterNavigationObserver {
+public class EcmView extends StandardView implements BeforeEnterObserver, AfterNavigationObserver {
     @ViewComponent
     private CollectionContainer<Folder> foldersDc;
     @ViewComponent
@@ -91,14 +89,16 @@ public class  EcmView extends StandardView implements BeforeEnterObserver, After
     @Autowired
     private IFolderService folderService;
     @Autowired
-    private IFileDescriptorService fileDescriptorService;
+    private FileDescriptorService fileDescriptorService;
     @ViewComponent
     private FileStorageUploadField fileRefField;
+
+
 
     @ViewComponent
     private ViewModeFragment viewModeFragment;
     @ViewComponent
-    private com.vaadin.flow.component.orderedlayout.HorizontalLayout iconTiles;
+    private HorizontalLayout iconTiles;
 
 
     @Subscribe
@@ -150,6 +150,8 @@ public class  EcmView extends StandardView implements BeforeEnterObserver, After
         fileRefField.setEnabled(selection);
         User user = (User) currentAuthentication.getUser();
         if (selection) {
+            boolean hasUploadPermission = permissionService.hasPermission(user, PermissionType.CREATE, selected);
+            fileRefField.setEnabled(hasUploadPermission);
             loadAccessibleFiles(user, selected);
         } else {
             filesDc.getMutableItems().clear();
@@ -160,7 +162,7 @@ public class  EcmView extends StandardView implements BeforeEnterObserver, After
     @Subscribe("fileRefField")
     public void onFileRefFieldFileUploadSucceeded(final FileUploadSucceededEvent<FileStorageUploadField> event) {
         User user = (User) currentAuthentication.getUser();
-        boolean per = permissionService.hasPermission(user,PermissionType.CREATE,foldersTree.getSingleSelectedItem());
+        boolean per = permissionService.hasPermission(user, PermissionType.CREATE, foldersTree.getSingleSelectedItem());
         if (!per) {
             notifications.create("Bạn không có quyền tải file này lên hệ thống.")
                     .withType(Notifications.Type.ERROR)
@@ -271,6 +273,7 @@ public class  EcmView extends StandardView implements BeforeEnterObserver, After
         });
         dlg.open();
     }
+
     @Subscribe("foldersTree.renameFolder")
     public void onFoldersTreeRenameFolder(final ActionPerformedEvent event) {
         Folder selected = foldersTree.getSingleSelectedItem();
@@ -338,6 +341,19 @@ public class  EcmView extends StandardView implements BeforeEnterObserver, After
             }
         });
         dlg.open();
+    }
+    @Subscribe("fileDataGird.renameFile")
+    public void onFileDataGirdRenameFile(final ActionPerformedEvent event) {
+        FileDescriptor selected = fileDataGird.getSingleSelectedItem();
+        User userCurr = (User) currentAuthentication.getUser();
+        boolean per = permissionService.hasPermission(userCurr, PermissionType.MODIFY, selected);
+        if (!per) {
+            notifications.create("Bạn không có quyền đổi tên tệp này.")
+                    .withType(Notifications.Type.ERROR)
+                    .show();
+            return;
+        }
+        notifications.show("Chức năng đang phát triển");
     }
 
     private void loadAccessibleFolders(User user) {

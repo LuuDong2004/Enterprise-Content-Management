@@ -42,7 +42,6 @@ public class FileStorageInitializer {
             }
             return null;
         });
-
     }
     public boolean findSourceStorage(SourceStorage sourceStorage) {
         return storageManager.isStorageValid(sourceStorage);

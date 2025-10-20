@@ -1,8 +1,7 @@
-package com.vn.ecm.service.ecm;
+package com.vn.ecm.service.ecm.folderandfile;
 
 
 
-import com.vn.ecm.entity.FileDescriptor;
 import com.vn.ecm.entity.Folder;
 
 

@@ -1,8 +1,8 @@
-package com.vn.ecm.service.ecm.Impl;
+package com.vn.ecm.service.ecm.folderandfile.Impl;
 
 import com.vn.ecm.entity.FileDescriptor;
 import com.vn.ecm.entity.Folder;
-import com.vn.ecm.service.ecm.IFolderService;
+import com.vn.ecm.service.ecm.folderandfile.IFolderService;
 import io.jmix.core.DataManager;
 import io.jmix.core.Messages;
 import org.springframework.beans.factory.annotation.Autowired;

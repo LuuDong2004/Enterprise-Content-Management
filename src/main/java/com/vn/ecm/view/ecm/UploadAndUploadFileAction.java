@@ -1,6 +1,6 @@
 package com.vn.ecm.view.ecm;
 import com.vn.ecm.entity.*;
-import com.vn.ecm.service.ecm.Impl.FileDescriptorUploadAndDownloadService;
+import com.vn.ecm.service.ecm.folderandfile.IFileDescriptorUploadAndDownloadService;
 import com.vn.ecm.service.ecm.PermissionService;
 import io.jmix.core.security.CurrentAuthentication;
 import io.jmix.flowui.Notifications;
@@ -43,7 +43,7 @@ public class UploadAndUploadFileAction extends ItemTrackingAction<FileDescriptor
     private Mode mode = Mode.UPLOAD;
 
     @Autowired
-    private FileDescriptorUploadAndDownloadService fileDescriptorService;
+    private IFileDescriptorUploadAndDownloadService fileDescriptorService;
 
     private Supplier<Folder> folderSupplier;
 
@@ -86,8 +86,6 @@ public class UploadAndUploadFileAction extends ItemTrackingAction<FileDescriptor
         return mode == Mode.UPLOAD
                 || (getTarget() != null && getTarget().getSingleSelectedItem() != null);
     }
-
-
     private void upload() {
 
         Folder folder = folderSupplier != null ? folderSupplier.get() : null;
@@ -111,7 +109,6 @@ public class UploadAndUploadFileAction extends ItemTrackingAction<FileDescriptor
             UUID fileId = buf.getFileData().getFileInfo().getId();
             File tmp = tempStorage.getFile(fileId);
             if (tmp == null) return;
-
             fileDescriptorService.uploadFile(
                     fileId,
                     uploadEvent.getFileName(),
