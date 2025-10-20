@@ -1,10 +1,10 @@
-package com.vn.ecm.view.ecm;
+package com.vn.ecm.ecmmodule.view.ecm;
 
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vn.ecm.entity.SourceStorage;
 import com.vn.ecm.entity.StorageType;
-import com.vn.ecm.view.main.MainView;
+import com.vn.ecm.ecmmodule.view.main.MainView;
 import io.jmix.core.DataManager;
 import io.jmix.flowui.view.ViewController;
 import io.jmix.flowui.view.ViewDescriptor;

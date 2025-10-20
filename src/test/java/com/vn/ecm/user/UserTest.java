@@ -1,6 +1,6 @@
 package com.vn.ecm.user;
 
-import com.vn.ecm.entity.User;
+import com.vn.ecm.ecmmodule.entity.User;
 import com.vn.ecm.test_support.AuthenticatedAsAdmin;
 import io.jmix.core.DataManager;
 import io.jmix.core.security.UserRepository;

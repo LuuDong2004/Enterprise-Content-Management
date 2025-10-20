@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<view xmlns="http://jmix.io/schema/flowui/view"
+      title="Kho lưu trữ"
+      focusComponent="form">
+    <data>
+        <instance id="sourceStorageDc"
+                  class="com.vn.ecm.ecmmodule.entity.SourceStorage">
+            <fetchPlan extends="_base"/>
+            <loader id="sourceStorageDl"/>
+        </instance>
+    </data>
+    <facets>
+        <dataLoadCoordinator auto="true"/>
+    </facets>
+    <actions>
+        <action id="saveAction" type="detail_saveClose"/>
+        <action id="closeAction" type="detail_close"/>
+    </actions>
+    <layout>
+        <formLayout id="form" dataContainer="sourceStorageDc">
+            <responsiveSteps>
+                <responsiveStep minWidth="0" columns="1"/>
+                <responsiveStep minWidth="40em" columns="2"/>
+            </responsiveSteps>
+        <textField id="nameField" required="true" property="name"/>
+        <select id="typeField"  required="true" property="type"/>
+        </formLayout>
+
+        <!-- ===== S3 group ===== -->
+        <formLayout id="s3Group" dataContainer="sourceStorageDc">
+            <responsiveSteps>
+                <responsiveStep minWidth="0" columns="1"/>
+                <responsiveStep minWidth="40em" columns="2"/>
+            </responsiveSteps>
+            <textField id="accessKeyField" required="true" property="accessKey"/>
+            <textField id="secretAccessKeyField" required="true" property="secretAccessKey"/>
+            <textField id="regionField" required="false" property="region"/>
+            <textField id="bucketField" property="bucket" required="true" />
+            <textField id="endpointUrlField" required="true" property="endpointUrl"/>
+<!--            <textField id="chunkSizeField" required="true" property="chunkSize"/>-->
+            <checkbox id="activeS3Field" property="active"/>
+            <checkbox id="usePathStyleBucketAddressingField" property="usePathStyleBucketAddressing"/>
+        </formLayout>
+
+        <!-- ===== WEB Directory group ===== -->
+        <formLayout id="webDirGroup" visible="false" dataContainer="sourceStorageDc">
+            <responsiveSteps>
+                <responsiveStep minWidth="0" columns="1"/>
+                <responsiveStep minWidth="40em" columns="2"/>
+            </responsiveSteps>
+
+            <textField id="webRootPathField" required="true" property="webRootPath"/>
+            <checkbox id="activeWebDirField" property="active"/>
+        </formLayout>
+
+        <hbox id="detailActions">
+            <button id="saveAndCloseButton" action="saveAction"/>
+            <button id="closeButton" action="closeAction"/>
+        </hbox>
+    </layout>
+</view>

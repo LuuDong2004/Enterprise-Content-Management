@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<menu-config xmlns="http://jmix.io/schema/flowui/menu">
+
+    <menu id="application" title="msg://com.vn.ecm/menu.application.title" opened="true">
+        <item view="User.list" title="msg://com.vn.ecm.ecmmodule.view.userlist/userListView.title"/>
+<!--        <item view="AssignPermissionView" title="msg://com.vn.ecm.ecmmodule.view.assignpermission/assignPermissionView.title"/>-->
+<!--        <item view="EditPermissionView" title="msg://com.vn.ecm.ecmmodule.view.editpermission/editPermissionView.title"/>-->
+<!--        <item view="AdvancedPermissionView"-->
+<!--              title="msg://com.vn.ecm.ecmmodule.view.advancedpermission/advancedPermissionView.title"/>-->
+<!--        <item view="BlockInheritance" title="msg://com.vn.ecm.ecmmodule.view.blockinheritance/blockInheritance.title"/>-->
+<!--        <item view="ConfirmReplaceDialog"-->
+<!--              title="msg://com.vn.ecm.ecmmodule.view.confirmreplacedialog/confirmReplaceDialog.title"/>-->
+<!--        <item view="UserListView" title="msg://com.vn.ecm.ecmmodule.view.userlist/userListView.title"/>-->
+    </menu>
+    <menu id="storage" title="msg://com.vn.ecm.ecmmodule.view.sourcestorage/sourceStorageListView.title">
+        <item view="SourceStorage.list" title="Kho lưu trữ"/>
+    </menu>
+
+
+</menu-config>

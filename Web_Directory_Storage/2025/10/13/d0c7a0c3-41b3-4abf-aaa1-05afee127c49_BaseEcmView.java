@@ -1,8 +1,8 @@
-package com.vn.ecm.view.ecm;
+package com.vn.ecm.ecmmodule.view.ecm;
 
 import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.grid.ItemClickEvent;
-import com.vn.ecm.ecm.storage.DynamicStorageManager;
+import com.vn.ecm.dong.storage.DynamicStorageManager;
 import com.vn.ecm.entity.FileDescriptor;
 import com.vn.ecm.entity.Folder;
 import com.vn.ecm.entity.SourceStorage;
