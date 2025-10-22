@@ -16,7 +16,8 @@ import io.jmix.flowui.view.*;
 @ViewDescriptor(path = "source-storage-detail-view.xml")
 @EditedEntityContainer("sourceStorageDc")
 public class SourceStorageDetailView extends StandardDetailView<SourceStorage> {
-    @ViewComponent private Select<StorageType> typeField;
+    @ViewComponent
+    private Select<StorageType> typeField;
 
     @ViewComponent
     private JmixFormLayout s3Group;
