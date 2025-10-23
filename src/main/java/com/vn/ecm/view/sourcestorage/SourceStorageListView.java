@@ -41,6 +41,10 @@ public class SourceStorageListView extends StandardListView<SourceStorage> {
                     .one();
             Button viewStorageButton = uiComponents.create(Button.class);
             viewStorageButton.setText("Open");
+            if(reloadedStorage.getActive().equals(false)) {
+                viewStorageButton.setEnabled(false);
+                return null;
+            }
             viewStorageButton.addClickListener(e -> {
                 UI.getCurrent().navigate(EcmView.class,
                         new RouteParameters("id",reloadedStorage.getId().toString()));
