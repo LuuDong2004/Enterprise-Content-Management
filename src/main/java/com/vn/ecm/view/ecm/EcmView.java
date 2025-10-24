@@ -2,6 +2,7 @@ package com.vn.ecm.view.ecm;
 //v1
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
+import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -14,6 +15,7 @@ import com.vn.ecm.service.ecm.PermissionService;
 import com.vn.ecm.service.ecm.folderandfile.IFolderService;
 import com.vn.ecm.service.ecm.folderandfile.Impl.FileDescriptorService;
 import com.vn.ecm.view.main.MainView;
+import com.vn.ecm.view.sourcestorage.SourceStorageListView;
 import com.vn.ecm.view.viewmode.ViewModeFragment;
 import io.jmix.core.DataManager;
 
@@ -29,6 +31,7 @@ import io.jmix.flowui.component.grid.TreeDataGrid;
 import io.jmix.flowui.component.upload.FileStorageUploadField;
 import io.jmix.flowui.Actions;
 import io.jmix.flowui.kit.action.ActionPerformedEvent;
+import io.jmix.flowui.kit.action.BaseAction;
 import io.jmix.flowui.kit.component.button.JmixButton;
 import io.jmix.flowui.kit.component.upload.event.FileUploadSucceededEvent;
 import io.jmix.flowui.model.CollectionContainer;
@@ -92,13 +95,11 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     private FileDescriptorService fileDescriptorService;
     @ViewComponent
     private FileStorageUploadField fileRefField;
-
-
-
     @ViewComponent
     private ViewModeFragment viewModeFragment;
     @ViewComponent
     private HorizontalLayout iconTiles;
+
 
 
     @Subscribe
@@ -124,11 +125,14 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     public void beforeEnter(BeforeEnterEvent event) {
         String idParam = event.getRouteParameters().get("id").orElseThrow();
         this.id = UUID.fromString(idParam);
-
         this.currentStorage = dataManager.load(SourceStorage.class)
                 .id(id)
                 .optional()
                 .orElse(null);
+        if (currentStorage == null || Boolean.FALSE.equals(currentStorage.getActive())) {
+            notifications.show(messageBundle.getMessage("ecmSourceStorageInactiveAlert"));
+            event.rerouteTo(SourceStorageListView.class);
+        }
     }
 
     @Override
@@ -220,7 +224,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     @Subscribe("foldersTree.createFolder")
     public void onFoldersTreeCreateFolder(final ActionPerformedEvent event) {
         User user = (User) currentAuthentication.getUser();
-//
         dialogs.createInputDialog(this)
                 .withHeader("Tạo mới folder")
                 .withParameters(

@@ -31,8 +31,6 @@ public class SourceStorageListView extends StandardListView<SourceStorage> {
     private DataManager dataManager;
     @Autowired
     private DynamicStorageManager dynamicStorageManager;
-
-
     @Supply(to = "sourceStoragesDataGrid.actions", subject = "renderer")
     private Renderer<SourceStorage> sourceStoragesDataGridActionsRenderer() {
         return new ComponentRenderer<>(sourcestorage -> {
