@@ -35,7 +35,6 @@ import io.jmix.flowui.kit.component.upload.event.FileUploadSucceededEvent;
 import io.jmix.flowui.model.CollectionContainer;
 import io.jmix.flowui.model.CollectionLoader;
 import io.jmix.flowui.view.*;
-import org.checkerframework.checker.units.qual.s;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
@@ -50,6 +49,7 @@ import static io.jmix.flowui.app.inputdialog.InputParameter.stringParameter;
 @ViewController("EcmView")
 @ViewDescriptor("ECM-view.xml")
 public class EcmView extends StandardView implements BeforeEnterObserver, AfterNavigationObserver {
+
     @ViewComponent
     private CollectionContainer<Folder> foldersDc;
     @ViewComponent

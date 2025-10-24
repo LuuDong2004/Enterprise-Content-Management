@@ -12,7 +12,7 @@
 <!--              title="msg://com.vn.ecm.ecmmodule.view.confirmreplacedialog/confirmReplaceDialog.title"/>-->
 <!--        <item view="UserListView" title="msg://com.vn.ecm.ecmmodule.view.userlist/userListView.title"/>-->
     </menu>
-    <menu id="storage" title="msg://com.vn.ecm.ecmmodule.view.sourcestorage/sourceStorageListView.title">
+    <menu id="storage" title="Quản lí file/tệp">
         <item view="SourceStorage.list" title="Kho lưu trữ"/>
     </menu>
 

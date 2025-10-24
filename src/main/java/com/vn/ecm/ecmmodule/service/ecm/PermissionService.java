@@ -211,9 +211,6 @@ public class PermissionService {
         return String.join("/", parts);
     }
 
-    /**
-     * Build full path for a FileDescriptor: Root/.../parentFolder/FileDescriptorName
-     */
     public String getFullPath(FileDescriptor FileDescriptor) {
         if (FileDescriptor == null) return "";
         String folderPath = getFullPath(FileDescriptor.getFolder());

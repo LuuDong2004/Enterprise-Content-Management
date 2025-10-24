@@ -36,8 +36,6 @@ public class EditPermissionView extends StandardView {
     private User selectedUser;
     String path = "";
     private EcmObject target;
-    @ViewComponent
-    private MessageBundle messageBundle;
 
     public void setTarget(EcmObject target) {
         this.target = target;
@@ -60,6 +58,8 @@ public class EditPermissionView extends StandardView {
         this.selectedFile = null;
     }
 
+    @ViewComponent
+    private MessageBundle messageBundle;
     @Autowired
     private DataManager dataManager;
     @ViewComponent

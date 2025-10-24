@@ -119,7 +119,6 @@ public class Permission {
         this.permissionMask = permissionMask;
     }
 
-
     public Boolean getInheritEnabled() {
         return inheritEnabled;
     }
