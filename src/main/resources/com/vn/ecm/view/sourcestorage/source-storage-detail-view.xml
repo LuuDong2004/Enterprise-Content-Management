@@ -23,7 +23,8 @@
                 <responsiveStep minWidth="40em" columns="1"/>
             </responsiveSteps>
         <textField id="nameField" required="true" property="name"/>
-        <select id="typeField"  required="true" property="type"/>
+        <select id="typeField"  readOnly="true" property="type"/>
+
         </formLayout>
 
         <!-- ===== S3 group ===== -->
@@ -39,7 +40,7 @@
             <textField id="endpointUrlField" required="true" property="endpointUrl"/>
 <!--            <textField id="chunkSizeField" required="true" property="chunkSize"/>-->
             <checkbox id="activeS3Field" property="active"/>
-            <checkbox id="usePathStyleBucketAddressingField" property="usePathStyleBucketAddressing"/>
+<!--            <checkbox id="usePathStyleBucketAddressingField" property="usePathStyleBucketAddressing"/>-->
         </formLayout>
 
         <!-- ===== WEB Directory group ===== -->
@@ -56,6 +57,9 @@
         <hbox id="detailActions">
             <button id="saveAndCloseButton" action="saveAction"/>
             <button id="closeButton" action="closeAction"/>
+            <button id="testConnection"
+                    text="Test S3"
+                    title="Kiểm tra kết nối đến kho lưu trữ"/>
         </hbox>
     </layout>
 </view>
