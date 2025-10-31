@@ -15,6 +15,7 @@ import io.jmix.flowui.view.*;
 @ViewController(id = "SourceStorage.detail")
 @ViewDescriptor(path = "source-storage-detail-view.xml")
 @EditedEntityContainer("sourceStorageDc")
+@DialogMode(width = "60%" , height = "90%")
 public class SourceStorageDetailView extends StandardDetailView<SourceStorage> {
     @ViewComponent
     private Select<StorageType> typeField;

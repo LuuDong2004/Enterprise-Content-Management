@@ -20,7 +20,7 @@
         <formLayout id="form" dataContainer="sourceStorageDc">
             <responsiveSteps>
                 <responsiveStep minWidth="0" columns="1"/>
-                <responsiveStep minWidth="40em" columns="2"/>
+                <responsiveStep minWidth="40em" columns="1"/>
             </responsiveSteps>
         <textField id="nameField" required="true" property="name"/>
         <select id="typeField"  required="true" property="type"/>
@@ -30,7 +30,7 @@
         <formLayout id="s3Group" dataContainer="sourceStorageDc">
             <responsiveSteps>
                 <responsiveStep minWidth="0" columns="1"/>
-                <responsiveStep minWidth="40em" columns="2"/>
+                <responsiveStep minWidth="40em" columns="1"/>
             </responsiveSteps>
             <textField id="accessKeyField" required="true" property="accessKey"/>
             <textField id="secretAccessKeyField" required="true" property="secretAccessKey"/>

@@ -36,6 +36,13 @@
 <!--            <properties include=".*"/>-->
 <!--        </genericFilter>-->
         <hbox id="buttonsPanel" classNames="buttons-panel">
+
+            <dropdownButton id="createGroup">
+                <items>
+                    <actionItem id="s3CreateActionItem" ref="sourceStoragesDataGrid.s3CreateAction"/>
+                    <actionItem id="ftpCreateActionItem" ref="sourceStoragesDataGrid.ftpCreateAction"/>
+                </items>
+            </dropdownButton>
             <button id="createButton" action="sourceStoragesDataGrid.createAction"/>
             <button id="editButton" action="sourceStoragesDataGrid.editAction"/>
             <button id="removeButton" action="sourceStoragesDataGrid.removeAction"/>
@@ -50,6 +57,8 @@
                 <action id="createAction" type="list_create"/>
                 <action id="editAction" type="list_edit"/>
                 <action id="removeAction" type="list_remove"/>
+                <action id="s3CreateAction"/>
+                <action id="ftpCreateAction"/>
             </actions>
             <columns resizable="true">
                 <column property="name"/>

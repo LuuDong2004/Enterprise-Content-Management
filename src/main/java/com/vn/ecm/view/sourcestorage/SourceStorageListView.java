@@ -8,11 +8,15 @@ import com.vaadin.flow.router.RouteParameters;
 
 import com.vn.ecm.ecm.storage.DynamicStorageManager;
 import com.vn.ecm.entity.SourceStorage;
+import com.vn.ecm.entity.StorageType;
 import com.vn.ecm.view.ecm.EcmView;
 import com.vn.ecm.view.main.MainView;
 import io.jmix.core.DataManager;
+import io.jmix.flowui.DialogWindows;
 import io.jmix.flowui.UiComponents;
 
+import io.jmix.flowui.kit.action.ActionPerformedEvent;
+import io.jmix.flowui.model.CollectionLoader;
 import io.jmix.flowui.view.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.vaadin.flow.component.UI;
@@ -31,6 +35,11 @@ public class SourceStorageListView extends StandardListView<SourceStorage> {
     private DataManager dataManager;
     @Autowired
     private DynamicStorageManager dynamicStorageManager;
+    @Autowired
+    private DialogWindows dialogWindows;
+    @ViewComponent
+    private CollectionLoader<SourceStorage> sourceStoragesDl;
+
     @Supply(to = "sourceStoragesDataGrid.actions", subject = "renderer")
     private Renderer<SourceStorage> sourceStoragesDataGridActionsRenderer() {
         return new ComponentRenderer<>(sourcestorage -> {
@@ -39,9 +48,8 @@ public class SourceStorageListView extends StandardListView<SourceStorage> {
                     .one();
             Button viewStorageButton = uiComponents.create(Button.class);
             viewStorageButton.setText("Open");
-            if(reloadedStorage.getActive().equals(false)) {
+            if(!Boolean.TRUE.equals(reloadedStorage.getActive())) {
                 viewStorageButton.setEnabled(false);
-                return null;
             }
             viewStorageButton.addClickListener(e -> {
                 UI.getCurrent().navigate(EcmView.class,
@@ -51,6 +59,33 @@ public class SourceStorageListView extends StandardListView<SourceStorage> {
             });
             return viewStorageButton;
         });
+    }
+
+    @Subscribe("sourceStoragesDataGrid.ftpCreateAction")
+    public void onSourceStoragesDataGridFtpCreateAction(final ActionPerformedEvent event) {
+        SourceStorage newSourceStorage = dataManager.create(SourceStorage.class);
+            newSourceStorage.setType(StorageType.S3);
+        DialogWindow<View<?>> window = dialogWindows.detail(this,SourceStorage.class )
+                .newEntity(newSourceStorage)
+                .build();
+        window.addAfterCloseListener(afterCloseEvent -> {
+            sourceStoragesDl.load();
+        });
+        window.open();
+
+    }
+
+    @Subscribe("sourceStoragesDataGrid.s3CreateAction")
+    public void onSourceStoragesDataGridS3CreateAction(final ActionPerformedEvent event) {
+        SourceStorage newSourceStorage = dataManager.create(SourceStorage.class);
+        newSourceStorage.setType(StorageType.WEBDIR);
+        DialogWindow<View<?>> window = dialogWindows.detail(this,SourceStorage.class )
+                .newEntity(newSourceStorage)
+                .build();
+        window.addAfterCloseListener(afterCloseEvent -> {
+            sourceStoragesDl.load();
+        });
+        window.open();
     }
 
 
