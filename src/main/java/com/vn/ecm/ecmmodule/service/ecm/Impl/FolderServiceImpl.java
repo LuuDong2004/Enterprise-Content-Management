@@ -2,9 +2,12 @@ package com.vn.ecm.ecmmodule.service.ecm.Impl;
 
 import com.vn.ecm.ecmmodule.entity.FileDescriptor;
 import com.vn.ecm.ecmmodule.entity.Folder;
+import com.vn.ecm.ecmmodule.entity.User;
 import com.vn.ecm.ecmmodule.service.ecm.IFolderService;
+import com.vn.ecm.ecmmodule.service.ecm.PermissionService;
 import io.jmix.core.DataManager;
 import io.jmix.core.Messages;
+import io.jmix.core.security.CurrentAuthentication;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -16,11 +19,15 @@ import java.util.UUID;
 public class FolderServiceImpl implements IFolderService {
     @Autowired
     private final Messages messages;
+    private final PermissionService permissionService;
     @Autowired
     private DataManager dataManager;
+    @Autowired
+    private CurrentAuthentication currentAuthentication;
 
-    public FolderServiceImpl(Messages messages) {
+    public FolderServiceImpl(Messages messages, PermissionService permissionService) {
         this.messages = messages;
+        this.permissionService = permissionService;
     }
 
 
@@ -35,7 +42,10 @@ public class FolderServiceImpl implements IFolderService {
         f.setCreatedDate(LocalDateTime.now());
         f.setFullPath(buildFolderPath(folder));
         f.setInTrash(false);
-        return dataManager.save(f);
+        Folder f2 = dataManager.save(f);
+        User user = (User) currentAuthentication.getUser();
+        permissionService.initializeFolderPermission(user, f2);
+        return f2;
     }
 
 

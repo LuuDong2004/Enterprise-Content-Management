@@ -872,4 +872,29 @@ public class PermissionService {
         dataManager.save(filePerm);
     }
 
+    @Transactional
+    public void initializeFolderPermission(User user, Folder folder) {
+        if (user == null || folder == null) return;
+        Folder parentFolder = folder.getParent();
+        Permission ancestorPerm = findNearestAncestorPermission(user, parentFolder);
+        int inheritedMask;
+        String inheritedFromValue;
+        if (ancestorPerm != null) {
+            inheritedMask = Optional.ofNullable(ancestorPerm.getPermissionMask()).orElse(0);
+            inheritedFromValue = ancestorIdentifier(ancestorPerm);
+        } else {
+            inheritedMask = PermissionType.FULL.getValue();
+            inheritedFromValue = null;
+        }
+        Permission folderPerm = dataManager.create(Permission.class);
+        folderPerm.setUser(user);
+        folderPerm.setFolder(folder);
+        folderPerm.setPermissionMask(inheritedMask);
+        folderPerm.setInherited(ancestorPerm != null);
+        folderPerm.setInheritEnabled(true);
+        folderPerm.setInheritedFrom(inheritedFromValue);
+        folderPerm.setAppliesTo(AppliesTo.THIS_FOLDER_SUBFOLDERS_FILES);
+        dataManager.save(folderPerm);
+    }
+
 }
