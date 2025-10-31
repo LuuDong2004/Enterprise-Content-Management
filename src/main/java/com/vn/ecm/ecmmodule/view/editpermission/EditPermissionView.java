@@ -37,6 +37,9 @@ public class EditPermissionView extends StandardView {
     String path = "";
     private EcmObject target;
 
+    @ViewComponent
+    private CollectionLoader<Permission> permissionsDl;
+
     public void setTarget(EcmObject target) {
         this.target = target;
     }
@@ -349,6 +352,11 @@ public class EditPermissionView extends StandardView {
             }
         }
         if (saved) {
+            permissionsDl.setParameter("file", selectedFile);
+            permissionsDl.setParameter("folder", selectedFolder);
+            permissionsDl.setParameter("user", selectedUser);
+            permissionsDl.setParameter("roleCode", selectedRole != null ? selectedRole.getCode() : null);
+            permissionsDl.load();
             Notification.show("Permission saved");
             close(StandardOutcome.SAVE);
         } else {

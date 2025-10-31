@@ -20,6 +20,7 @@ public class PermissionService {
         this.dataManager = dataManager;
     }
 
+    @Transactional
     //SAVE permission (User)
     public void savePermission(Collection<Permission> permissions, User user, Folder folder) {
         normalizePermissions(permissions);
@@ -41,6 +42,7 @@ public class PermissionService {
         propagateToChildren(user, null, folder, mask);
     }
 
+    @Transactional
     public void savePermission(Collection<Permission> permissions, User user, FileDescriptor FileDescriptor) {
         normalizePermissions(permissions);
         int mask = buildMask(permissions);
@@ -58,6 +60,7 @@ public class PermissionService {
         dataManager.save(permission);
     }
 
+    @Transactional
     // SAVE permission (Role)
     public void savePermission(Collection<Permission> permissions, ResourceRoleEntity role, Folder folder) {
         normalizePermissions(permissions);
@@ -78,6 +81,7 @@ public class PermissionService {
         propagateToChildren(null, role, folder, mask);
     }
 
+    @Transactional
     public void savePermission(Collection<Permission> permissions, ResourceRoleEntity role, FileDescriptor FileDescriptor) {
         normalizePermissions(permissions);
         int mask = buildMask(permissions);
@@ -94,6 +98,8 @@ public class PermissionService {
         permission.setInherited(false);
         dataManager.save(permission);
     }
+
+    @Transactional
     // LOAD permission
     public Permission loadPermission(User user, Folder folder) {
         return dataManager.load(Permission.class)
@@ -104,6 +110,7 @@ public class PermissionService {
                 .orElse(null);
     }
 
+    @Transactional
     public Permission loadPermission(User user, FileDescriptor FileDescriptor) {
         return dataManager.load(Permission.class)
                 .query("select p from Permission p where p.user = :user and p.file = :FileDescriptor")
@@ -113,6 +120,7 @@ public class PermissionService {
                 .orElse(null);
     }
 
+    @Transactional
     public Permission loadPermission(ResourceRoleEntity role, Folder folder) {
         return dataManager.load(Permission.class)
                 .query("select p from Permission p where p.roleCode = :roleCode and p.folder = :folder")
@@ -122,6 +130,7 @@ public class PermissionService {
                 .orElse(null);
     }
 
+    @Transactional
     public Permission loadPermission(ResourceRoleEntity role, FileDescriptor FileDescriptor) {
         return dataManager.load(Permission.class)
                 .query("select p from Permission p where p.roleCode = :roleCode and p.file = :FileDescriptor")
@@ -131,6 +140,7 @@ public class PermissionService {
                 .orElse(null);
     }
 
+    @Transactional
     // HAS permission
     public boolean hasPermission(User user, PermissionType type, FileDescriptor FileDescriptor) {
         Permission p = loadPermission(user, FileDescriptor);
@@ -141,6 +151,7 @@ public class PermissionService {
         return folder != null && hasPermission(user, type, folder);
     }
 
+    @Transactional
     public boolean hasPermission(User user, PermissionType type, Folder folder) {
         Folder cur = folder;
         while (cur != null) {
