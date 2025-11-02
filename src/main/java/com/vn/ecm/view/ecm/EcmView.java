@@ -326,6 +326,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         if (!per) {
             notifications.create("Bạn không có quyền xóa File này.")
                     .withType(Notifications.Type.ERROR)
+                    .withDuration(2000)
                     .show();
             return;
         }
