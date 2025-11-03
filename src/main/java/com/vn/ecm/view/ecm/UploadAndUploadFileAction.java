@@ -135,7 +135,8 @@ public class UploadAndUploadFileAction extends ItemTrackingAction<FileDescriptor
         if (!per) {
 
             notifications.create("Bạn không có quyền tải xuống File này.")
-                    .withType(Notifications.Type.ERROR)
+                    .withType(Notifications.Type.ERROR).withDuration(2000)
+                    .withCloseable(false)
                     .show();
             return;
         }

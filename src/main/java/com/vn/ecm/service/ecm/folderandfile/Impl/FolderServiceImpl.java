@@ -2,9 +2,12 @@ package com.vn.ecm.service.ecm.folderandfile.Impl;
 
 import com.vn.ecm.entity.FileDescriptor;
 import com.vn.ecm.entity.Folder;
+import com.vn.ecm.entity.User;
+import com.vn.ecm.service.ecm.PermissionService;
 import com.vn.ecm.service.ecm.folderandfile.IFolderService;
 import io.jmix.core.DataManager;
 import io.jmix.core.Messages;
+import io.jmix.core.security.CurrentAuthentication;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -20,6 +23,12 @@ public class FolderServiceImpl implements IFolderService {
     private final Messages messages;
     @Autowired
     private DataManager dataManager;
+    @Autowired
+    private PermissionService permissionService;
+    @Autowired
+    private CurrentAuthentication currentAuthentication;
+
+
 
     public FolderServiceImpl(Messages messages) {
         this.messages = messages;
@@ -44,7 +53,10 @@ public class FolderServiceImpl implements IFolderService {
         f.setCreatedDate(LocalDateTime.now());
         f.setFullPath(buildFolderPath(folder));
         f.setInTrash(false);
-        return dataManager.save(f);
+        Folder f2 = dataManager.save(f);
+        User user = (User) currentAuthentication.getUser();
+        permissionService.initializeFolderPermission(user, f2);
+        return f2;
     }
     private String generateUniqueName(Folder parent, Object sourceStorage, String desiredName) {
         String baseName = stripIndexSuffix(desiredName);
@@ -84,13 +96,10 @@ public class FolderServiceImpl implements IFolderService {
     private String buildIndexedName(String base, int index) {
         return index == 0 ? base : base + " (" + index + ")";
     }
-
-
     //xóa cứng
     @Override
     public boolean deleteFolderFromTrash(Folder folder){
         if(folder == null)  return false;
-
         List<FileDescriptor> files = dataManager.load(FileDescriptor.class)
                 .query("select f from FileDescriptor f where f.folder = :folder")
                 .parameter("folder", folder)
@@ -109,8 +118,6 @@ public class FolderServiceImpl implements IFolderService {
         dataManager.remove(folder);
         return true;
     }
-
-
     // xử lý logic xóa folder - đệ quy khỏi thùng rác
     @Override
     public int deleteFolderRecursivelyFromTrash(Folder folder) {

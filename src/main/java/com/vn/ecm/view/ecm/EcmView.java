@@ -185,11 +185,13 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
             notifications.create(messageBundle.getMessage("ecmUploadFileAlert"))
                     .withType(Notifications.Type.SUCCESS)
                     .withDuration(2000)
+                    .withCloseable(false)
                     .show();
         }catch(Exception e){
             notifications.create("Lỗi tải lên : " + event.getFileName())
                     .withType(Notifications.Type.ERROR)
                     .withDuration(4000)
+                    .withCloseable(false)
                     .show();
         }
     }
@@ -272,6 +274,8 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         if (!per) {
             notifications.create("Bạn không có quyền xóa thư mục này.")
                     .withType(Notifications.Type.ERROR)
+                    .withDuration(2000)
+                    .withCloseable(false)
                     .show();
             return;
         }
@@ -296,15 +300,13 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     @Subscribe("foldersTree.renameFolder")
     public void onFoldersTreeRenameFolder(final ActionPerformedEvent event) {
         Folder selected = foldersTree.getSingleSelectedItem();
-        if (selected == null) {
-            notifications.show("Vui lòng chọn thư mục để đổi tên");
-            return;
-        }
         User userCurr = (User) currentAuthentication.getUser();
         boolean per = permissionService.hasPermission(userCurr, PermissionType.MODIFY, selected);
         if (!per) {
             notifications.create("Bạn không có quyền đổi tên thư mục này.")
                     .withType(Notifications.Type.ERROR)
+                    .withDuration(2000)
+                    .withCloseable(false)
                     .show();
             return;
         }
@@ -333,16 +335,13 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     @Subscribe("fileDataGird.deleteFile")
     public void onFileDataGirdDeleteFile(final ActionPerformedEvent event) {
         FileDescriptor selected = fileDataGird.getSingleSelectedItem();
-        if (selected == null) {
-            notifications.create("Vui lòng chọn tệp để xóa").show();
-            return;
-        }
         User userCurr = (User) currentAuthentication.getUser();
         boolean per = permissionService.hasPermission(userCurr, PermissionType.FULL, selected);
         if (!per) {
             notifications.create("Bạn không có quyền xóa File này.")
                     .withType(Notifications.Type.ERROR)
                     .withDuration(2000)
+                    .withCloseable(false)
                     .show();
             return;
         }
@@ -370,7 +369,10 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         boolean canDownload = permissionService.hasPermission(user, PermissionType.READ, selected);
         if (!canDownload) {
             notifications.create("Bạn không có quyền tải xuống tệp này.")
-                    .withType(Notifications.Type.ERROR).show();
+                    .withCloseable(false)
+                    .withDuration(2000)
+                    .withType(Notifications.Type.ERROR)
+                    .show();
             return;
         }
         downloadAction.setTarget(fileDataGird);
@@ -387,6 +389,8 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         if (!per) {
             notifications.create("Bạn không có quyền đổi tên tệp này.")
                     .withType(Notifications.Type.ERROR)
+                    .withCloseable(false)
+                    .withDuration(2000)
                     .show();
             return;
         }

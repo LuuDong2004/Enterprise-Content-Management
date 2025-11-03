@@ -36,8 +36,9 @@ public class EditPermissionView extends StandardView {
     private User selectedUser;
     String path = "";
     private EcmObject target;
+
     @ViewComponent
-    private MessageBundle messageBundle;
+    private CollectionLoader<Permission> permissionsDl;
 
     public void setTarget(EcmObject target) {
         this.target = target;
@@ -60,6 +61,8 @@ public class EditPermissionView extends StandardView {
         this.selectedFile = null;
     }
 
+    @ViewComponent
+    private MessageBundle messageBundle;
     @Autowired
     private DataManager dataManager;
     @ViewComponent
@@ -157,6 +160,15 @@ public class EditPermissionView extends StandardView {
                                 for (Permission p : permissionsDc.getItems()) {
                                     if (p.getPermissionType().equals(PermissionType.READ)
                                             || p.getPermissionType().equals(PermissionType.CREATE)) {
+                                        p.setAllow(true);
+                                        permissionDataGrid.getDataProvider().refreshItem(p);
+                                    }
+                                }
+                            } else if (permission.getPermissionType().equals(PermissionType.CREATE)) {
+                                CollectionContainer<Permission> permissionsDc = getViewData()
+                                        .getContainer("permissionsDc");
+                                for (Permission p : permissionsDc.getItems()) {
+                                    if (p.getPermissionType().equals(PermissionType.READ)) {
                                         p.setAllow(true);
                                         permissionDataGrid.getDataProvider().refreshItem(p);
                                     }
@@ -340,6 +352,11 @@ public class EditPermissionView extends StandardView {
             }
         }
         if (saved) {
+            permissionsDl.setParameter("file", selectedFile);
+            permissionsDl.setParameter("folder", selectedFolder);
+            permissionsDl.setParameter("user", selectedUser);
+            permissionsDl.setParameter("roleCode", selectedRole != null ? selectedRole.getCode() : null);
+            permissionsDl.load();
             Notification.show("Permission saved");
             close(StandardOutcome.SAVE);
         } else {
