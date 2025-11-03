@@ -242,14 +242,17 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     @Subscribe("foldersTree.createFolder")
     public void onFoldersTreeCreateFolder(final ActionPerformedEvent event) {
         User user = (User) currentAuthentication.getUser();
-        boolean per = permissionService.hasPermission(user, PermissionType.CREATE, foldersTree.getSingleSelectedItem());
-        if (!per) {
-            notifications.create("Bạn không có quyền tạo folder")
-                    .withDuration(2000)
-                    .withCloseable(false)
-                    .withType(Notifications.Type.ERROR)
-                    .show();
-            return;
+        Folder selected = foldersTree.getSingleSelectedItem();
+        if(selected != null) {
+            boolean per = permissionService.hasPermission(user, PermissionType.CREATE, selected);
+            if (!per) {
+                notifications.create("Bạn không có quyền tạo folder")
+                        .withDuration(2000)
+                        .withCloseable(false)
+                        .withType(Notifications.Type.ERROR)
+                        .show();
+                return;
+            }
         }
         dialogs.createInputDialog(this)
                 .withHeader("Tạo mới folder")
