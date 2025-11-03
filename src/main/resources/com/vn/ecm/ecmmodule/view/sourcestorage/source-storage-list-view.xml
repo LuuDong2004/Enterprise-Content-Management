@@ -53,12 +53,12 @@
                 <action id="removeAction" type="list_remove"/>
             </actions>
             <columns resizable="true">
-                <column property="name"/>
+                <column property="name" header="Tên kho"/>
                 <column property="accessKey"/>
                 <column property="secretAccessKey"/>
                 <column property="endpointUrl"/>
                 <column property="type"/>
-                <column property="active"/>
+                <column property="active" header="Active"/>
                 <column key="actions" header="Action" />
             </columns>
         </dataGrid>
