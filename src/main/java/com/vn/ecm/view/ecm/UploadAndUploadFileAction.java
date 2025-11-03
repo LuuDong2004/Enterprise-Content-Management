@@ -109,7 +109,7 @@ public class UploadAndUploadFileAction extends ItemTrackingAction<FileDescriptor
             UUID fileId = buf.getFileData().getFileInfo().getId();
             File tmp = tempStorage.getFile(fileId);
             if (tmp == null) return;
-            fileDescriptorService.uploadFile(
+            FileDescriptor fileDescriptor = fileDescriptorService.uploadFile(
                     fileId,
                     uploadEvent.getFileName(),
                     uploadEvent.getContentLength() > 0 ? uploadEvent.getContentLength() : null,
@@ -117,6 +117,9 @@ public class UploadAndUploadFileAction extends ItemTrackingAction<FileDescriptor
                     storage,
                     user.getUsername()
             );
+        if (fileDescriptor != null) {
+            permissionService.initializeFilePermission(user, fileDescriptor);
+        }
     }
 
     private void download() {
