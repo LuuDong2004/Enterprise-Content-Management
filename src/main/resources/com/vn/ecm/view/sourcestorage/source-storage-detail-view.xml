@@ -34,7 +34,7 @@
                 <responsiveStep minWidth="40em" columns="1"/>
             </responsiveSteps>
             <textField id="accessKeyField" required="true" property="accessKey"/>
-            <textField id="secretAccessKeyField" required="true" property="secretAccessKey"/>
+            <textField id="secretAccessKeyField" required="true"  property="secretAccessKey" />
             <textField id="regionField" required="false" property="region"/>
             <textField id="bucketField" property="bucket" required="true" />
             <textField id="endpointUrlField" required="true" property="endpointUrl"/>

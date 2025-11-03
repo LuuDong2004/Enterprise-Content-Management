@@ -4,6 +4,7 @@ import com.vaadin.flow.component.AbstractField;
 import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.select.Select;
+import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.Route;
 import com.vn.ecm.ecm.storage.s3.S3ClientFactory;
 import com.vn.ecm.entity.SourceStorage;
@@ -12,6 +13,7 @@ import com.vn.ecm.view.main.MainView;
 import io.jmix.flowui.Notifications;
 import io.jmix.flowui.component.formlayout.JmixFormLayout;
 import io.jmix.flowui.kit.component.button.JmixButton;
+import io.jmix.flowui.model.DataContext;
 import io.jmix.flowui.view.*;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -45,7 +47,7 @@ public class SourceStorageDetailView extends StandardDetailView<SourceStorage> {
     public void onBeforeShow(BeforeShowEvent event) {
         updateGroups(typeField.getValue());
         SourceStorage s = getEditedEntity();
-        testConnection.setVisible(s != null && s.getType() == StorageType.S3);
+        testConnection.setVisible(s.getType() == StorageType.S3);
     }
 
 
@@ -59,8 +61,25 @@ public class SourceStorageDetailView extends StandardDetailView<SourceStorage> {
                 : Notifications.Type.ERROR;
         notifications.create(result)
                 .withType(type)
+                .withCloseable(false)
                 .withDuration(2000)
                 .show();
+    }
+
+    @Subscribe(target = Target.DATA_CONTEXT)
+    public void onPreSave(DataContext.PreSaveEvent event) {
+        SourceStorage s = getEditedEntity();
+        if (s.getType() == StorageType.S3) {
+            String mess = s3ClientFactory.testConnection(s);
+            if (!mess.startsWith("Kết nối thành công")) {
+                notifications.create(mess + "( Cấu hình vẫn đươc lưu !)")
+                        .withType(Notifications.Type.WARNING)
+                        .withCloseable(false)
+                        .withDuration(2000)
+                        .show();
+            }
+            // event.preventSave();
+        }
     }
 
     @Subscribe("typeField")

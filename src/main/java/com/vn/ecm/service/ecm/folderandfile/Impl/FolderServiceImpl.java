@@ -11,6 +11,8 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 public class FolderServiceImpl implements IFolderService {
@@ -27,15 +29,60 @@ public class FolderServiceImpl implements IFolderService {
     // tạo mới folder
     @Override
     public Folder createFolder(Folder folder) {
+        String desiredName = folder.getName().trim();
+
+        String uniqueName = generateUniqueName(
+                folder.getParent(),
+                folder.getSourceStorage(),
+                desiredName
+        );
         Folder f = dataManager.create(Folder.class);
         f.setId(UUID.randomUUID());
-        f.setName(folder.getName());
+        f.setName(uniqueName);
         f.setParent(folder.getParent());
         f.setSourceStorage(folder.getSourceStorage());
         f.setCreatedDate(LocalDateTime.now());
         f.setFullPath(buildFolderPath(folder));
         f.setInTrash(false);
         return dataManager.save(f);
+    }
+    private String generateUniqueName(Folder parent, Object sourceStorage, String desiredName) {
+        String baseName = stripIndexSuffix(desiredName);
+        int counter = 0;
+
+        while (isNameExists(parent, sourceStorage, buildIndexedName(baseName, counter))) {
+            counter++;
+        }
+        return buildIndexedName(baseName, counter);
+    }
+
+    /** Kiểm tra trùng tên folder (không phân biệt hoa thường, không tính folder trong trash) */
+    private boolean isNameExists(Folder parent, Object sourceStorage, String name) {
+        Long count = dataManager.loadValue(
+                        "select count(f) from Folder f " +
+                                "where f.parent = :parent " +
+                                "and f.sourceStorage = :storage " +
+                                "and f.inTrash = false " +
+                                "and lower(f.name) = lower(:name)",
+                        Long.class
+                )
+                .parameter("parent", parent)
+                .parameter("storage", sourceStorage)
+                .parameter("name", name)
+                .one();
+        return count != null && count > 0;
+    }
+
+    /** Xóa đuôi "(n)" nếu người dùng nhập tên như "Folder (3)" */
+    private String stripIndexSuffix(String name) {
+        Pattern pattern = Pattern.compile("^(.+?)\\s*\\((\\d+)\\)$");
+        Matcher matcher = pattern.matcher(name);
+        return matcher.matches() ? matcher.group(1).trim() : name;
+    }
+
+    /** Ghép tên với chỉ số */
+    private String buildIndexedName(String base, int index) {
+        return index == 0 ? base : base + " (" + index + ")";
     }
 
 

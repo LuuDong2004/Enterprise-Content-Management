@@ -1,6 +1,8 @@
 package com.vn.ecm.view.sourcestorage;
 
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.data.renderer.Renderer;
 import com.vaadin.flow.router.Route;
@@ -50,7 +52,9 @@ public class SourceStorageListView extends StandardListView<SourceStorage> {
                     .id(sourcestorage.getId())
                     .one();
             Button viewStorageButton = uiComponents.create(Button.class);
-            viewStorageButton.setText("Open");
+           viewStorageButton.setIcon(new Icon(VaadinIcon.FOLDER_OPEN));
+           // viewStorageButton.setIcon(new Icon(VaadinIcon.LOCK));
+            viewStorageButton.setText("Truy cập");
             if(!Boolean.TRUE.equals(reloadedStorage.getActive())) {
                 viewStorageButton.setEnabled(false);
             }
@@ -76,7 +80,6 @@ public class SourceStorageListView extends StandardListView<SourceStorage> {
             sourceStoragesDl.load();
         });
         window.open();
-
     }
 
     @Subscribe("sourceStoragesDataGrid.s3CreateAction")

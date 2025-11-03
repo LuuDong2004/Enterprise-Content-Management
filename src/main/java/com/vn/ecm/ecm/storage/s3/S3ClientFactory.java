@@ -67,7 +67,7 @@ public class S3ClientFactory {
             if (sc == 404) return "Bucket không tồn tại: " + s.getBucket();
             return "Lỗi S3 (" + sc + "): " + e.getMessage();
         } catch (Exception e) {
-            return "Lỗi không xác định: " + e.getMessage();
+            return "Lỗi: " + e.getMessage();
         }
     }
 }

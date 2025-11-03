@@ -105,6 +105,7 @@
                     <actions>
                         <action id="deleteFile" type="fileActionSelected" text="Xóa"/>
                         <action id="renameFile" type="fileActionSelected" text="Đổi tên"/>
+                        <action id="downloadFile" type="fileActionSelected" text="Tải xuống"/>
                         <action id="onObjectAssignPermission" text="Phân quyền" type="onObjectAssignPermission"/>
                     </actions>
                     <columns>

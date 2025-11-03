@@ -10,6 +10,7 @@ import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.data.selection.SelectionEvent;
 import com.vaadin.flow.router.*;
+import com.vn.ecm.ecm.storage.s3.S3ClientFactory;
 import com.vn.ecm.entity.*;
 import com.vn.ecm.service.ecm.PermissionService;
 import com.vn.ecm.service.ecm.folderandfile.IFolderService;
@@ -99,7 +100,8 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     private ViewModeFragment viewModeFragment;
     @ViewComponent
     private HorizontalLayout iconTiles;
-
+    @Autowired
+    private S3ClientFactory s3ClientFactory;
 
 
     @Subscribe
@@ -114,6 +116,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         uploadAction.setFolderSupplier(() -> foldersTree.getSingleSelectedItem());
         uploadAction.setStorageSupplier(() -> currentStorage);
         //download
+
         downloadAction.setMode(UploadAndUploadFileAction.Mode.DOWNLOAD);
         downloadAction.setTarget(fileDataGird);
         if (btnDownload.getAction() == null) {
@@ -170,15 +173,28 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         if (!per) {
             notifications.create("Bạn không có quyền tải file này lên hệ thống.")
                     .withType(Notifications.Type.ERROR)
+                    .withDuration(2000)
+                    .withCloseable(false)
                     .show();
             return;
         }
-        uploadAction.setUploadEvent(event);
-        uploadAction.execute();
-        loadAccessibleFiles(user, foldersTree.getSingleSelectedItem());
-
-        notifications.show(messageBundle.getMessage("ecmUploadFileAlert"));
+        try {
+            uploadAction.setUploadEvent(event);
+            uploadAction.execute();
+            loadAccessibleFiles(user, foldersTree.getSingleSelectedItem());
+            notifications.create(messageBundle.getMessage("ecmUploadFileAlert"))
+                    .withType(Notifications.Type.SUCCESS)
+                    .withDuration(2000)
+                    .show();
+        }catch(Exception e){
+            notifications.create("Lỗi tải lên : " + event.getFileName())
+                    .withType(Notifications.Type.ERROR)
+                    .withDuration(4000)
+                    .show();
+        }
     }
+
+
 
     //css
     private void initFolderGridColumn() {
@@ -346,6 +362,23 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         });
         dlg.open();
     }
+
+    @Subscribe("fileDataGird.downloadFile")
+    public void onFileDataGirdDownloadFile(final ActionPerformedEvent event) {
+        Folder selected = foldersTree.getSingleSelectedItem();
+        User user = (User) currentAuthentication.getUser();
+        boolean canDownload = permissionService.hasPermission(user, PermissionType.READ, selected);
+        if (!canDownload) {
+            notifications.create("Bạn không có quyền tải xuống tệp này.")
+                    .withType(Notifications.Type.ERROR).show();
+            return;
+        }
+        downloadAction.setTarget(fileDataGird);
+        downloadAction.execute();
+    }
+
+
+
     @Subscribe("fileDataGird.renameFile")
     public void onFileDataGirdRenameFile(final ActionPerformedEvent event) {
         FileDescriptor selected = fileDataGird.getSingleSelectedItem();
@@ -369,6 +402,8 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         List<FileDescriptor> accessibleFiles = permissionService.getAccessibleFiles(user, currentStorage, folder);
         filesDc.setItems(accessibleFiles);
     }
+
+
 
 }
 
