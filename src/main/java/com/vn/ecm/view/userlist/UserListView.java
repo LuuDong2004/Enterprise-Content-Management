@@ -23,7 +23,7 @@ import java.util.UUID;
 @Route(value = "user-list-view", layout = MainView.class)
 @ViewController(id = "UserListView")
 @ViewDescriptor(path = "user-list-view.xml")
-public class UserListView extends StandardView {
+public class UserListView extends StandardListView<User> {
 
     private User selectedUser;
 

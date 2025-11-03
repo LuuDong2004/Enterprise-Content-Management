@@ -17,8 +17,7 @@ import io.jmix.flowui.fragment.Fragment;
 import io.jmix.flowui.fragment.FragmentDescriptor;
 import io.jmix.flowui.model.CollectionContainer;
 import io.jmix.flowui.view.Subscribe;
-import io.jmix.flowui.view.Target;
-import io.jmix.flowui.view.View;
+
 import io.jmix.flowui.view.ViewComponent;
 import io.jmix.flowui.kit.action.Action;
 

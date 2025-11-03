@@ -1,6 +1,6 @@
 package com.vn.ecm.view.ecm;
 import com.vn.ecm.entity.*;
-import com.vn.ecm.service.ecm.Impl.FileDescriptorUploadAndDownloadService;
+import com.vn.ecm.service.ecm.folderandfile.IFileDescriptorUploadAndDownloadService;
 import com.vn.ecm.service.ecm.PermissionService;
 import io.jmix.core.security.CurrentAuthentication;
 import io.jmix.flowui.Notifications;
@@ -43,7 +43,7 @@ public class UploadAndUploadFileAction extends ItemTrackingAction<FileDescriptor
     private Mode mode = Mode.UPLOAD;
 
     @Autowired
-    private FileDescriptorUploadAndDownloadService fileDescriptorService;
+    private IFileDescriptorUploadAndDownloadService fileDescriptorService;
 
     private Supplier<Folder> folderSupplier;
 
@@ -89,7 +89,6 @@ public class UploadAndUploadFileAction extends ItemTrackingAction<FileDescriptor
 
 
     private void upload() {
-
         Folder folder = folderSupplier != null ? folderSupplier.get() : null;
         if (folder == null) return;
         User user = (User) currentAuthentication.getUser();
@@ -107,11 +106,9 @@ public class UploadAndUploadFileAction extends ItemTrackingAction<FileDescriptor
         Object receiver = uploadEvent.getReceiver();
         if (!(receiver instanceof FileTemporaryStorageBuffer)) return;
         FileTemporaryStorageBuffer buf = (FileTemporaryStorageBuffer) receiver;
-        try {
             UUID fileId = buf.getFileData().getFileInfo().getId();
             File tmp = tempStorage.getFile(fileId);
             if (tmp == null) return;
-
             fileDescriptorService.uploadFile(
                     fileId,
                     uploadEvent.getFileName(),
@@ -120,9 +117,6 @@ public class UploadAndUploadFileAction extends ItemTrackingAction<FileDescriptor
                     storage,
                     user.getUsername()
             );
-        } catch (Exception e) {
-            throw new RuntimeException("Upload failed for: " + uploadEvent.getFileName(), e);
-        }
     }
 
     private void download() {
@@ -139,8 +133,10 @@ public class UploadAndUploadFileAction extends ItemTrackingAction<FileDescriptor
         User userCurr = (User) currentAuthentication.getUser();
         boolean per = permissionService.hasPermission(userCurr, PermissionType.MODIFY, selected);
         if (!per) {
+
             notifications.create("Bạn không có quyền tải xuống File này.")
-                    .withType(Notifications.Type.ERROR)
+                    .withType(Notifications.Type.ERROR).withDuration(2000)
+                    .withCloseable(false)
                     .show();
             return;
         }
@@ -148,7 +144,11 @@ public class UploadAndUploadFileAction extends ItemTrackingAction<FileDescriptor
             byte[] bytes = fileDescriptorService.downloadFile(selected);
             downloader.download(bytes, selected.getName());
         } catch (Exception e) {
-            throw new RuntimeException("Download failed for: " + selected.getName(), e);
+//            throw new RuntimeException("Download failed for: " + selected.getName(), e);
+            notifications.create("Lỗi tải xuống ")
+                    .withType(Notifications.Type.ERROR)
+                    .show();
+
         }
     }
 }

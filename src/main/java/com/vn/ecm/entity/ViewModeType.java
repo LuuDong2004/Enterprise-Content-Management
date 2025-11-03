@@ -29,7 +29,6 @@ public enum ViewModeType implements EnumClass<String> {
         }
         return null;
     }
-
     @Override
     public String toString() {
         switch (this) {
@@ -43,4 +42,5 @@ public enum ViewModeType implements EnumClass<String> {
                 return super.toString();
         }
     }
+
 }

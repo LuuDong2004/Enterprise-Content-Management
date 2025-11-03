@@ -56,6 +56,7 @@ public class SourceStorage {
     }
 
     public void setName(String name) {
+
         this.name = name;
     }
 
@@ -120,7 +121,7 @@ public class SourceStorage {
     }
 
     public void setBucket(String bucket) {
-        this.bucket = bucket;
+        this.bucket = bucket.toLowerCase();
     }
 
     public String getChunkSize() {

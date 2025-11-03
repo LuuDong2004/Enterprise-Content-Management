@@ -20,26 +20,27 @@
         <formLayout id="form" dataContainer="sourceStorageDc">
             <responsiveSteps>
                 <responsiveStep minWidth="0" columns="1"/>
-                <responsiveStep minWidth="40em" columns="2"/>
+                <responsiveStep minWidth="40em" columns="1"/>
             </responsiveSteps>
         <textField id="nameField" required="true" property="name"/>
-        <select id="typeField"  required="true" property="type"/>
+        <select id="typeField"  readOnly="true" property="type"/>
+
         </formLayout>
 
         <!-- ===== S3 group ===== -->
         <formLayout id="s3Group" dataContainer="sourceStorageDc">
             <responsiveSteps>
                 <responsiveStep minWidth="0" columns="1"/>
-                <responsiveStep minWidth="40em" columns="2"/>
+                <responsiveStep minWidth="40em" columns="1"/>
             </responsiveSteps>
             <textField id="accessKeyField" required="true" property="accessKey"/>
-            <textField id="secretAccessKeyField" required="true" property="secretAccessKey"/>
+            <textField id="secretAccessKeyField" required="true"  property="secretAccessKey" />
             <textField id="regionField" required="false" property="region"/>
             <textField id="bucketField" property="bucket" required="true" />
             <textField id="endpointUrlField" required="true" property="endpointUrl"/>
 <!--            <textField id="chunkSizeField" required="true" property="chunkSize"/>-->
             <checkbox id="activeS3Field" property="active"/>
-            <checkbox id="usePathStyleBucketAddressingField" property="usePathStyleBucketAddressing"/>
+<!--            <checkbox id="usePathStyleBucketAddressingField" property="usePathStyleBucketAddressing"/>-->
         </formLayout>
 
         <!-- ===== WEB Directory group ===== -->
@@ -56,6 +57,9 @@
         <hbox id="detailActions">
             <button id="saveAndCloseButton" action="saveAction"/>
             <button id="closeButton" action="closeAction"/>
+            <button id="testConnection"
+                    text="Test S3"
+                    title="Kiểm tra kết nối đến kho lưu trữ"/>
         </hbox>
     </layout>
 </view>

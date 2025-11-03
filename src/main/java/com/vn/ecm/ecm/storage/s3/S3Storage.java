@@ -132,16 +132,10 @@ public class S3Storage implements FileStorage {
         try {
             s3.headBucket(HeadBucketRequest.builder().bucket(bucket).build());
         } catch (S3Exception e) {
-            try {
-                s3.createBucket(CreateBucketRequest.builder().bucket(bucket).build());
-            } catch (S3Exception ce) {
-                // If another node created it concurrently or provider forbids create, ignore if now exists
-                try {
-                    s3.headBucket(HeadBucketRequest.builder().bucket(bucket).build());
-                } catch (Exception ignored) {
-                    throw ce; // rethrow original create error if still not available
-                }
+            if (e.statusCode() == 404) {
+                throw new RuntimeException("Bucket không tồn tại: " + bucket);
             }
+            throw new RuntimeException("Lỗi kiểm tra bucket: " + bucket + " | " + e.awsErrorDetails().errorMessage(), e);
         }
     }
 }

@@ -20,6 +20,7 @@ public class PermissionService {
         this.dataManager = dataManager;
     }
 
+    @Transactional
     //SAVE permission (User)
     public void savePermission(Collection<Permission> permissions, User user, Folder folder) {
         normalizePermissions(permissions);
@@ -41,6 +42,7 @@ public class PermissionService {
         propagateToChildren(user, null, folder, mask);
     }
 
+    @Transactional
     public void savePermission(Collection<Permission> permissions, User user, FileDescriptor FileDescriptor) {
         normalizePermissions(permissions);
         int mask = buildMask(permissions);
@@ -58,6 +60,7 @@ public class PermissionService {
         dataManager.save(permission);
     }
 
+    @Transactional
     // SAVE permission (Role)
     public void savePermission(Collection<Permission> permissions, ResourceRoleEntity role, Folder folder) {
         normalizePermissions(permissions);
@@ -78,6 +81,7 @@ public class PermissionService {
         propagateToChildren(null, role, folder, mask);
     }
 
+    @Transactional
     public void savePermission(Collection<Permission> permissions, ResourceRoleEntity role, FileDescriptor FileDescriptor) {
         normalizePermissions(permissions);
         int mask = buildMask(permissions);
@@ -94,6 +98,8 @@ public class PermissionService {
         permission.setInherited(false);
         dataManager.save(permission);
     }
+
+    @Transactional
     // LOAD permission
     public Permission loadPermission(User user, Folder folder) {
         return dataManager.load(Permission.class)
@@ -104,6 +110,7 @@ public class PermissionService {
                 .orElse(null);
     }
 
+    @Transactional
     public Permission loadPermission(User user, FileDescriptor FileDescriptor) {
         return dataManager.load(Permission.class)
                 .query("select p from Permission p where p.user = :user and p.file = :FileDescriptor")
@@ -113,6 +120,7 @@ public class PermissionService {
                 .orElse(null);
     }
 
+    @Transactional
     public Permission loadPermission(ResourceRoleEntity role, Folder folder) {
         return dataManager.load(Permission.class)
                 .query("select p from Permission p where p.roleCode = :roleCode and p.folder = :folder")
@@ -122,6 +130,7 @@ public class PermissionService {
                 .orElse(null);
     }
 
+    @Transactional
     public Permission loadPermission(ResourceRoleEntity role, FileDescriptor FileDescriptor) {
         return dataManager.load(Permission.class)
                 .query("select p from Permission p where p.roleCode = :roleCode and p.file = :FileDescriptor")
@@ -131,6 +140,7 @@ public class PermissionService {
                 .orElse(null);
     }
 
+    @Transactional
     // HAS permission
     public boolean hasPermission(User user, PermissionType type, FileDescriptor FileDescriptor) {
         Permission p = loadPermission(user, FileDescriptor);
@@ -141,6 +151,7 @@ public class PermissionService {
         return folder != null && hasPermission(user, type, folder);
     }
 
+    @Transactional
     public boolean hasPermission(User user, PermissionType type, Folder folder) {
         Folder cur = folder;
         while (cur != null) {
@@ -211,9 +222,6 @@ public class PermissionService {
         return String.join("/", parts);
     }
 
-    /**
-     * Build full path for a FileDescriptor: Root/.../parentFolder/FileDescriptorName
-     */
     public String getFullPath(FileDescriptor FileDescriptor) {
         if (FileDescriptor == null) return "";
         String folderPath = getFullPath(FileDescriptor.getFolder());
@@ -843,4 +851,60 @@ public class PermissionService {
         }
     }
 
+    @Transactional
+    public void initializeFilePermission(User user, FileDescriptor fileDescriptor) {
+        if (user == null || fileDescriptor == null) {
+            return;
+        }
+        Folder parentFolder = fileDescriptor.getFolder();
+        // Find the nearest ancestor permission for this user
+        Permission ancestorPerm = findNearestAncestorPermission(user, parentFolder);
+        int inheritedMask;
+        String inheritedFromValue;
+        if (ancestorPerm != null) {
+            // Inherit mask from ancestor
+            inheritedMask = Optional.ofNullable(ancestorPerm.getPermissionMask()).orElse(0);
+            inheritedFromValue = ancestorIdentifier(ancestorPerm);
+        } else {
+            // No ancestor permission found, grant FULL permission to the uploader
+            inheritedMask = PermissionType.FULL.getValue();
+            inheritedFromValue = null;
+        }
+        // Create permission for the file
+        Permission filePerm = dataManager.create(Permission.class);
+        filePerm.setUser(user);
+        filePerm.setFile(fileDescriptor);
+        filePerm.setPermissionMask(inheritedMask);
+        filePerm.setInherited(ancestorPerm != null); // true if inherited, false if original owner
+        filePerm.setInheritEnabled(true);
+        filePerm.setInheritedFrom(inheritedFromValue);
+        filePerm.setAppliesTo(AppliesTo.THIS_FOLDER_ONLY);
+
+        dataManager.save(filePerm);
+    }
+
+    @Transactional
+    public void initializeFolderPermission(User user, Folder folder) {
+        if (user == null || folder == null) return;
+        Folder parentFolder = folder.getParent();
+        Permission ancestorPerm = findNearestAncestorPermission(user, parentFolder);
+        int inheritedMask;
+        String inheritedFromValue;
+        if (ancestorPerm != null) {
+            inheritedMask = Optional.ofNullable(ancestorPerm.getPermissionMask()).orElse(0);
+            inheritedFromValue = ancestorIdentifier(ancestorPerm);
+        } else {
+            inheritedMask = PermissionType.FULL.getValue();
+            inheritedFromValue = null;
+        }
+        Permission folderPerm = dataManager.create(Permission.class);
+        folderPerm.setUser(user);
+        folderPerm.setFolder(folder);
+        folderPerm.setPermissionMask(inheritedMask);
+        folderPerm.setInherited(ancestorPerm != null);
+        folderPerm.setInheritEnabled(true);
+        folderPerm.setInheritedFrom(inheritedFromValue);
+        folderPerm.setAppliesTo(AppliesTo.THIS_FOLDER_SUBFOLDERS_FILES);
+        dataManager.save(folderPerm);
+    }
 }

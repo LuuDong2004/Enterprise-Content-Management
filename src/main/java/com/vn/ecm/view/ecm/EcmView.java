@@ -1,5 +1,4 @@
 package com.vn.ecm.view.ecm;
-
 //v1
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
@@ -10,11 +9,13 @@ import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.data.selection.SelectionEvent;
 import com.vaadin.flow.router.*;
+import com.vn.ecm.ecm.storage.s3.S3ClientFactory;
 import com.vn.ecm.entity.*;
 import com.vn.ecm.service.ecm.PermissionService;
-import com.vn.ecm.service.ecm.IFileDescriptorService;
-import com.vn.ecm.service.ecm.IFolderService;
+import com.vn.ecm.service.ecm.folderandfile.IFolderService;
+import com.vn.ecm.service.ecm.folderandfile.Impl.FileDescriptorService;
 import com.vn.ecm.view.main.MainView;
+import com.vn.ecm.view.sourcestorage.SourceStorageListView;
 import com.vn.ecm.view.viewmode.ViewModeFragment;
 import io.jmix.core.DataManager;
 
@@ -30,6 +31,7 @@ import io.jmix.flowui.component.grid.TreeDataGrid;
 import io.jmix.flowui.component.upload.FileStorageUploadField;
 import io.jmix.flowui.Actions;
 import io.jmix.flowui.kit.action.ActionPerformedEvent;
+import io.jmix.flowui.kit.action.BaseAction;
 import io.jmix.flowui.kit.component.button.JmixButton;
 import io.jmix.flowui.kit.component.upload.event.FileUploadSucceededEvent;
 import io.jmix.flowui.model.CollectionContainer;
@@ -90,14 +92,15 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     @Autowired
     private IFolderService folderService;
     @Autowired
-    private IFileDescriptorService fileDescriptorService;
+    private FileDescriptorService fileDescriptorService;
     @ViewComponent
     private FileStorageUploadField fileRefField;
-
     @ViewComponent
     private ViewModeFragment viewModeFragment;
     @ViewComponent
-    private com.vaadin.flow.component.orderedlayout.HorizontalLayout iconTiles;
+    private HorizontalLayout iconTiles;
+    @Autowired
+    private S3ClientFactory s3ClientFactory;
 
 
     @Subscribe
@@ -112,6 +115,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         uploadAction.setFolderSupplier(() -> foldersTree.getSingleSelectedItem());
         uploadAction.setStorageSupplier(() -> currentStorage);
         //download
+
         downloadAction.setMode(UploadAndUploadFileAction.Mode.DOWNLOAD);
         downloadAction.setTarget(fileDataGird);
         if (btnDownload.getAction() == null) {
@@ -123,11 +127,14 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     public void beforeEnter(BeforeEnterEvent event) {
         String idParam = event.getRouteParameters().get("id").orElseThrow();
         this.id = UUID.fromString(idParam);
-
         this.currentStorage = dataManager.load(SourceStorage.class)
                 .id(id)
                 .optional()
                 .orElse(null);
+        if (currentStorage == null || Boolean.FALSE.equals(currentStorage.getActive())) {
+            notifications.show(messageBundle.getMessage("ecmSourceStorageInactiveAlert"));
+            event.rerouteTo(SourceStorageListView.class);
+        }
     }
 
     @Override
@@ -149,6 +156,8 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         fileRefField.setEnabled(selection);
         User user = (User) currentAuthentication.getUser();
         if (selection) {
+            boolean hasUploadPermission = permissionService.hasPermission(user, PermissionType.CREATE, selected);
+            fileRefField.setEnabled(hasUploadPermission);
             loadAccessibleFiles(user, selected);
         } else {
             filesDc.getMutableItems().clear();
@@ -159,19 +168,34 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     @Subscribe("fileRefField")
     public void onFileRefFieldFileUploadSucceeded(final FileUploadSucceededEvent<FileStorageUploadField> event) {
         User user = (User) currentAuthentication.getUser();
-        boolean per = permissionService.hasPermission(user,PermissionType.CREATE,foldersTree.getSingleSelectedItem());
+        boolean per = permissionService.hasPermission(user, PermissionType.CREATE, foldersTree.getSingleSelectedItem());
         if (!per) {
             notifications.create("Bạn không có quyền tải file này lên hệ thống.")
                     .withType(Notifications.Type.ERROR)
+                    .withDuration(2000)
+                    .withCloseable(false)
                     .show();
             return;
         }
-        uploadAction.setUploadEvent(event);
-        uploadAction.execute();
-        loadAccessibleFiles(user, foldersTree.getSingleSelectedItem());
-
-        notifications.show(messageBundle.getMessage("ecmUploadFileAlert"));
+        try {
+            uploadAction.setUploadEvent(event);
+            uploadAction.execute();
+            loadAccessibleFiles(user, foldersTree.getSingleSelectedItem());
+            notifications.create(messageBundle.getMessage("ecmUploadFileAlert"))
+                    .withType(Notifications.Type.SUCCESS)
+                    .withDuration(2000)
+                    .withCloseable(false)
+                    .show();
+        }catch(Exception e){
+            notifications.create("Lỗi tải lên : " + event.getFileName())
+                    .withType(Notifications.Type.ERROR)
+                    .withDuration(4000)
+                    .withCloseable(false)
+                    .show();
+        }
     }
+
+
 
     //css
     private void initFolderGridColumn() {
@@ -217,7 +241,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     @Subscribe("foldersTree.createFolder")
     public void onFoldersTreeCreateFolder(final ActionPerformedEvent event) {
         User user = (User) currentAuthentication.getUser();
-//
         dialogs.createInputDialog(this)
                 .withHeader("Tạo mới folder")
                 .withParameters(
@@ -250,6 +273,8 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         if (!per) {
             notifications.create("Bạn không có quyền xóa thư mục này.")
                     .withType(Notifications.Type.ERROR)
+                    .withDuration(2000)
+                    .withCloseable(false)
                     .show();
             return;
         }
@@ -270,18 +295,17 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         });
         dlg.open();
     }
+
     @Subscribe("foldersTree.renameFolder")
     public void onFoldersTreeRenameFolder(final ActionPerformedEvent event) {
         Folder selected = foldersTree.getSingleSelectedItem();
-        if (selected == null) {
-            notifications.show("Vui lòng chọn thư mục để đổi tên");
-            return;
-        }
         User userCurr = (User) currentAuthentication.getUser();
         boolean per = permissionService.hasPermission(userCurr, PermissionType.MODIFY, selected);
         if (!per) {
             notifications.create("Bạn không có quyền đổi tên thư mục này.")
                     .withType(Notifications.Type.ERROR)
+                    .withDuration(2000)
+                    .withCloseable(false)
                     .show();
             return;
         }
@@ -310,15 +334,13 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     @Subscribe("fileDataGird.deleteFile")
     public void onFileDataGirdDeleteFile(final ActionPerformedEvent event) {
         FileDescriptor selected = fileDataGird.getSingleSelectedItem();
-        if (selected == null) {
-            notifications.create("Vui lòng chọn tệp để xóa").show();
-            return;
-        }
         User userCurr = (User) currentAuthentication.getUser();
         boolean per = permissionService.hasPermission(userCurr, PermissionType.FULL, selected);
         if (!per) {
             notifications.create("Bạn không có quyền xóa File này.")
                     .withType(Notifications.Type.ERROR)
+                    .withDuration(2000)
+                    .withCloseable(false)
                     .show();
             return;
         }
@@ -339,6 +361,41 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         dlg.open();
     }
 
+    @Subscribe("fileDataGird.downloadFile")
+    public void onFileDataGirdDownloadFile(final ActionPerformedEvent event) {
+        Folder selected = foldersTree.getSingleSelectedItem();
+        User user = (User) currentAuthentication.getUser();
+        boolean canDownload = permissionService.hasPermission(user, PermissionType.READ, selected);
+        if (!canDownload) {
+            notifications.create("Bạn không có quyền tải xuống tệp này.")
+                    .withCloseable(false)
+                    .withDuration(2000)
+                    .withType(Notifications.Type.ERROR)
+                    .show();
+            return;
+        }
+        downloadAction.setTarget(fileDataGird);
+        downloadAction.execute();
+    }
+
+
+
+    @Subscribe("fileDataGird.renameFile")
+    public void onFileDataGirdRenameFile(final ActionPerformedEvent event) {
+        FileDescriptor selected = fileDataGird.getSingleSelectedItem();
+        User userCurr = (User) currentAuthentication.getUser();
+        boolean per = permissionService.hasPermission(userCurr, PermissionType.MODIFY, selected);
+        if (!per) {
+            notifications.create("Bạn không có quyền đổi tên tệp này.")
+                    .withType(Notifications.Type.ERROR)
+                    .withCloseable(false)
+                    .withDuration(2000)
+                    .show();
+            return;
+        }
+        notifications.show("Chức năng đang phát triển");
+    }
+
     private void loadAccessibleFolders(User user) {
         List<Folder> accessibleFolders = permissionService.getAccessibleFolders(user, currentStorage);
         foldersDc.setItems(accessibleFolders);
@@ -348,6 +405,8 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         List<FileDescriptor> accessibleFiles = permissionService.getAccessibleFiles(user, currentStorage, folder);
         filesDc.setItems(accessibleFiles);
     }
+
+
 
 }
 
