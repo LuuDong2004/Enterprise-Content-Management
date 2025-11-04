@@ -61,27 +61,11 @@
         <action id="downloadAction" type="UploadDownloadFile"/>
     </actions>
     <layout>
-        <hbox id="rightHbox"
-              spacing="true"
-              width="100%"
-              alignItems="CENTER"
-              padding="true">
-            <fileStorageUploadField id="fileRefField"
-                                    property="fileRef"
-                                    dataContainer="filesDc"
-                                    uploadText="Tải lên"
-                                    dropAllowed="true"
-                                    clearButtonVisible="true"
-                                    maxFileSize="1073741824"
-                                    fileStoragePutMode="MANUAL"/>
-            <button id="btnDownload" text="Tải xuống" action="downloadAction"/>
-            <fragment id="viewModeFragment" class="com.vn.ecm.view.viewmode.ViewModeFragment"/>
-            <button id="previewBtn"
-                    text="Xem chi tiết"
-                    classNames="ml-auto preview-btn off"/>
-        </hbox>
-        <vbox width="100%" height="100%">
-            <split width="100%" height="100%" splitterPosition="25">
+        <split width="100%" height="100%" splitterPosition="25">
+            <vbox>
+                <hbox>
+                    <button id="newFolderBtn" text="Tạo mới"/>
+                </hbox>
                 <treeDataGrid id="foldersTree"
                               dataContainer="foldersDc"
                               hierarchyProperty="parent"
@@ -98,71 +82,79 @@
                         <action id="assignPermission" text="Phân quyền" type="assignPermission"/>
                     </actions>
                 </treeDataGrid>
-                <split width="100%" height="100%" splitterPosition="75">
-                    <vbox width="100%" height="100%">
-                        <hbox id="iconTiles" visible="false" classNames="icon-tiles"/>
-                        <dataGrid id="fileDataGird"
-                                  width="100%"
-                                  height="100%"
-                                  dataContainer="filesDc"
-                                  themeNames="compact">
-                            <actions>
-                                <action id="deleteFile" type="fileActionSelected" text="Xóa"/>
-                                <action id="renameFile" type="fileActionSelected" text="Đổi tên"/>
-                                <action id="downloadFile" type="fileActionSelected" text="Tải xuống"/>
-                                <action id="onObjectAssignPermission" text="Phân quyền"
-                                        type="onObjectAssignPermission"/>
-                            </actions>
-                            <columns>
-                                <column property="name"/>
-                                <column property="size"/>
-                                <column property="extension"/>
-                                <column property="lastModified"/>
-                            </columns>
-                        </dataGrid>
-                    </vbox>
-                    <vbox id="metadataPanel"
-                          spacing="true"
-                          padding="true"
-                          width="100%"
-                          height="100%"
-                          themeNames="compact"
-                          visible="false"
-                          enabled="false">
-                        <hbox spacing="true" alignItems="CENTER" justifyContent="BETWEEN" padding="true"
-                              classNames="metadataTitle" width="100%">
-                            <h4 text="Thông tin tệp"/>
-                        </hbox>
+            </vbox>
 
-                        <vbox id="metadataContent" width="100%" height="100%" classNames="metadata-content">
-                            <hbox spacing="true" alignItems="CENTER" classNames="metadata-row">
-                                <h5 text="Tệp:" classNames="metadata-label"/>
-                                <span id="metadataName" property="name" dataContainer="metadataFileDc"/>
-                            </hbox>
-                            <hbox spacing="true" alignItems="CENTER" classNames="metadata-row">
-                                <h5 text="Kích cỡ:" classNames="metadata-label"/>
-                                <span id="metadataSize" property="size" dataContainer="metadataFileDc"/>
-                            </hbox>
-                            <hbox spacing="true" alignItems="CENTER" classNames="metadata-row">
-                                <h5 text="Phần mở rộng:" classNames="metadata-label"/>
-                                <span id="metadataExtension" property="extension" dataContainer="metadataFileDc"/>
-                            </hbox>
-                            <hbox spacing="true" alignItems="CENTER" classNames="metadata-row">
-                                <h5 text="Ngày sửa:" classNames="metadata-label"/>
-                                <span id="metadataLastModified" property="lastModified" dataContainer="metadataFileDc"/>
-                            </hbox>
-                            <hbox spacing="true" alignItems="CENTER" classNames="metadata-row">
-                                <h5 text="Người tạo:" classNames="metadata-label"/>
-                                <span id="metadataCreateBy" dataContainer="metadataFileDc" property="createBy"/>
-                            </hbox>
-                            <hbox spacing="true" alignItems="CENTER" classNames="metadata-row">
-                                <h5 text="Nội dung tệp:" classNames="metadata-label"/>
-                                <span id="metadataContentType" dataContainer="metadataFileDc"/>
-                            </hbox>
-                        </vbox>
+            <split width="100%" height="100%" splitterPosition="75">
+                <vbox>
+                    <hbox>
+                        <fileStorageUploadField id="fileRefField"
+                                                property="fileRef"
+                                                dataContainer="filesDc"
+                                                uploadText="Tải lên"
+                                                dropAllowed="true"
+                                                clearButtonVisible="true"
+                                                maxFileSize="1073741824"
+                                                fileStoragePutMode="MANUAL"/>
+                        <button id="btnDownload" text="Tải xuống" action="downloadAction"/>
+                        <fragment id="viewModeFragment" class="com.vn.ecm.view.viewmode.ViewModeFragment"/>
+                        <button id="previewBtn" text="Xem chi tiết"/>
+                    </hbox>
+                    <hbox id="iconTiles" visible="false" classNames="icon-tiles"/>
+                    <dataGrid id="fileDataGird"
+                              width="100%"
+                              height="100%"
+                              dataContainer="filesDc"
+                              themeNames="compact">
+                        <actions>
+                            <action id="deleteFile" type="fileActionSelected" text="Xóa"/>
+                            <action id="renameFile" type="fileActionSelected" text="Đổi tên"/>
+                            <action id="downloadFile" type="fileActionSelected" text="Tải xuống"/>
+                            <action id="onObjectAssignPermission" text="Phân quyền"
+                                    type="onObjectAssignPermission"/>
+                        </actions>
+                        <columns>
+                            <column property="name"/>
+                            <column property="size"/>
+                            <column property="extension"/>
+                            <column property="lastModified"/>
+                        </columns>
+                    </dataGrid>
+                </vbox>
+
+                <vbox id="metadataPanel">
+                    <hbox spacing="true" alignItems="CENTER" justifyContent="BETWEEN" padding="true"
+                          classNames="metadataTitle" width="100%">
+                        <h4 text="Thông tin tệp"/>
+                    </hbox>
+
+                    <vbox id="metadataContent" width="100%" height="100%" classNames="metadata-content">
+                        <hbox spacing="true" alignItems="CENTER" classNames="metadata-row">
+                            <h5 text="Tệp:" classNames="metadata-label"/>
+                            <span id="metadataName" property="name" dataContainer="metadataFileDc"/>
+                        </hbox>
+                        <hbox spacing="true" alignItems="CENTER" classNames="metadata-row">
+                            <h5 text="Kích cỡ:" classNames="metadata-label"/>
+                            <span id="metadataSize" property="size" dataContainer="metadataFileDc"/>
+                        </hbox>
+                        <hbox spacing="true" alignItems="CENTER" classNames="metadata-row">
+                            <h5 text="Phần mở rộng:" classNames="metadata-label"/>
+                            <span id="metadataExtension" property="extension" dataContainer="metadataFileDc"/>
+                        </hbox>
+                        <hbox spacing="true" alignItems="CENTER" classNames="metadata-row">
+                            <h5 text="Ngày sửa:" classNames="metadata-label"/>
+                            <span id="metadataLastModified" property="lastModified" dataContainer="metadataFileDc"/>
+                        </hbox>
+                        <hbox spacing="true" alignItems="CENTER" classNames="metadata-row">
+                            <h5 text="Người tạo:" classNames="metadata-label"/>
+                            <span id="metadataCreateBy" dataContainer="metadataFileDc" property="createBy"/>
+                        </hbox>
+                        <hbox spacing="true" alignItems="CENTER" classNames="metadata-row">
+                            <h5 text="Nội dung tệp:" classNames="metadata-label"/>
+                            <span id="metadataContentType" dataContainer="metadataFileDc"/>
+                        </hbox>
                     </vbox>
-                </split>
+                </vbox>
             </split>
-        </vbox>
+        </split>
     </layout>
 </view>

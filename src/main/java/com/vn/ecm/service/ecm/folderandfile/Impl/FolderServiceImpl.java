@@ -28,12 +28,9 @@ public class FolderServiceImpl implements IFolderService {
     @Autowired
     private CurrentAuthentication currentAuthentication;
 
-
-
     public FolderServiceImpl(Messages messages) {
         this.messages = messages;
     }
-
 
     // tạo mới folder
     @Override

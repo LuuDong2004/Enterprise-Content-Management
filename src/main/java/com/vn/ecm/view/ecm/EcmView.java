@@ -4,6 +4,7 @@ package com.vn.ecm.view.ecm;
 import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
+import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.ItemClickEvent;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
@@ -42,9 +43,12 @@ import io.jmix.flowui.view.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
+
 import java.util.List;
 import java.util.UUID;
+
 import static io.jmix.flowui.app.inputdialog.InputParameter.stringParameter;
+
 @Route(value = "source-storages/:id", layout = MainView.class)
 @ViewController("EcmView")
 @ViewDescriptor("ECM-view.xml")
@@ -104,6 +108,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     @ViewComponent
     private JmixButton previewBtn;
 
+
     @Subscribe("fileDataGird")
     public void onFileDataGirdItemClick(final ItemClickEvent<FileDescriptor> event) {
         metadataFileDc.setItem(event.getItem());
@@ -130,7 +135,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         }
         metadataPanel.setEnabled(true);
         metadataPanel.setVisible(!currentlyVisible);
-
         boolean nowVisible = metadataPanel.isVisible(); // TRẠNG THÁI MỚI
         previewBtn.setText(nowVisible ? "Ẩn chi tiết" : "Xem chi tiết");
     }
@@ -138,8 +142,10 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
 
     @Subscribe
     public void onInit(InitEvent event) {
+        previewBtn.getElement().getStyle().set("position", "fixed");
+        previewBtn.getElement().getStyle().set("right","16px");
+
         metadataPanel.setVisible(false);
-        // mode view
         viewModeFragment.bind(fileDataGird, filesDc, iconTiles);
 
         initFolderGridColumn();
