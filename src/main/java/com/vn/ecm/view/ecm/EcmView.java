@@ -1,13 +1,16 @@
 package com.vn.ecm.view.ecm;
 //v1
+import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.grid.ItemClickEvent;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.data.selection.SelectionEvent;
 import com.vaadin.flow.router.*;
 import com.vn.ecm.ecm.storage.s3.S3ClientFactory;
@@ -20,6 +23,7 @@ import com.vn.ecm.view.sourcestorage.SourceStorageListView;
 import com.vn.ecm.view.viewmode.ViewModeFragment;
 import io.jmix.core.DataManager;
 
+import io.jmix.core.entity.KeyValueEntity;
 import io.jmix.core.security.CurrentAuthentication;
 import io.jmix.flowui.DialogWindows;
 import io.jmix.flowui.Dialogs;
@@ -37,6 +41,7 @@ import io.jmix.flowui.kit.component.button.JmixButton;
 import io.jmix.flowui.kit.component.upload.event.FileUploadSucceededEvent;
 import io.jmix.flowui.model.CollectionContainer;
 import io.jmix.flowui.model.CollectionLoader;
+import io.jmix.flowui.model.InstanceContainer;
 import io.jmix.flowui.view.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.vaadin.flow.router.BeforeEnterEvent;
@@ -47,6 +52,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static io.jmix.flowui.app.inputdialog.InputParameter.stringParameter;
+import static org.apache.catalina.manager.StatusTransformer.formatSize;
 
 @Route(value = "source-storages/:id", layout = MainView.class)
 @ViewController("EcmView")
@@ -100,12 +106,20 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     private ViewModeFragment viewModeFragment;
     @ViewComponent
     private HorizontalLayout iconTiles;
-    @Autowired
-    private S3ClientFactory s3ClientFactory;
+    @ViewComponent
+    private VerticalLayout metadataPanel;
+    @ViewComponent
+    private InstanceContainer<FileDescriptor> metadataFileDc;
 
+    @Subscribe(id = "metadataBtn", subject = "clickListener")
+    public void onMetadataBtnClick(final ClickEvent<JmixButton> event) {
+        metadataPanel.setVisible(false);
+    }
 
     @Subscribe
     public void onInit(InitEvent event) {
+
+        metadataPanel.setVisible(false);
         // mode view
         viewModeFragment.bind(fileDataGird, filesDc, iconTiles);
 
@@ -116,12 +130,21 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         uploadAction.setFolderSupplier(() -> foldersTree.getSingleSelectedItem());
         uploadAction.setStorageSupplier(() -> currentStorage);
         //download
-
         downloadAction.setMode(UploadAndUploadFileAction.Mode.DOWNLOAD);
         downloadAction.setTarget(fileDataGird);
         if (btnDownload.getAction() == null) {
             btnDownload.setAction(downloadAction);
         }
+    }
+
+    @Subscribe("fileDataGird")
+    public void onFileDataGirdItemClick(final ItemClickEvent<FileDescriptor> event) {
+        metadataPanel.setVisible(true);
+        FileDescriptor selected = event.getItem();
+        metadataFileDc.setItem(selected);
+        filesDl.setParameter("storage" , currentStorage);
+        filesDl.setParameter("folder" , foldersTree.getSingleSelectedItem());
+        filesDl.load();
     }
 
     @Override
@@ -195,9 +218,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
                     .show();
         }
     }
-
-
-
     //css
     private void initFolderGridColumn() {
         //remove column by key
@@ -238,7 +258,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         });
         return hboxMain;
     }
-
     @Subscribe("foldersTree.createFolder")
     public void onFoldersTreeCreateFolder(final ActionPerformedEvent event) {
         User user = (User) currentAuthentication.getUser();
@@ -343,7 +362,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
                 })
                 .open();
     }
-
     @Subscribe("fileDataGird.deleteFile")
     public void onFileDataGirdDeleteFile(final ActionPerformedEvent event) {
         FileDescriptor selected = fileDataGird.getSingleSelectedItem();
@@ -390,8 +408,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         downloadAction.setTarget(fileDataGird);
         downloadAction.execute();
     }
-
-
 
     @Subscribe("fileDataGird.renameFile")
     public void onFileDataGirdRenameFile(final ActionPerformedEvent event) {
