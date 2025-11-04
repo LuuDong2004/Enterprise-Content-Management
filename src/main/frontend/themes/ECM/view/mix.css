@@ -1,3 +1,31 @@
 .metadataTitle {
     background: #FFEDCC!important;
 }
+
+/*css checkbox view metadata file*/
+.preview-btn {
+     border-radius: 12px;
+     padding: 3px 10px;
+     font-size: 12px;
+     border: 1px solid #ccc;
+     transition: all .2s ease;
+     cursor: pointer;
+ }
+
+.preview-btn.off {
+    background: #f4f4f4;
+    color: #555;
+}
+
+.preview-btn.on {
+    background: #e74a4a;
+    color: white;
+    border-color: #e74a4a;
+}
+
+.ml-auto {
+    margin-left: auto;   /* đẩy sát bên phải trong flex container */
+}
+
+
+

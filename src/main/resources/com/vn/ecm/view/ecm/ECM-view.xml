@@ -97,6 +97,9 @@
                                                 fileStoragePutMode="MANUAL"/>
                         <button id="btnDownload" text="Tải xuống" action="downloadAction"/>
                         <fragment id="viewModeFragment" class="com.vn.ecm.view.viewmode.ViewModeFragment"/>
+                        <button id="previewBtn"
+                                text="Xem chi tiết"
+                                classNames="ml-auto preview-btn off"/>
                     </hbox>
                     <hbox id="iconTiles" visible="false" classNames="icon-tiles"/>
                     <dataGrid id="fileDataGird"
@@ -118,12 +121,6 @@
                     </dataGrid>
                 </vbox>
                 <vbox spacing="true" padding="true" id="metadataPanel" width="100%" height="100%" themeNames="compact">
-                    <hbox>
-                        <endSlot>
-                            <button id="metadataBtn" text="Ẩn"/>
-                        </endSlot>
-                    </hbox>
-
                     <hbox spacing="true" alignItems="CENTER" justifyContent="BETWEEN" padding="true"
                           classNames="metadataTitle" width="100%">
                         <h4 text="Thông tin tệp"/>

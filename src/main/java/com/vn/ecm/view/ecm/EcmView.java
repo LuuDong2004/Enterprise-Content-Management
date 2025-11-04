@@ -111,10 +111,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     @ViewComponent
     private InstanceContainer<FileDescriptor> metadataFileDc;
 
-    @Subscribe(id = "metadataBtn", subject = "clickListener")
-    public void onMetadataBtnClick(final ClickEvent<JmixButton> event) {
-        metadataPanel.setVisible(false);
-    }
+
 
     @Subscribe
     public void onInit(InitEvent event) {
@@ -135,16 +132,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         if (btnDownload.getAction() == null) {
             btnDownload.setAction(downloadAction);
         }
-    }
-
-    @Subscribe("fileDataGird")
-    public void onFileDataGirdItemClick(final ItemClickEvent<FileDescriptor> event) {
-        metadataPanel.setVisible(true);
-        FileDescriptor selected = event.getItem();
-        metadataFileDc.setItem(selected);
-        filesDl.setParameter("storage" , currentStorage);
-        filesDl.setParameter("folder" , foldersTree.getSingleSelectedItem());
-        filesDl.load();
     }
 
     @Override
@@ -433,6 +420,11 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     private void loadAccessibleFiles(User user, Folder folder) {
         List<FileDescriptor> accessibleFiles = permissionService.getAccessibleFiles(user, currentStorage, folder);
         filesDc.setItems(accessibleFiles);
+    }
+
+    @Subscribe(id = "previewBtn", subject = "clickListener")
+    public void onPreviewBtnClick(final ClickEvent<JmixButton> event) {
+        metadataPanel.setVisible(!metadataPanel.isVisible());
     }
 
 
