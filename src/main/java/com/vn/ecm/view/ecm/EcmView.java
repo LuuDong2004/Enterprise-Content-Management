@@ -1,9 +1,9 @@
 package com.vn.ecm.view.ecm;
 //v1
+
 import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
-import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.ItemClickEvent;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
@@ -13,7 +13,6 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.data.selection.SelectionEvent;
 import com.vaadin.flow.router.*;
-import com.vn.ecm.ecm.storage.s3.S3ClientFactory;
 import com.vn.ecm.entity.*;
 import com.vn.ecm.service.ecm.PermissionService;
 import com.vn.ecm.service.ecm.folderandfile.IFolderService;
@@ -22,8 +21,6 @@ import com.vn.ecm.view.main.MainView;
 import com.vn.ecm.view.sourcestorage.SourceStorageListView;
 import com.vn.ecm.view.viewmode.ViewModeFragment;
 import io.jmix.core.DataManager;
-
-import io.jmix.core.entity.KeyValueEntity;
 import io.jmix.core.security.CurrentAuthentication;
 import io.jmix.flowui.DialogWindows;
 import io.jmix.flowui.Dialogs;
@@ -36,7 +33,6 @@ import io.jmix.flowui.component.grid.TreeDataGrid;
 import io.jmix.flowui.component.upload.FileStorageUploadField;
 import io.jmix.flowui.Actions;
 import io.jmix.flowui.kit.action.ActionPerformedEvent;
-import io.jmix.flowui.kit.action.BaseAction;
 import io.jmix.flowui.kit.component.button.JmixButton;
 import io.jmix.flowui.kit.component.upload.event.FileUploadSucceededEvent;
 import io.jmix.flowui.model.CollectionContainer;
@@ -46,14 +42,9 @@ import io.jmix.flowui.view.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
-
 import java.util.List;
-
 import java.util.UUID;
-
 import static io.jmix.flowui.app.inputdialog.InputParameter.stringParameter;
-import static org.apache.catalina.manager.StatusTransformer.formatSize;
-
 @Route(value = "source-storages/:id", layout = MainView.class)
 @ViewController("EcmView")
 @ViewDescriptor("ECM-view.xml")
@@ -110,12 +101,43 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     private VerticalLayout metadataPanel;
     @ViewComponent
     private InstanceContainer<FileDescriptor> metadataFileDc;
+    @ViewComponent
+    private JmixButton previewBtn;
 
+    @Subscribe("fileDataGird")
+    public void onFileDataGirdItemClick(final ItemClickEvent<FileDescriptor> event) {
+        metadataFileDc.setItem(event.getItem());
+    }
+
+    @Subscribe(id = "previewBtn", subject = "clickListener")
+    public void onPreviewBtnClick(final ClickEvent<JmixButton> event) {
+        boolean selection = fileDataGird.getSingleSelectedItem() != null;
+        boolean currentlyVisible = metadataPanel.isVisible();
+
+        if (!selection) {
+            if (currentlyVisible) {
+                metadataPanel.setVisible(false);
+                metadataPanel.setEnabled(false);
+                previewBtn.setText("Xem chi tiết");
+            } else {
+                notifications.create("Vui lòng chọn tệp để xem chi tiết")
+                        .withDuration(2000)
+                        .withCloseable(false)
+                        .withType(Notifications.Type.WARNING)
+                        .show();
+            }
+            return;
+        }
+        metadataPanel.setEnabled(true);
+        metadataPanel.setVisible(!currentlyVisible);
+
+        boolean nowVisible = metadataPanel.isVisible(); // TRẠNG THÁI MỚI
+        previewBtn.setText(nowVisible ? "Ẩn chi tiết" : "Xem chi tiết");
+    }
 
 
     @Subscribe
     public void onInit(InitEvent event) {
-
         metadataPanel.setVisible(false);
         // mode view
         viewModeFragment.bind(fileDataGird, filesDc, iconTiles);
@@ -197,7 +219,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
                     .withDuration(2000)
                     .withCloseable(false)
                     .show();
-        }catch(Exception e){
+        } catch (Exception e) {
             notifications.create("Lỗi tải lên : " + event.getFileName())
                     .withType(Notifications.Type.ERROR)
                     .withDuration(4000)
@@ -205,6 +227,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
                     .show();
         }
     }
+
     //css
     private void initFolderGridColumn() {
         //remove column by key
@@ -245,11 +268,12 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         });
         return hboxMain;
     }
+
     @Subscribe("foldersTree.createFolder")
     public void onFoldersTreeCreateFolder(final ActionPerformedEvent event) {
         User user = (User) currentAuthentication.getUser();
         Folder selected = foldersTree.getSingleSelectedItem();
-        if(selected != null) {
+        if (selected != null) {
             boolean per = permissionService.hasPermission(user, PermissionType.CREATE, selected);
             if (!per) {
                 notifications.create("Bạn không có quyền tạo folder")
@@ -349,6 +373,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
                 })
                 .open();
     }
+
     @Subscribe("fileDataGird.deleteFile")
     public void onFileDataGirdDeleteFile(final ActionPerformedEvent event) {
         FileDescriptor selected = fileDataGird.getSingleSelectedItem();
@@ -421,12 +446,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         List<FileDescriptor> accessibleFiles = permissionService.getAccessibleFiles(user, currentStorage, folder);
         filesDc.setItems(accessibleFiles);
     }
-
-    @Subscribe(id = "previewBtn", subject = "clickListener")
-    public void onPreviewBtnClick(final ClickEvent<JmixButton> event) {
-        metadataPanel.setVisible(!metadataPanel.isVisible());
-    }
-
 
 
 }

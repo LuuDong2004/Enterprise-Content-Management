@@ -134,7 +134,7 @@ public class UploadAndUploadFileAction extends ItemTrackingAction<FileDescriptor
             return;
         }
         User userCurr = (User) currentAuthentication.getUser();
-        boolean per = permissionService.hasPermission(userCurr, PermissionType.MODIFY, selected);
+        boolean per = permissionService.hasPermission(userCurr, PermissionType.READ, selected);
         if (!per) {
             notifications.create("Bạn không có quyền tải xuống File này.")
                     .withType(Notifications.Type.ERROR).withDuration(2000)
