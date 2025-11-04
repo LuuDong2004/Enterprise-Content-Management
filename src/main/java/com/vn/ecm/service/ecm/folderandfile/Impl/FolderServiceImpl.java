@@ -42,6 +42,7 @@ public class FolderServiceImpl implements IFolderService {
                 folder.getSourceStorage(),
                 desiredName
         );
+
         Folder f = dataManager.create(Folder.class);
         f.setId(UUID.randomUUID());
         f.setName(uniqueName);
@@ -178,14 +179,17 @@ public class FolderServiceImpl implements IFolderService {
         if(folder == null || newName == null || newName.isBlank()){
             return null;
         }
+        String name = generateUniqueName(
+                folder.getParent(),
+                folder.getSourceStorage(),
+                newName
+        );
 
-        folder.setName(newName);
+        folder.setName(name);
         folder.setFullPath(buildFolderPath(folder));
         folder.setCreatedDate(LocalDateTime.now());
 
-
         Folder saved = dataManager.save(folder);
-
         // Cập nhật fullPath cho toàn bộ folder con (nếu có)
         updateChildFullPaths(saved);
 
