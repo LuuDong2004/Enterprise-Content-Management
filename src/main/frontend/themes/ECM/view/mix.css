@@ -4,6 +4,136 @@
 #metadataPanel {
     padding-top: 48px;
 }
+/* ===== Confirm Replace (simple Windows-like) ===== */
+/* ================== Metadata panel CSS (giữ nguyên của bạn) ================== */
+.metadataTitle {
+    background: #FFEDCC!important;
+}
+#metadataPanel {
+    padding-top: 48px;
+}
+
+
+/* ================== Confirm Replace (Windows-like) ================== */
+.confirm-replace-root {
+    width: 480px !important;
+    padding: 0;
+    gap: 10px;
+    color: var(--lumo-body-text-color);
+}
+
+/* Banner: icon cảnh báo + tiêu đề */
+.confirm-replace-root .banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 0 2px 0;
+}
+
+.confirm-replace-root .warming-icon {
+    --size: 28px;
+    width: var(--size) !important;
+    height: var(--size) !important;
+    color: #d6b400 !important;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+.confirm-replace-root vaadin-icon.warming-icon::part(icon) {
+    fill: #d6b400;
+}
+
+.confirm-replace-root .banner h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+}
+.confirm-replace-root .banner span {
+    font-size: 13px;
+    color: var(--lumo-secondary-text-color);
+}
+
+
+/* ✅ Dịch phần so sánh sang phải (đã chỉnh 96px → 88px) */
+.confirm-replace-root .indent {
+    padding-left: 88px;
+}
+.confirm-replace-root .between span {
+    padding-left: 88px;
+}
+
+
+/* Tiêu đề phần hỏi */
+.confirm-replace-root .question h4 {
+    margin: 4px 0 2px 0;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+
+/* Hàng hiển thị folder */
+.confirm-replace-root .folder-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 6px 0;
+}
+
+/* ✅ Icon folder to hơn */
+.confirm-replace-root .folder-icon {
+    --size: 46px;
+    width: var(--size);
+    height: var(--size);
+    color: #d6b400 !important;
+    flex-shrink: 0;
+}
+.confirm-replace-root .folder-icon vaadin-icon,
+.confirm-replace-root .folder-icon svg {
+    fill: #d6b400 !important;
+}
+vaadin-icon.folder-icon::part(icon) { fill: #d6b400; }
+
+
+/* Text folder (tên + ngày tạo) */
+.confirm-replace-root .folder-text {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+.confirm-replace-root .folder-text .name {
+    margin: 0;
+    font-weight: 600;
+}
+.confirm-replace-root .date-line {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+}
+.confirm-replace-root .date-line .label {
+    margin: 0;
+    font-weight: 600;
+    font-size: 13px;
+}
+.confirm-replace-root .date-line .date {
+    margin: 0;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+}
+
+
+/* ================== Buttons (trả về mặc định Lumo) ================== */
+.confirm-replace-root .btn.win,
+.confirm-replace-root .btn.win[theme~="primary"] {
+    all: revert;   /* Xóa toàn bộ style nút đã custom */
+}
+
+.confirm-replace-root .actions {
+    margin-top: 8px;
+    gap: 8px;
+}
+
+
+
+
 
 
 
