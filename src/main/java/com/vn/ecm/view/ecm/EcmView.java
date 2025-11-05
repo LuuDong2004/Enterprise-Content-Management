@@ -255,9 +255,8 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
                 )
                 .withActions(DialogActions.OK_CANCEL)
                 .withCloseListener(closeEvent -> {
-                    if (!closeEvent.closedWith(DialogOutcome.OK)) return;
-
                     String inputName = closeEvent.getValue("name");
+                    String uniqueName = folderService.generateUniqueName(parent, currentStorage, inputName);
                     Folder existingFolder = folderService.findExistingFolder(parent, currentStorage, inputName);
 
                     if (existingFolder != null) {
@@ -268,7 +267,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
 
                                                 notifications.show("Chức năng gộp đang phát triển");
                                             } else if (w.closedWith(StandardOutcome.CLOSE)) {
-                                                String uniqueName = folderService.generateUniqueName(parent, currentStorage, inputName);
                                                 Folder newFolder = new Folder();
                                                 newFolder.setName(uniqueName);
                                                 newFolder.setParent(parent);
@@ -280,16 +278,14 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
                                         })
                                         .build();
 
-                        // Tạo bản newFolder (tạm) để show trong dialog
                         Folder newFolderForDialog = new Folder();
-                        newFolderForDialog.setName(inputName);
+                        newFolderForDialog.setName(uniqueName);
                         newFolderForDialog.setCreatedDate(LocalDateTime.now());
 
                         window.getView().setFolderData(existingFolder, newFolderForDialog);
                         window.open();
                         return;
                     }
-
                     // Nếu không trùng tên: tạo trực tiếp
                     Folder folder = new Folder();
                     folder.setName(inputName);
