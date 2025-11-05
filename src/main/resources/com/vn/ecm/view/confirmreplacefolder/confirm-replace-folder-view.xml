@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<view xmlns="http://jmix.io/schema/flowui/view"
+      title="msg://confirmReplaceFolderView.title">
+    <data>
+        <!-- Thư mục cũ (đã tồn tại, trùng tên) -->
+        <instance id="existingFolderDc" class="com.vn.ecm.entity.Folder"/>
+
+        <!-- Thư mục mới (đang chuẩn bị tạo) -->
+        <instance id="newFolderDc" class="com.vn.ecm.entity.Folder"/>
+    </data>
+
+    <layout>
+        <vbox width="560px" padding="true" spacing="true">
+
+            <!-- Tiêu đề cảnh báo -->
+            <hbox spacing="true" alignItems="START">
+                <icon icon="vaadin:warning" classNames="text-warning text-2xl"/>
+                <vbox spacing="xs">
+                    <h3 text="Thư mục đã tồn tại ở nơi này"/>
+                </vbox>
+            </hbox>
+
+            <!-- Câu hỏi -->
+           <hbox spacing="true">
+               <h5/><h5/>
+               <h5 text="Nếu có tệp trùng tên, bạn sẽ được hỏi để thay thế tệp đó"/>
+           </hbox>
+
+            <hbox>
+                <h5/><h5/>
+                <h5 text="Bạn có muốn gộp thư mục này"/>
+            </hbox>
+
+            <!-- Hiển thị thông tin 2 thư mục -->
+            <vbox spacing="xl" classNames="folders-compare">
+                <hbox spacing="xs" alignItems="CENTER" classNames="folder-card">
+                    <icon icon="vaadin:folder" />
+                    <h5 text="Tệp:"/>
+                    <span id="" dataContainer="existingFolderDc" property="name"/>
+                </hbox>
+                <hbox>
+                    <h5 text="Ngày tạo:"/>
+                    <span id="" dataContainer="existingFolderDc" property="createdDate"/>
+                </hbox>
+
+                <hbox>
+                    <h5 text="thành thư mục mới"/>
+                </hbox>
+
+
+                <hbox spacing="xs" alignItems="CENTER" classNames="folder-card">
+                    <icon icon="vaadin:folder"/>
+                    <h5 text="Tệp:"/>
+                    <span id="" dataContainer="newFolderDc" property="name"/>
+                </hbox>
+                <hbox>
+                    <h5 text="Ngày tạo:"/>
+                    <span id="" dataContainer="newFolderDc" property="createdDate"/>
+                </hbox>
+            </vbox>
+
+            <!-- Nút xác nhận -->
+            <hbox spacing="true" alignSelf="END">
+                <button id="yesBtn" text="Có" />
+                <button id="noBtn" text="Không"/>
+            </hbox>
+
+        </vbox>
+
+    </layout>
+</view>

@@ -16,6 +16,7 @@ import com.vn.ecm.entity.*;
 import com.vn.ecm.service.ecm.PermissionService;
 import com.vn.ecm.service.ecm.folderandfile.IFolderService;
 import com.vn.ecm.service.ecm.folderandfile.Impl.FileDescriptorService;
+import com.vn.ecm.view.confirmreplacefolder.ConfirmReplaceFolderView;
 import com.vn.ecm.view.main.MainView;
 import com.vn.ecm.view.sourcestorage.SourceStorageListView;
 import com.vn.ecm.view.viewmode.ViewModeFragment;
@@ -42,6 +43,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -136,7 +138,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     @Subscribe
     public void onInit(InitEvent event) {
         previewBtn.getElement().getStyle().set("position", "fixed");
-        previewBtn.getElement().getStyle().set("right","16px");
+        previewBtn.getElement().getStyle().set("right", "16px");
 
         metadataPanel.setVisible(false);
         viewModeFragment.bind(fileDataGird, filesDc, iconTiles);
@@ -233,16 +235,15 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     public void onFoldersTreeCreateFolder(final ActionPerformedEvent event) {
         User user = (User) currentAuthentication.getUser();
         Folder selected = foldersTree.getSingleSelectedItem();
-        if (selected != null) {
-            boolean per = permissionService.hasPermission(user, PermissionType.CREATE, selected);
-            if (!per) {
-                notifications.create("Bạn không có quyền tạo folder")
-                        .withDuration(2000)
-                        .withCloseable(false)
-                        .withType(Notifications.Type.ERROR)
-                        .show();
-                return;
-            }
+        Folder parent = selected;
+
+        if (selected != null && !permissionService.hasPermission(user, PermissionType.CREATE, selected)) {
+            notifications.create("Bạn không có quyền tạo folder")
+                    .withDuration(2000)
+                    .withCloseable(false)
+                    .withType(Notifications.Type.ERROR)
+                    .show();
+            return;
         }
         dialogs.createInputDialog(this)
                 .withHeader("Tạo mới folder")
@@ -254,15 +255,49 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
                 )
                 .withActions(DialogActions.OK_CANCEL)
                 .withCloseListener(closeEvent -> {
-                    if (closeEvent.closedWith(DialogOutcome.OK)) {
-                        Folder folder = new Folder();
-                        folder.setName(closeEvent.getValue("name"));
-                        folder.setParent(foldersTree.getSingleSelectedItem());
-                        folder.setSourceStorage(currentStorage);
-                        folderService.createFolder(folder);
-                        loadAccessibleFolders(user);
-                        notifications.show(messageBundle.getMessage("ecmCreateFolderAlert"));
+                    if (!closeEvent.closedWith(DialogOutcome.OK)) return;
+
+                    String inputName = closeEvent.getValue("name");
+                    Folder existingFolder = folderService.findExistingFolder(parent, currentStorage, inputName);
+
+                    if (existingFolder != null) {
+                        DialogWindow<ConfirmReplaceFolderView> window =
+                                dialogWindows.view(this, ConfirmReplaceFolderView.class)
+                                        .withAfterCloseListener(w -> {
+                                            if (w.closedWith(StandardOutcome.SAVE)) {
+
+                                                notifications.show("Chức năng gộp đang phát triển");
+                                            } else if (w.closedWith(StandardOutcome.CLOSE)) {
+                                                String uniqueName = folderService.generateUniqueName(parent, currentStorage, inputName);
+                                                Folder newFolder = new Folder();
+                                                newFolder.setName(uniqueName);
+                                                newFolder.setParent(parent);
+                                                newFolder.setSourceStorage(currentStorage);
+                                                folderService.createFolder(newFolder);
+                                                loadAccessibleFolders(user);
+                                                notifications.show(messageBundle.getMessage("ecmCreateFolderAlert"));
+                                            }
+                                        })
+                                        .build();
+
+                        // Tạo bản newFolder (tạm) để show trong dialog
+                        Folder newFolderForDialog = new Folder();
+                        newFolderForDialog.setName(inputName);
+                        newFolderForDialog.setCreatedDate(LocalDateTime.now());
+
+                        window.getView().setFolderData(existingFolder, newFolderForDialog);
+                        window.open();
+                        return;
                     }
+
+                    // Nếu không trùng tên: tạo trực tiếp
+                    Folder folder = new Folder();
+                    folder.setName(inputName);
+                    folder.setParent(parent);
+                    folder.setSourceStorage(currentStorage);
+                    folderService.createFolder(folder);
+                    loadAccessibleFolders(user);
+                    notifications.show(messageBundle.getMessage("ecmCreateFolderAlert"));
                 })
                 .open();
     }
@@ -298,6 +333,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         });
         dlg.open();
     }
+
     //rename folder
     @Subscribe("foldersTree.renameFolder")
     public void onFoldersTreeRenameFolder(final ActionPerformedEvent event) {
@@ -333,6 +369,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
                 })
                 .open();
     }
+
     //remove file
     @Subscribe("fileDataGird.deleteFile")
     public void onFileDataGirdDeleteFile(final ActionPerformedEvent event) {
@@ -367,7 +404,8 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     //action download file
     @Subscribe("fileDataGird.downloadFile")
     public void onFileDataGirdDownloadFile(final ActionPerformedEvent event) {
-        btnDownload.click();;
+        btnDownload.click();
+        ;
     }
 
     //action rename file
@@ -396,6 +434,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         List<FileDescriptor> accessibleFiles = permissionService.getAccessibleFiles(user, currentStorage, folder);
         filesDc.setItems(accessibleFiles);
     }
+
     //css
     private void initFolderGridColumn() {
         //remove column by key

@@ -37,6 +37,7 @@ public class FolderServiceImpl implements IFolderService {
     public Folder createFolder(Folder folder) {
         String desiredName = folder.getName().trim();
 
+
         String uniqueName = generateUniqueName(
                 folder.getParent(),
                 folder.getSourceStorage(),
@@ -56,7 +57,9 @@ public class FolderServiceImpl implements IFolderService {
         permissionService.initializeFolderPermission(user, f2);
         return f2;
     }
-    private String generateUniqueName(Folder parent, Object sourceStorage, String desiredName) {
+
+    @Override
+    public String generateUniqueName(Folder parent, Object sourceStorage, String desiredName) {
         String baseName = stripIndexSuffix(desiredName);
         int counter = 0;
 
@@ -66,22 +69,24 @@ public class FolderServiceImpl implements IFolderService {
         return buildIndexedName(baseName, counter);
     }
 
+
     /** Kiểm tra trùng tên folder (không phân biệt hoa thường, không tính folder trong trash) */
-    private boolean isNameExists(Folder parent, Object sourceStorage, String name) {
+    @Override
+    public boolean isNameExists(Folder parent, Object sourceStorage, String name) {
         Long count = dataManager.loadValue(
                         "select count(f) from Folder f " +
-                                "where f.parent = :parent " +
+                                "where ( ( :parent is null and f.parent is null ) or f.parent = :parent ) " +
                                 "and f.sourceStorage = :storage " +
                                 "and f.inTrash = false " +
-                                "and lower(f.name) = lower(:name)",
-                        Long.class
-                )
+                                "and lower(f.name) = lower(:name)", Long.class)
                 .parameter("parent", parent)
                 .parameter("storage", sourceStorage)
                 .parameter("name", name)
                 .one();
         return count != null && count > 0;
     }
+
+
 
     /** Xóa đuôi "(n)" nếu người dùng nhập tên như "Folder (3)" */
     private String stripIndexSuffix(String name) {
@@ -218,4 +223,29 @@ public class FolderServiceImpl implements IFolderService {
         }
         return path.toString();
     }
+
+    @Override
+    public Folder findExistingFolder(Folder parent, Object sourceStorage, String name) {
+        if (name == null || name.isBlank()) {
+            return null;
+        }
+
+        try {
+            return dataManager.load(Folder.class)
+                    .query("select f from Folder f " +
+                            "where ( ( :parent is null and f.parent is null ) or f.parent = :parent ) " +
+                            "and f.sourceStorage = :storage " +
+                            "and f.inTrash = false " +
+                            "and lower(f.name) = lower(:name)")
+                    .parameter("parent", parent)
+                    .parameter("storage", sourceStorage)
+                    .parameter("name", name.trim().toLowerCase())
+                    .one();
+        } catch (Exception e) {
+            // Nếu không tìm thấy hoặc trả về nhiều bản ghi
+            return null;
+        }
+    }
+
+
 }
