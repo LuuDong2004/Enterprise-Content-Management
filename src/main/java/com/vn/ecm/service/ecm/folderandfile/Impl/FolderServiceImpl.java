@@ -184,11 +184,9 @@ public class FolderServiceImpl implements IFolderService {
                 folder.getSourceStorage(),
                 newName
         );
-
         folder.setName(name);
         folder.setFullPath(buildFolderPath(folder));
         folder.setCreatedDate(LocalDateTime.now());
-
         Folder saved = dataManager.save(folder);
         // Cập nhật fullPath cho toàn bộ folder con (nếu có)
         updateChildFullPaths(saved);

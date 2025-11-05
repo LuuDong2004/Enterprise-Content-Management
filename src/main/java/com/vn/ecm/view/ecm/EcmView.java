@@ -1,10 +1,8 @@
 package com.vn.ecm.view.ecm;
-//v1
 
 import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
-import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.ItemClickEvent;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
@@ -108,7 +106,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     @ViewComponent
     private JmixButton previewBtn;
 
-
     @Subscribe("fileDataGird")
     public void onFileDataGirdItemClick(final ItemClickEvent<FileDescriptor> event) {
         metadataFileDc.setItem(event.getItem());
@@ -135,7 +132,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         }
         metadataPanel.setEnabled(true);
         metadataPanel.setVisible(!currentlyVisible);
-        boolean nowVisible = metadataPanel.isVisible(); // TRẠNG THÁI MỚI
+        boolean nowVisible = metadataPanel.isVisible();
         previewBtn.setText(nowVisible ? "Ẩn chi tiết" : "Xem chi tiết");
     }
 
@@ -161,6 +158,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
             btnDownload.setAction(downloadAction);
         }
     }
+
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
@@ -234,48 +232,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         }
     }
 
-    //css
-    private void initFolderGridColumn() {
-        //remove column by key
-        if (foldersTree.getColumnByKey("name") != null) {
-            foldersTree.removeColumn(foldersTree.getColumnByKey("name"));
-        }
-        //Add hierarchy column
-        TreeDataGrid.Column<Folder> nameColumn = foldersTree.addComponentHierarchyColumn(item -> renderFolderItem(item));
-        nameColumn.setHeader("Thư mục");
-        nameColumn.setFlexGrow(1);
-        nameColumn.setResizable(true);
-
-        foldersTree.setColumnPosition(nameColumn, 0);
-    }
-
-    private Component renderFolderItem(Folder item) {
-        HorizontalLayout hboxMain = uiComponents.create(HorizontalLayout.class);
-        hboxMain.setAlignItems(FlexComponent.Alignment.CENTER);
-        hboxMain.setWidthFull();
-        hboxMain.setPadding(false);
-        hboxMain.setSpacing(true);
-
-        Icon icon = uiComponents.create(Icon.class);
-        icon.setIcon(VaadinIcon.FOLDER);
-
-        // Không cho icon bị co lại
-        icon.getElement().getStyle().set("flex-shrink", "0");
-        icon.addClassName("folder-item");
-
-        Span span = uiComponents.create(Span.class);
-        span.setText(item.getName());
-        span.addClassName("folder-text");
-
-        hboxMain.add(icon, span);
-
-        hboxMain.addClickListener(event -> {
-            foldersTree.select(item);
-            foldersDc.setItem(item);
-        });
-        return hboxMain;
-    }
-
+    //new folder
     @Subscribe("foldersTree.createFolder")
     public void onFoldersTreeCreateFolder(final ActionPerformedEvent event) {
         User user = (User) currentAuthentication.getUser();
@@ -345,7 +302,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         });
         dlg.open();
     }
-
+    //rename folder
     @Subscribe("foldersTree.renameFolder")
     public void onFoldersTreeRenameFolder(final ActionPerformedEvent event) {
         Folder selected = foldersTree.getSingleSelectedItem();
@@ -380,7 +337,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
                 })
                 .open();
     }
-
+    //remove file
     @Subscribe("fileDataGird.deleteFile")
     public void onFileDataGirdDeleteFile(final ActionPerformedEvent event) {
         FileDescriptor selected = fileDataGird.getSingleSelectedItem();
@@ -411,23 +368,13 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         dlg.open();
     }
 
+    //action download file
     @Subscribe("fileDataGird.downloadFile")
     public void onFileDataGirdDownloadFile(final ActionPerformedEvent event) {
-        Folder selected = foldersTree.getSingleSelectedItem();
-        User user = (User) currentAuthentication.getUser();
-        boolean canDownload = permissionService.hasPermission(user, PermissionType.READ, selected);
-        if (!canDownload) {
-            notifications.create("Bạn không có quyền tải xuống tệp này.")
-                    .withCloseable(false)
-                    .withDuration(2000)
-                    .withType(Notifications.Type.ERROR)
-                    .show();
-            return;
-        }
-        downloadAction.setTarget(fileDataGird);
-        downloadAction.execute();
+        btnDownload.click();;
     }
 
+    //action rename file
     @Subscribe("fileDataGird.renameFile")
     public void onFileDataGirdRenameFile(final ActionPerformedEvent event) {
         FileDescriptor selected = fileDataGird.getSingleSelectedItem();
@@ -453,7 +400,47 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         List<FileDescriptor> accessibleFiles = permissionService.getAccessibleFiles(user, currentStorage, folder);
         filesDc.setItems(accessibleFiles);
     }
+    //css
+    private void initFolderGridColumn() {
+        //remove column by key
+        if (foldersTree.getColumnByKey("name") != null) {
+            foldersTree.removeColumn(foldersTree.getColumnByKey("name"));
+        }
+        //Add hierarchy column
+        TreeDataGrid.Column<Folder> nameColumn = foldersTree.addComponentHierarchyColumn(item -> renderFolderItem(item));
+        nameColumn.setHeader("Thư mục");
+        nameColumn.setFlexGrow(1);
+        nameColumn.setResizable(true);
 
+        foldersTree.setColumnPosition(nameColumn, 0);
+    }
+
+    private Component renderFolderItem(Folder item) {
+        HorizontalLayout hboxMain = uiComponents.create(HorizontalLayout.class);
+        hboxMain.setAlignItems(FlexComponent.Alignment.CENTER);
+        hboxMain.setWidthFull();
+        hboxMain.setPadding(false);
+        hboxMain.setSpacing(true);
+
+        Icon icon = uiComponents.create(Icon.class);
+        icon.setIcon(VaadinIcon.FOLDER);
+
+        // Không cho icon bị co lại
+        icon.getElement().getStyle().set("flex-shrink", "0");
+        icon.addClassName("folder-item");
+
+        Span span = uiComponents.create(Span.class);
+        span.setText(item.getName());
+        span.addClassName("folder-text");
+
+        hboxMain.add(icon, span);
+
+        hboxMain.addClickListener(event -> {
+            foldersTree.select(item);
+            foldersDc.setItem(item);
+        });
+        return hboxMain;
+    }
 
 }
 
