@@ -56,11 +56,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     @ViewComponent
     private TreeDataGrid<Folder> foldersTree;
     @ViewComponent
-    private CollectionLoader<Folder> foldersDl;
-    @ViewComponent
     private DataGrid<FileDescriptor> fileDataGird;
-    @ViewComponent
-    private CollectionLoader<FileDescriptor> filesDl;
     @ViewComponent
     private CollectionContainer<FileDescriptor> filesDc;
     @Autowired
