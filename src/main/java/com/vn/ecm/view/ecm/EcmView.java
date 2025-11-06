@@ -259,7 +259,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
                 })
                 .open();
     }
-
     //rename folder
     @Subscribe("foldersTree.renameFolder")
     public void onFoldersTreeRenameFolder(final ActionPerformedEvent event) {
@@ -311,12 +310,9 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
                     folderService.renameFolder(selected, closeEvent.getValue("name"));
                     notifications.show(messageBundle.getMessage("ecmRenameFolderAlert"));
                 })
-
-
                 .open();
 
     }
-
     //xóa vào thùng rác
     @Subscribe("foldersTree.delete")
     public void onFoldersTreeDelete(final ActionPerformedEvent event) {
@@ -384,7 +380,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     @Subscribe("fileDataGird.downloadFile")
     public void onFileDataGirdDownloadFile(final ActionPerformedEvent event) {
         btnDownload.click();
-        ;
     }
 
     //action rename file
@@ -446,16 +441,13 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         Span span = uiComponents.create(Span.class);
         span.setText(item.getName());
         span.addClassName("folder-text");
-
         hboxMain.add(icon, span);
-
         hboxMain.addClickListener(event -> {
             foldersTree.select(item);
             foldersDc.setItem(item);
         });
         return hboxMain;
     }
-
 }
 
 
