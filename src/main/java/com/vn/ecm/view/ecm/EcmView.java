@@ -265,7 +265,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
                         if (existingFolder != null) {
                             notifications.show(messageBundle.getMessage("ecmRenameFolderExistAlert"));
                         } else {
-                            Folder folder = new Folder();
+                            Folder folder = dataManager.create(Folder.class);
                             folder.setName(closeEvent.getValue("name"));
                             folder.setParent(foldersTree.getSingleSelectedItem());
                             folder.setSourceStorage(currentStorage);
