@@ -229,48 +229,68 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
                     .show();
         }
     }
+
     //new folder
     @Subscribe("foldersTree.createFolder")
     public void onFoldersTreeCreateFolder(final ActionPerformedEvent event) {
         User user = (User) currentAuthentication.getUser();
+        Folder selected = foldersTree.getSingleSelectedItem();
+        Folder parent;
+        if (selected != null) {
+            parent = null;
+            boolean per = permissionService.hasPermission(user, PermissionType.CREATE, selected);
+            if (!per) {
+                notifications.create("Bạn không có quyền tạo folder")
+                        .withDuration(2000)
+                        .withCloseable(false)
+                        .withType(Notifications.Type.ERROR)
+                        .show();
+                return;
+            }
+
+        } else {
+            parent = selected;
+        }
         dialogs.createInputDialog(this)
                 .withHeader("Tạo mới folder")
                 .withParameters(
                         stringParameter("name")
                                 .withLabel("Tên Folder ")
                                 .withRequired(true)
-                                .withDefaultValue("New Folder")
-                )
+                                .withDefaultValue("New Folder"))
                 .withActions(DialogActions.OK_CANCEL)
                 .withCloseListener(closeEvent -> {
                     if (closeEvent.closedWith(DialogOutcome.OK)) {
-                        Folder folder = new Folder();
-                        folder.setName(closeEvent.getValue("name"));
-                        folder.setParent(foldersTree.getSingleSelectedItem());
-                        folder.setSourceStorage(currentStorage);
-                        folderService.createFolder(folder);
-                        loadAccessibleFolders(user);
-                        notifications.create(messageBundle.getMessage("ecmCreateFolderAlert"))
-                                .withDuration(2000)
-                                .withCloseable(false)
-                                .withType(Notifications.Type.SUCCESS)
-                                .show();
+                        Folder existingFolder = folderService.findExistingFolder(parent, currentStorage, closeEvent.getValue("name"));
+                        if (existingFolder != null) {
+                            notifications.show(messageBundle.getMessage("ecmRenameFolderExistAlert"));
+                        } else {
+                            Folder folder = new Folder();
+                            folder.setName(closeEvent.getValue("name"));
+                            folder.setParent(foldersTree.getSingleSelectedItem());
+                            folder.setSourceStorage(currentStorage);
+                            folderService.createFolder(folder);
+                            loadAccessibleFolders(user);
+                            notifications.show(messageBundle.getMessage("ecmCreateFolderAlert"));
+                        }
                     }
                 })
                 .open();
     }
+
     //rename folder
     @Subscribe("foldersTree.renameFolder")
     public void onFoldersTreeRenameFolder(final ActionPerformedEvent event) {
         Folder selected = foldersTree.getSingleSelectedItem();
+        if (selected == null) {
+            notifications.show("Vui lòng chọn thư mục để đổi tên");
+            return;
+        }
         User userCurr = (User) currentAuthentication.getUser();
         boolean per = permissionService.hasPermission(userCurr, PermissionType.MODIFY, selected);
-        Folder parent = selected.getParent();
         if (!per) {
             notifications.create("Bạn không có quyền đổi tên thư mục này.")
                     .withType(Notifications.Type.ERROR)
-                    .withDuration(2000)
-                    .withCloseable(false)
                     .show();
             return;
         }
@@ -284,35 +304,19 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
                 )
                 .withActions(DialogActions.OK_CANCEL)
                 .withCloseListener(closeEvent -> {
-                    String inputName = closeEvent.getValue("name");
-                    String uniqueName = folderService.generateUniqueName(parent, currentStorage, inputName);
-                    Folder existingFolder = folderService.findExistingFolder(parent, currentStorage, inputName);
-                    if (existingFolder != null) {
-                        DialogWindow<ConfirmReplaceFolderView> window =
-                                dialogWindows.view(this, ConfirmReplaceFolderView.class)
-                                        .withAfterCloseListener(w -> {
-                                            if (w.closedWith(StandardOutcome.SAVE)) {
-                                                notifications.show("Chức năng gộp đang phát triển");
-                                            } else if (w.closedWith(StandardOutcome.CLOSE)) {
-                                                folderService.renameFolder(selected, closeEvent.getValue("name"));
-                                                notifications.show(messageBundle.getMessage("ecmRenameFolderAlert"));
-                                            }
-                                        })
-                                        .build();
-
-                        Folder newFolderForDialog = new Folder();
-                        newFolderForDialog.setName(uniqueName);
-                        newFolderForDialog.setCreatedDate(LocalDateTime.now());
-                        window.getView().setFolderData(existingFolder, newFolderForDialog);
-                        window.open();
-                        return;
+                    if (closeEvent.closedWith(DialogOutcome.OK)) {
+                        Folder existingFolder = folderService.findExistingFolder(selected.getParent(), currentStorage, closeEvent.getValue("name"));
+                        if (existingFolder != null) {
+                            notifications.show(messageBundle.getMessage("ecmRenameFolderExistAlert"));
+                        } else {
+                            folderService.renameFolder(selected, closeEvent.getValue("name"));
+                            notifications.show(messageBundle.getMessage("ecmRenameFolderAlert"));
+                        }
                     }
-                    folderService.renameFolder(selected, closeEvent.getValue("name"));
-                    notifications.show(messageBundle.getMessage("ecmRenameFolderAlert"));
                 })
                 .open();
-
     }
+
     //xóa vào thùng rác
     @Subscribe("foldersTree.delete")
     public void onFoldersTreeDelete(final ActionPerformedEvent event) {

@@ -28,7 +28,7 @@
         </formLayout>
 
         <!-- ===== S3 group ===== -->
-        <formLayout id="s3Group" dataContainer="sourceStorageDc">
+        <formLayout id="s3Group" dataContainer="sourceStorageDc" classNames="sm">
             <responsiveSteps>
                 <responsiveStep minWidth="0" columns="1"/>
                 <responsiveStep minWidth="40em" columns="1"/>

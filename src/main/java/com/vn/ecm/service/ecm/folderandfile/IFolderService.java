@@ -23,9 +23,5 @@ public interface IFolderService {
 
     String buildFolderPath(Folder folder);
 
-    boolean isNameExists(Folder parent, Object sourceStorage, String name);
-
-    String generateUniqueName(Folder parent, Object sourceStorage, String desiredName);
-
     Folder findExistingFolder(Folder parent, Object sourceStorage, String name);
 }

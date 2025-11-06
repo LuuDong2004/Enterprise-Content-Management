@@ -79,6 +79,8 @@ public class SourceStorageListView extends StandardListView<SourceStorage> {
         window.addAfterCloseListener(afterCloseEvent -> {
             sourceStoragesDl.load();
         });
+        window.setWidth("auto");
+        window.setHeight("auto");
         window.open();
     }
 
@@ -92,6 +94,8 @@ public class SourceStorageListView extends StandardListView<SourceStorage> {
         window.addAfterCloseListener(afterCloseEvent -> {
             sourceStoragesDl.load();
         });
+        window.setWidth("auto");
+        window.setHeight("auto");
         window.open();
     }
 

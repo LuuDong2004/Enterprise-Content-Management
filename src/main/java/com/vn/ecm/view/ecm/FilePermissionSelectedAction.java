@@ -10,6 +10,7 @@ import io.jmix.flowui.Notifications;
 import io.jmix.flowui.action.ActionType;
 import io.jmix.flowui.action.list.ItemTrackingAction;
 import io.jmix.flowui.component.UiComponentUtils;
+import io.jmix.flowui.view.Subscribe;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @ActionType("onObjectAssignPermission")

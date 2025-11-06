@@ -125,7 +125,7 @@ public class S3Storage implements FileStorage {
         LocalDate d = LocalDate.now();
         return d.getYear() + "/" + String.format("%02d", d.getMonthValue()) + "/"
                 + String.format("%02d", d.getDayOfMonth()) + "/"
-                + fileName + ext;
+                + UUID.randomUUID() + ext;
     }
 
     private void ensureBucketExists() {
