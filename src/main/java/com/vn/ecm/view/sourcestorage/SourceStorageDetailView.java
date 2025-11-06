@@ -6,6 +6,7 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.Route;
+import com.vn.ecm.ecm.storage.DynamicStorageManager;
 import com.vn.ecm.ecm.storage.s3.S3ClientFactory;
 import com.vn.ecm.entity.SourceStorage;
 import com.vn.ecm.entity.StorageType;
@@ -37,6 +38,8 @@ public class SourceStorageDetailView extends StandardDetailView<SourceStorage> {
     private S3ClientFactory s3ClientFactory;
     @Autowired
     private Notifications notifications;
+    @Autowired
+    private DynamicStorageManager dynamicStorageManager;
 
     @Subscribe
     public void onInit(final InitEvent event) {
@@ -78,6 +81,7 @@ public class SourceStorageDetailView extends StandardDetailView<SourceStorage> {
                         .withDuration(2000)
                         .show();
             }
+            dynamicStorageManager.refreshFileStorage(s);
             // event.preventSave();
         }
     }

@@ -1,6 +1,8 @@
 .metadataTitle {
     background: #FFEDCC!important;
 }
+#detailActions { justify-content: flex-end; }
+
 /*#metadataPanel {*/
 /*    padding-top: 48px;*/
 /*}*/

@@ -54,7 +54,7 @@
             <checkbox id="activeWebDirField" property="active"/>
         </formLayout>
 
-        <hbox id="detailActions">
+        <hbox id="detailActions"  width="100%" alignItems="CENTER" justifyContent="END">
             <button id="saveAndCloseButton" action="saveAction"/>
             <button id="closeButton" action="closeAction"/>
             <button id="testConnection"
