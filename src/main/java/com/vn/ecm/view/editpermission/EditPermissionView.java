@@ -2,13 +2,13 @@ package com.vn.ecm.view.editpermission;
 
 import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.checkbox.Checkbox;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.textfield.TextArea;
+import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.data.renderer.TextRenderer;
 import com.vaadin.flow.router.Route;
 import com.vn.ecm.entity.*;
-
 import com.vn.ecm.service.ecm.PermissionService;
 import com.vn.ecm.view.main.MainView;
 import com.vn.ecm.view.userlist.UserListView;
@@ -62,6 +62,8 @@ public class EditPermissionView extends StandardView {
     }
 
     @ViewComponent
+    private Span principalTitle;
+    @ViewComponent
     private MessageBundle messageBundle;
     @Autowired
     private DataManager dataManager;
@@ -72,7 +74,7 @@ public class EditPermissionView extends StandardView {
     @ViewComponent
     private CollectionContainer<Permission> permissionsDc;
     @ViewComponent
-    private TextArea pathArea;
+    private TextField pathArea;
     @ViewComponent
     private CollectionLoader<User> usersDl;
     @ViewComponent
@@ -122,20 +124,19 @@ public class EditPermissionView extends StandardView {
                 objectsDc.setItems(dtos);
             }
         });
+        window.setWidth("60%");
+        window.setHeight("70%");
+        window.setResizable(true);
         window.open();
     }
 
     @Subscribe
     public void onBeforeShow(BeforeShowEvent event) {
         if (path != null) {
-            pathArea.setValue(path);
+            pathArea.setValue("Đường dẫn: " + path);
         }
-        if (target != null) {
-            List<EcmObject> dtos = new ArrayList<>();
-            dtos.add(target);
-            objectsDc.setItems(dtos);
-            objectDataGrid.select(target);
-        }
+        updatePermissionTitle(null);
+        loadPrincipals();
     }
 
     @Subscribe
@@ -213,7 +214,7 @@ public class EditPermissionView extends StandardView {
             Optional<EcmObject> optional = selection.getFirstSelectedItem();
             if (optional.isPresent()) {
                 EcmObject dto = optional.get();
-
+                updatePermissionTitle(dto);
                 CollectionContainer<Permission> permDc = getViewData().getContainer("permissionsDc");
                 List<Permission> list = new ArrayList<>();
 
@@ -286,40 +287,6 @@ public class EditPermissionView extends StandardView {
         });
     }
 
-    @Subscribe("usersBtn")
-    public void onUsersBtnClick(ClickEvent<JmixButton> event) {
-        usersDl.setParameter("file", selectedFile);
-        usersDl.setParameter("folder", selectedFolder);
-        usersDl.load();
-        List<User> users = usersDl.getContainer().getItems();
-        List<EcmObject> dtos = new ArrayList<>();
-        for (User u : users) {
-            EcmObject dto = new EcmObject();
-            dto.setId(u.getId().toString());
-            dto.setName(u.getUsername());
-            dto.setType(ObjectType.USER);
-            dtos.add(dto);
-        }
-        objectsDc.setItems(dtos);
-    }
-
-    @Subscribe("rolesBtn")
-    public void onRolesBtnClick(ClickEvent<JmixButton> event) {
-        rolesDl.setParameter("file", selectedFile);
-        rolesDl.setParameter("folder", selectedFolder);
-        rolesDl.load();
-        List<ResourceRoleEntity> roles = rolesDl.getContainer().getItems();
-        List<EcmObject> dtos = new ArrayList<>();
-        for (ResourceRoleEntity r : roles) {
-            EcmObject dto = new EcmObject();
-            dto.setId(r.getCode()); // code dùng làm key cho role
-            dto.setName(r.getName());
-            dto.setType(ObjectType.ROLE);
-            dtos.add(dto);
-        }
-        objectsDc.setItems(dtos);
-    }
-
     @Subscribe(id = "saveBtn", subject = "clickListener")
     public void onSaveBtnClick(final ClickEvent<JmixButton> event) {
         CollectionContainer<Permission> permissionDc = getViewData().getContainer("permissionsDc");
@@ -361,6 +328,55 @@ public class EditPermissionView extends StandardView {
             close(StandardOutcome.SAVE);
         } else {
             Notification.show("No target selected for saving permissions");
+        }
+    }
+
+    private void updatePermissionTitle(EcmObject dto) {
+        if (principalTitle == null) return; // phòng lỗi NPE nếu XML chưa gắn id
+
+        if (dto == null) {
+            principalTitle.setText("Quyền truy cập cho ");
+            return;
+        }
+        String typeLabel = (dto.getType() == ObjectType.USER) ? "Người dùng" : "Phòng ban";
+        String name = dto.getName() != null ? dto.getName() : "";
+        principalTitle.setText("Quyền truy cập cho " + name + ":");
+    }
+
+    private void loadPrincipals() {
+        // luôn set param, kể cả null
+        usersDl.setParameter("file", selectedFile);
+        usersDl.setParameter("folder", selectedFolder);
+        rolesDl.setParameter("file", selectedFile);
+        rolesDl.setParameter("folder", selectedFolder);
+
+        usersDl.load();
+        rolesDl.load();
+
+        List<User> userList = usersDl.getContainer().getItems();
+        List<ResourceRoleEntity> roles = rolesDl.getContainer().getItems();
+
+        List<EcmObject> principals = new ArrayList<>(userList.size() + roles.size());
+        principals.addAll(userList.stream()
+                .map(u -> new EcmObject(u.getId().toString(), ObjectType.USER, u.getUsername()))
+                .toList());
+        principals.addAll(roles.stream()
+                .map(r -> new EcmObject(r.getCode(), ObjectType.ROLE, r.getName()))
+                .toList());
+
+        // Sắp xếp cho “gọn mắt”: theo tên rồi theo kiểu
+        principals.sort((a, b) -> {
+            String an = a.getName() == null ? "" : a.getName();
+            String bn = b.getName() == null ? "" : b.getName();
+            int cmp = an.compareToIgnoreCase(bn);
+            return cmp != 0 ? cmp : a.getType().compareTo(b.getType());
+        });
+
+        objectsDc.setItems(principals);
+
+        // Nếu không có principal nào thì xóa bảng quyền bên dưới
+        if (principals.isEmpty()) {
+            permissionsDc.getMutableItems().clear();
         }
     }
 }

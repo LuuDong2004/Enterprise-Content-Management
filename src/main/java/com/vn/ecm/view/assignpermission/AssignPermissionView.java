@@ -1,14 +1,12 @@
 package com.vn.ecm.view.assignpermission;
 
-
 import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.checkbox.Checkbox;
-import com.vaadin.flow.component.textfield.TextArea;
+import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.data.renderer.TextRenderer;
 import com.vaadin.flow.router.Route;
 import com.vn.ecm.entity.*;
-
 import com.vn.ecm.service.ecm.PermissionService;
 import com.vn.ecm.view.advancedpermission.AdvancedPermissionView;
 import com.vn.ecm.view.editpermission.EditPermissionView;
@@ -22,6 +20,7 @@ import io.jmix.flowui.model.CollectionLoader;
 import io.jmix.flowui.view.*;
 import io.jmix.securitydata.entity.ResourceRoleEntity;
 import org.springframework.beans.factory.annotation.Autowired;
+import com.vaadin.flow.component.html.Span;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,7 +33,7 @@ import java.util.UUID;
 public class AssignPermissionView extends StandardView {
 
     @ViewComponent
-    private TextArea pathArea;
+    private TextField pathArea;
     @ViewComponent
     private DataGrid<EcmObject> objectDataGrid;
     @ViewComponent
@@ -47,6 +46,8 @@ public class AssignPermissionView extends StandardView {
     private CollectionLoader<ResourceRoleEntity> rolesDl;
     @ViewComponent
     private CollectionContainer<EcmObject> objectsDc;
+    @ViewComponent
+    private Span principalTitle;
     @Autowired
     private DialogWindows dialogWindows;
     @Autowired
@@ -79,65 +80,62 @@ public class AssignPermissionView extends StandardView {
         this.selectedFile = null;
     }
 
-    @Subscribe(id = "editBtn", subject = "clickListener")
-    public void onEditBtnClick(final ClickEvent<JmixButton> event) {
-        EcmObject seleted = objectDataGrid.getSingleSelectedItem();
-        DialogWindow<EditPermissionView> window = dialogWindows.view(this, EditPermissionView.class).build();
-        if (this.selectedFile != null) {
-            window.getView().setTargetFile(this.selectedFile);
-        } else if (this.selectedFolder != null) {
-            window.getView().setTargetFolder(this.selectedFolder);
-        }
-        window.getView().setPath(path);
-        window.getView().setTarget(seleted);
-        window.open();
-    }
-
-    @Subscribe(id = "usersBtn", subject = "clickListener")
-    public void onUsersBtnClick(final ClickEvent<JmixButton> event) {
-        // luôn set param, kể cả null
-        usersDl.setParameter("file", selectedFile);
-        usersDl.setParameter("folder", selectedFolder);
-        usersDl.load();
-
-        List<User> userList = usersDl.getContainer().getItems();
-        List<EcmObject> dtos = userList.stream()
-                .map(u -> new EcmObject(u.getId().toString(), ObjectType.USER, u.getUsername()))
-                .toList();
-        objectsDc.setItems(dtos);
-    }
-
-    @Subscribe(id = "rolesBtn", subject = "clickListener")
-    public void onRolesBtnClick(final ClickEvent<JmixButton> event) {
-        // tương tự
-        rolesDl.setParameter("file", selectedFile);
-        rolesDl.setParameter("folder", selectedFolder);
-        rolesDl.load();
-
-        List<ResourceRoleEntity> roles = rolesDl.getContainer().getItems();
-        List<EcmObject> roleDtos = roles.stream()
-                .map(r -> new EcmObject(
-                        r.getCode(),
-                        ObjectType.ROLE,
-                        r.getName()))
-                .toList();
-        objectsDc.setItems(roleDtos);
-    }
-
     @Subscribe
     public void onBeforeShow(BeforeShowEvent event) {
         if (path != null) {
-            pathArea.setValue(path);
+            pathArea.setValue("Đường dẫn: " + path);
+        }
+        updatePermissionTitle(null);
+        loadPrincipals(); //nạp danh sách chung người dùng + phòng ban
+    }
+
+    // NEW: nạp Users + Roles rồi gộp thành một list EcmObject
+    private void loadPrincipals() {
+        // luôn set param, kể cả null
+        usersDl.setParameter("file", selectedFile);
+        usersDl.setParameter("folder", selectedFolder);
+        rolesDl.setParameter("file", selectedFile);
+        rolesDl.setParameter("folder", selectedFolder);
+
+        usersDl.load();
+        rolesDl.load();
+
+        List<User> userList = usersDl.getContainer().getItems();
+        List<ResourceRoleEntity> roles = rolesDl.getContainer().getItems();
+
+        List<EcmObject> principals = new ArrayList<>(userList.size() + roles.size());
+        principals.addAll(userList.stream()
+                .map(u -> new EcmObject(u.getId().toString(), ObjectType.USER, u.getUsername()))
+                .toList());
+        principals.addAll(roles.stream()
+                .map(r -> new EcmObject(r.getCode(), ObjectType.ROLE, r.getName()))
+                .toList());
+
+        // Sắp xếp cho “gọn mắt”: theo tên rồi theo kiểu
+        principals.sort((a, b) -> {
+            String an = a.getName() == null ? "" : a.getName();
+            String bn = b.getName() == null ? "" : b.getName();
+            int cmp = an.compareToIgnoreCase(bn);
+            return cmp != 0 ? cmp : a.getType().compareTo(b.getType());
+        });
+
+        objectsDc.setItems(principals);
+
+        // Nếu không có principal nào thì xóa bảng quyền bên dưới
+        if (principals.isEmpty()) {
+            permissionsDc.getMutableItems().clear();
         }
     }
 
     @Subscribe
     public void onInit(InitEvent event) {
+        // Hiển thị tên quyền
         permissionDataGrid.getColumnByKey("permissionType")
                 .setRenderer(new TextRenderer<>(permission -> {
                     PermissionType type = permission.getPermissionType();
                     return type != null ? type.toString() : "";
                 }));
+
         // Cột Allow
         permissionDataGrid.addColumn(
                 new ComponentRenderer<>(permission -> {
@@ -169,22 +167,23 @@ public class AssignPermissionView extends StandardView {
                     return checkbox;
                 })).setHeader("Từ chối");
 
+        // Khi chọn 1 principal (user/role) -> tính ra danh sách quyền tương ứng
         objectDataGrid.addSelectionListener(selection -> {
             Optional<EcmObject> optional = selection.getFirstSelectedItem();
             if (optional.isEmpty()) {
                 permissionsDc.getMutableItems().clear();
+                updatePermissionTitle(null); // NEW
                 return;
             }
             EcmObject dto = optional.get();
-            // permissionsDc
-            List<Permission> list = new ArrayList<>();
+            updatePermissionTitle(dto);
 
+            List<Permission> list = new ArrayList<>();
             if (dto.getType() == ObjectType.USER) {
-                // load user
                 User user = dataManager.load(User.class)
                         .id(UUID.fromString(dto.getId()))
                         .one();
-                // load DB permission for this principal on selected target (file or folder)
+
                 Permission dbPerm = null;
                 if (selectedFile != null) {
                     dbPerm = permissionService.loadPermission(user, selectedFile);
@@ -195,16 +194,13 @@ public class AssignPermissionView extends StandardView {
                 for (PermissionType type : PermissionType.values()) {
                     Permission p = dataManager.create(Permission.class);
                     p.setUser(user);
-                    if (selectedFile != null)
-                        p.setFile(selectedFile);
-                    if (selectedFolder != null)
-                        p.setFolder(selectedFolder);
+                    if (selectedFile != null) p.setFile(selectedFile);
+                    if (selectedFolder != null) p.setFolder(selectedFolder);
                     p.setPermissionType(type);
                     p.setAllow(PermissionType.hasPermission(mask, type));
                     list.add(p);
                 }
             } else if (dto.getType() == ObjectType.ROLE) {
-                // load role
                 ResourceRoleEntity role = dataManager.load(ResourceRoleEntity.class)
                         .query("select r from sec_ResourceRoleEntity r where r.code = :code")
                         .parameter("code", dto.getId())
@@ -220,10 +216,8 @@ public class AssignPermissionView extends StandardView {
                 for (PermissionType type : PermissionType.values()) {
                     Permission p = dataManager.create(Permission.class);
                     p.setRoleCode(role.getCode());
-                    if (selectedFile != null)
-                        p.setFile(selectedFile);
-                    if (selectedFolder != null)
-                        p.setFolder(selectedFolder);
+                    if (selectedFile != null) p.setFile(selectedFile);
+                    if (selectedFolder != null) p.setFolder(selectedFolder);
                     p.setPermissionType(type);
                     p.setAllow(PermissionType.hasPermission(mask, type));
                     list.add(p);
@@ -231,6 +225,23 @@ public class AssignPermissionView extends StandardView {
             }
             permissionsDc.setItems(list);
         });
+    }
+
+    @Subscribe(id = "editBtn", subject = "clickListener")
+    public void onEditBtnClick(final ClickEvent<JmixButton> event) {
+        EcmObject seleted = objectDataGrid.getSingleSelectedItem();
+        DialogWindow<EditPermissionView> window = dialogWindows.view(this, EditPermissionView.class).build();
+        if (this.selectedFile != null) {
+            window.getView().setTargetFile(this.selectedFile);
+        } else if (this.selectedFolder != null) {
+            window.getView().setTargetFolder(this.selectedFolder);
+        }
+        window.getView().setPath(path);
+        window.getView().setTarget(seleted);
+        window.setWidth("60%");
+        window.setHeight("70%");
+        window.setResizable(true);
+        window.open();
     }
 
     @Subscribe(id = "advanceBtn", subject = "clickListener")
@@ -245,5 +256,17 @@ public class AssignPermissionView extends StandardView {
         window.getView().setPath(path);
         window.getView().setTarget(seleted);
         window.open();
+    }
+
+    private void updatePermissionTitle(EcmObject dto) {
+        if (principalTitle == null) return; // phòng lỗi NPE nếu XML chưa gắn id
+
+        if (dto == null) {
+            principalTitle.setText("Quyền truy cập cho ");
+            return;
+        }
+        String typeLabel = (dto.getType() == ObjectType.USER) ? "Người dùng" : "Phòng ban";
+        String name = dto.getName() != null ? dto.getName() : "";
+        principalTitle.setText("Quyền truy cập cho " + name + ":");
     }
 }

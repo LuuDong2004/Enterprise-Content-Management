@@ -43,6 +43,9 @@ public class FolderPermissionSelectedAction extends ItemTrackingAction<Folder> {
         var window = dialogWindows.view(currentView, AssignPermissionView.class).build();
         window.getView().setTargetFolder(folder);
         window.getView().setPath(path);
+        window.setWidth("60%");
+        window.setHeight("70%");
+        window.setResizable(true);
         window.open();
     }
 

@@ -1,4 +1,5 @@
 package com.vn.ecm.view.ecm;
+
 //v1
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
@@ -102,7 +103,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     @Autowired
     private S3ClientFactory s3ClientFactory;
 
-
     @Subscribe
     public void onInit(InitEvent event) {
         // mode view
@@ -114,7 +114,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         uploadAction.setMode(UploadAndUploadFileAction.Mode.UPLOAD);
         uploadAction.setFolderSupplier(() -> foldersTree.getSingleSelectedItem());
         uploadAction.setStorageSupplier(() -> currentStorage);
-        //download
+        // download
 
         downloadAction.setMode(UploadAndUploadFileAction.Mode.DOWNLOAD);
         downloadAction.setTarget(fileDataGird);
@@ -164,7 +164,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         }
     }
 
-    //upload file
+    // upload file
     @Subscribe("fileRefField")
     public void onFileRefFieldFileUploadSucceeded(final FileUploadSucceededEvent<FileStorageUploadField> event) {
         User user = (User) currentAuthentication.getUser();
@@ -186,7 +186,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
                     .withDuration(2000)
                     .withCloseable(false)
                     .show();
-        }catch(Exception e){
+        } catch (Exception e) {
             notifications.create("Lỗi tải lên : " + event.getFileName())
                     .withType(Notifications.Type.ERROR)
                     .withDuration(4000)
@@ -195,19 +195,18 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         }
     }
 
-
-
-    //css
+    // css
     private void initFolderGridColumn() {
-        //remove column by key
+        // remove column by key
         if (foldersTree.getColumnByKey("name") != null) {
             foldersTree.removeColumn(foldersTree.getColumnByKey("name"));
         }
-        //Add hierarchy column
-        TreeDataGrid.Column<Folder> nameColumn = foldersTree.addComponentHierarchyColumn(item -> renderFolderItem(item));
+        // Add hierarchy column
+        TreeDataGrid.Column<Folder> nameColumn = foldersTree
+                .addComponentHierarchyColumn(item -> renderFolderItem(item));
         nameColumn.setHeader("Thư mục");
         nameColumn.setWidth("500px");
-        //set position for hierarchy column
+        // set position for hierarchy column
         foldersTree.setColumnPosition(nameColumn, 0);
     }
 
@@ -242,7 +241,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     public void onFoldersTreeCreateFolder(final ActionPerformedEvent event) {
         User user = (User) currentAuthentication.getUser();
         Folder selected = foldersTree.getSingleSelectedItem();
-        if(selected != null) {
+        if (selected != null) {
             boolean per = permissionService.hasPermission(user, PermissionType.CREATE, selected);
             if (!per) {
                 notifications.create("Bạn không có quyền tạo folder")
@@ -259,8 +258,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
                         stringParameter("name")
                                 .withLabel("Tên Folder ")
                                 .withRequired(true)
-                                .withDefaultValue("New Folder")
-                )
+                                .withDefaultValue("New Folder"))
                 .withActions(DialogActions.OK_CANCEL)
                 .withCloseListener(closeEvent -> {
                     if (closeEvent.closedWith(DialogOutcome.OK)) {
@@ -276,7 +274,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
                 .open();
     }
 
-    //xóa vào thùng rác
+    // xóa vào thùng rác
     @Subscribe("foldersTree.delete")
     public void onFoldersTreeDelete(final ActionPerformedEvent event) {
         Folder selected = foldersTree.getSingleSelectedItem();
@@ -327,8 +325,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
                         stringParameter("name")
                                 .withLabel("Tên thư mục")
                                 .withDefaultValue(selected.getName())
-                                .withRequired(true)
-                )
+                                .withRequired(true))
                 .withActions(DialogActions.OK_CANCEL)
                 .withCloseListener(closeEvent -> {
                     if (closeEvent.closedWith(DialogOutcome.OK)) {
@@ -390,8 +387,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         downloadAction.execute();
     }
 
-
-
     @Subscribe("fileDataGird.renameFile")
     public void onFileDataGirdRenameFile(final ActionPerformedEvent event) {
         FileDescriptor selected = fileDataGird.getSingleSelectedItem();
@@ -418,8 +413,4 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         filesDc.setItems(accessibleFiles);
     }
 
-
-
 }
-
-
