@@ -10,7 +10,6 @@ import io.jmix.flowui.Notifications;
 import io.jmix.flowui.action.ActionType;
 import io.jmix.flowui.action.list.ItemTrackingAction;
 import io.jmix.flowui.component.UiComponentUtils;
-import io.jmix.flowui.view.Subscribe;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @ActionType("onObjectAssignPermission")
@@ -51,7 +50,7 @@ public class FilePermissionSelectedAction extends ItemTrackingAction<FileDescrip
             var window = dialogWindows.view(currentView, AssignPermissionView.class).build();
             window.getView().setTargetFile(file);
             window.getView().setPath(path);
-
+            window.setResizable(true);
             window.open();
         } catch (Exception e) {
             e.printStackTrace();

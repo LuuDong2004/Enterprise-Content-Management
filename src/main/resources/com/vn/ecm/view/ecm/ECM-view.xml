@@ -66,7 +66,6 @@
             <button id="phanquyenbtn" text="Phân quyền" action="foldersTree.assignPermission"/>
             <button id="renameFolderBtn" text="Đổi tên" action="foldersTree.renameFolder"/>
             <button id="deleteFolderBtn" text="Xóa tệp" action="foldersTree.delete"/>
-
             <fileStorageUploadField id="fileRefField"
                                     property="fileRef"
                                     dataContainer="filesDc"
@@ -82,9 +81,6 @@
         </hbox>
         <split width="100%" height="100%" splitterPosition="25">
             <vbox>
-<!--                <hbox>-->
-<!--                    <button id="newFolderBtn" text="Tạo mới" action="foldersTree.createFolder"/>-->
-<!--                </hbox>-->
                 <treeDataGrid id="foldersTree"
                               dataContainer="foldersDc"
                               hierarchyProperty="parent"
@@ -105,20 +101,6 @@
 
             <split width="100%" height="100%" splitterPosition="75">
                 <vbox>
-<!--                    <hbox>-->
-<!--                        <fileStorageUploadField id="fileRefField"-->
-<!--                                                property="fileRef"-->
-<!--                                                dataContainer="filesDc"-->
-<!--                                                uploadText="Tải lên"-->
-<!--                                                dropAllowed="true"-->
-<!--                                                clearButtonVisible="true"-->
-<!--                                                maxFileSize="1073741824"-->
-<!--                                                fileStoragePutMode="MANUAL"/>-->
-<!--                        <button id="btnDownload" text="Tải xuống" action="downloadAction"/>-->
-<!--                        <fragment id="viewModeFragment" class="com.vn.ecm.view.viewmode.ViewModeFragment"/>-->
-<!--                        <button id="previewBtn" text="Xem chi tiết"/>-->
-<!--                    </hbox>-->
-<!--                    <hbox id="iconTiles" visible="false" classNames="icon-tiles"/>-->
                     <dataGrid id="fileDataGird"
                               width="100%"
                               height="100%"

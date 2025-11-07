@@ -3,6 +3,7 @@ package com.vn.ecm.view.advancedpermission;
 
 import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.textfield.TextArea;
+import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
 import com.vn.ecm.entity.*;
 
@@ -44,7 +45,7 @@ public class AdvancedPermissionView extends StandardView {
     private JmixButton disableInheritanceBtn;
 
     @ViewComponent
-    private TextArea pathArea;
+    private TextField pathArea;
 
     @ViewComponent
     private CollectionLoader<Permission> permissionsDl;
@@ -189,7 +190,7 @@ public class AdvancedPermissionView extends StandardView {
     @Subscribe
     public void onBeforeShow(BeforeShowEvent event) {
         if (path != null) {
-            pathArea.setValue(path);
+            pathArea.setValue("Đường dẫn: " + path);
         }
         if (targetFolder != null) {
             pathArea.setValue(permissionService.getFullPath(targetFolder));
