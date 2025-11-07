@@ -14,9 +14,8 @@ import com.vaadin.flow.data.selection.SelectionEvent;
 import com.vaadin.flow.router.*;
 import com.vn.ecm.entity.*;
 import com.vn.ecm.service.ecm.PermissionService;
+import com.vn.ecm.service.ecm.folderandfile.IFileDescriptorService;
 import com.vn.ecm.service.ecm.folderandfile.IFolderService;
-import com.vn.ecm.service.ecm.folderandfile.Impl.FileDescriptorService;
-import com.vn.ecm.view.confirmreplacefolder.ConfirmReplaceFolderView;
 import com.vn.ecm.view.main.MainView;
 import com.vn.ecm.view.sourcestorage.SourceStorageListView;
 import com.vn.ecm.view.viewmode.ViewModeFragment;
@@ -39,6 +38,7 @@ import io.jmix.flowui.model.CollectionContainer;
 import io.jmix.flowui.model.CollectionLoader;
 import io.jmix.flowui.model.InstanceContainer;
 import io.jmix.flowui.view.*;
+import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
@@ -89,14 +89,14 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     private JmixButton btnDownload;
     @Autowired
     private IFolderService folderService;
-    @Autowired
-    private FileDescriptorService fileDescriptorService;
     @ViewComponent
     private FileStorageUploadField fileRefField;
     @ViewComponent
     private ViewModeFragment viewModeFragment;
     @ViewComponent
     private HorizontalLayout iconTiles;
+    @Autowired
+    private IFileDescriptorService fileDescriptorService;
     @ViewComponent
     private VerticalLayout metadataPanel;
     @ViewComponent
@@ -389,6 +389,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     //action rename file
     @Subscribe("fileDataGird.renameFile")
     public void onFileDataGirdRenameFile(final ActionPerformedEvent event) {
+        Folder selectedFolder = foldersTree.getSingleSelectedItem();
         FileDescriptor selected = fileDataGird.getSingleSelectedItem();
         User userCurr = (User) currentAuthentication.getUser();
         boolean per = permissionService.hasPermission(userCurr, PermissionType.MODIFY, selected);
@@ -400,7 +401,37 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
                     .show();
             return;
         }
-        notifications.show("Chức năng đang phát triển");
+        dialogs.createInputDialog(this)
+                .withHeader("Đổi tên tệp")
+                .withParameters(
+                        stringParameter("name")
+                                .withLabel("Tên thư mục")
+                                .withDefaultValue(selected.getName())
+                                .withRequired(true)
+                )
+                .withActions(DialogActions.OK_CANCEL)
+                .withCloseListener(closeEvent -> {
+                    String newName = closeEvent.getValue("name");
+                    if (closeEvent.closedWith(DialogOutcome.OK)) {
+                       FileDescriptor fileExist = fileDescriptorService.findByName(selectedFolder,currentStorage,newName);
+                       if(fileExist == null){
+                            fileDescriptorService.renameFile(selected,newName,userCurr.getUsername());
+                            notifications.create(messageBundle.getMessage("ecmRenameFileAlert"))
+                                    .withType(Notifications.Type.SUCCESS)
+                                    .withDuration(2000)
+                                    .withCloseable(false)
+                                    .show();
+                       }else{
+                           notifications.create(messageBundle.getMessage("ecmRenameFileExistAlert"))
+                                   .withDuration(2000)
+                                   .withCloseable(false)
+                                   .withType(Notifications.Type.ERROR)
+                                   .show();
+                       }
+                    }
+                })
+                .open();
+
     }
 
     private void loadAccessibleFolders(User user) {
