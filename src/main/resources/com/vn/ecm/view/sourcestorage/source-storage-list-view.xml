@@ -29,10 +29,6 @@
         <action id="discardAction" type="lookup_discard"/>
     </actions>
     <layout>
-<!--        <genericFilter id="genericFilter"-->
-<!--                       dataLoader="sourceStoragesDl">-->
-<!--            <properties include=".*"/>-->
-<!--        </genericFilter>-->
         <hbox id="buttonsPanel" classNames="buttons-panel">
 
             <dropdownButton id="createGroup" text="Tạo mới kho">
@@ -41,9 +37,8 @@
                     <actionItem id="ftpCreateActionItem" ref="sourceStoragesDataGrid.ftpCreateAction"/>
                 </items>
             </dropdownButton>
-<!--            <button id="createButton" action="sourceStoragesDataGrid.createAction"/>-->
-            <button id="editButton" action="sourceStoragesDataGrid.editAction"/>
-            <button id="removeButton" action="sourceStoragesDataGrid.removeAction"/>
+            <button id="editButton" text="Chỉnh sửa" action="sourceStoragesDataGrid.editAction"/>
+            <button id="removeButton" text="Xóa" action="sourceStoragesDataGrid.removeAction"/>
             <simplePagination id="pagination" dataLoader="sourceStoragesDl"/>
         </hbox>
         <dataGrid id="sourceStoragesDataGrid"
@@ -53,8 +48,8 @@
                   columnReorderingAllowed="true">
             <actions>
 <!--                <action id="createAction" type="list_create"/>-->
-                <action id="editAction" type="list_edit"/>
-                <action id="removeAction" type="list_remove"/>
+                <action id="editAction" text="chỉnh sửa" type="list_edit"/>
+                <action id="removeAction" text="xóa" type="list_remove"/>
                 <action id="s3CreateAction" text="Kho lưu trữ S3"/>
                 <action id="ftpCreateAction" text="Kho lưu trữ FTP"/>
             </actions>

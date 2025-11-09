@@ -50,7 +50,9 @@ public class FilePermissionSelectedAction extends ItemTrackingAction<FileDescrip
             var window = dialogWindows.view(currentView, AssignPermissionView.class).build();
             window.getView().setTargetFile(file);
             window.getView().setPath(path);
-
+            window.setWidth("60%");
+            window.setHeight("70%");
+            window.setResizable(true);
             window.open();
         } catch (Exception e) {
             e.printStackTrace();

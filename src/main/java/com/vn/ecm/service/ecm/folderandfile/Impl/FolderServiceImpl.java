@@ -14,8 +14,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+
 
 @Service
 public class FolderServiceImpl implements IFolderService {
@@ -28,26 +27,17 @@ public class FolderServiceImpl implements IFolderService {
     @Autowired
     private CurrentAuthentication currentAuthentication;
 
-
-
     public FolderServiceImpl(Messages messages) {
         this.messages = messages;
     }
 
-
     // tạo mới folder
     @Override
     public Folder createFolder(Folder folder) {
-        String desiredName = folder.getName().trim();
-
-        String uniqueName = generateUniqueName(
-                folder.getParent(),
-                folder.getSourceStorage(),
-                desiredName
-        );
+        String name = folder.getName().trim();
         Folder f = dataManager.create(Folder.class);
         f.setId(UUID.randomUUID());
-        f.setName(uniqueName);
+        f.setName(name);
         f.setParent(folder.getParent());
         f.setSourceStorage(folder.getSourceStorage());
         f.setCreatedDate(LocalDateTime.now());
@@ -57,44 +47,6 @@ public class FolderServiceImpl implements IFolderService {
         User user = (User) currentAuthentication.getUser();
         permissionService.initializeFolderPermission(user, f2);
         return f2;
-    }
-    private String generateUniqueName(Folder parent, Object sourceStorage, String desiredName) {
-        String baseName = stripIndexSuffix(desiredName);
-        int counter = 0;
-
-        while (isNameExists(parent, sourceStorage, buildIndexedName(baseName, counter))) {
-            counter++;
-        }
-        return buildIndexedName(baseName, counter);
-    }
-
-    /** Kiểm tra trùng tên folder (không phân biệt hoa thường, không tính folder trong trash) */
-    private boolean isNameExists(Folder parent, Object sourceStorage, String name) {
-        Long count = dataManager.loadValue(
-                        "select count(f) from Folder f " +
-                                "where f.parent = :parent " +
-                                "and f.sourceStorage = :storage " +
-                                "and f.inTrash = false " +
-                                "and lower(f.name) = lower(:name)",
-                        Long.class
-                )
-                .parameter("parent", parent)
-                .parameter("storage", sourceStorage)
-                .parameter("name", name)
-                .one();
-        return count != null && count > 0;
-    }
-
-    /** Xóa đuôi "(n)" nếu người dùng nhập tên như "Folder (3)" */
-    private String stripIndexSuffix(String name) {
-        Pattern pattern = Pattern.compile("^(.+?)\\s*\\((\\d+)\\)$");
-        Matcher matcher = pattern.matcher(name);
-        return matcher.matches() ? matcher.group(1).trim() : name;
-    }
-
-    /** Ghép tên với chỉ số */
-    private String buildIndexedName(String base, int index) {
-        return index == 0 ? base : base + " (" + index + ")";
     }
     //xóa cứng
     @Override
@@ -173,29 +125,21 @@ public class FolderServiceImpl implements IFolderService {
         folder.setDeletedBy(null);
         return dataManager.save(folder);
     }
-
-
     // đổi tên folder
     @Override
     public Folder renameFolder(Folder folder , String newName){
         if(folder == null || newName == null || newName.isBlank()){
             return null;
         }
-
         folder.setName(newName);
         folder.setFullPath(buildFolderPath(folder));
         folder.setCreatedDate(LocalDateTime.now());
-
-
         Folder saved = dataManager.save(folder);
-
         // Cập nhật fullPath cho toàn bộ folder con (nếu có)
         updateChildFullPaths(saved);
 
         return saved;
     }
-
-
     // cập nhập full path đệ quy của các folder con
     private void updateChildFullPaths(Folder parentFolder) {
         List<Folder> children = dataManager.load(Folder.class)
@@ -219,4 +163,28 @@ public class FolderServiceImpl implements IFolderService {
         }
         return path.toString();
     }
+
+    @Override
+    public Folder findExistingFolder(Folder parent, Object sourceStorage, String name) {
+        if (name == null || name.isBlank()) {
+            return null;
+        }
+        try {
+            return dataManager.load(Folder.class)
+                    .query("select f from Folder f " +
+                            "where ( ( :parent is null and f.parent is null ) or f.parent = :parent ) " +
+                            "and f.sourceStorage = :storage " +
+                            "and f.inTrash = false " +
+                            "and lower(f.name) = lower(:name)")
+                    .parameter("parent", parent)
+                    .parameter("storage", sourceStorage)
+                    .parameter("name", name.trim().toLowerCase())
+                    .one();
+        } catch (Exception e) {
+            // Nếu không tìm thấy hoặc trả về nhiều bản ghi
+            return null;
+        }
+    }
+
+
 }

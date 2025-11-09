@@ -23,7 +23,7 @@
 
     <layout width="900px" height="100%">
         <!-- Object name info -->
-        <textArea id="pathArea" label="Đường dẫn:" readOnly="true" width="100%"/>
+        <textField id="pathArea" readOnly="true" width="100%"/>
 
         <!-- Permission entries table -->
         <dataGrid id="permissionDataGrid"

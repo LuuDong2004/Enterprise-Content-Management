@@ -1,4 +1,5 @@
 package com.vn.ecm.view.ecm;
+
 import com.vn.ecm.entity.*;
 import com.vn.ecm.service.ecm.folderandfile.IFileDescriptorUploadAndDownloadService;
 import com.vn.ecm.service.ecm.PermissionService;
@@ -8,6 +9,7 @@ import io.jmix.flowui.action.ActionType;
 import io.jmix.flowui.action.list.ItemTrackingAction;
 import io.jmix.flowui.component.upload.FileStorageUploadField;
 import io.jmix.flowui.component.upload.receiver.FileTemporaryStorageBuffer;
+import io.jmix.flowui.download.DownloadFormat;
 import io.jmix.flowui.download.Downloader;
 import io.jmix.flowui.kit.component.upload.event.FileUploadSucceededEvent;
 import io.jmix.flowui.upload.TemporaryStorage;
@@ -25,6 +27,7 @@ import java.util.function.Supplier;
 public class UploadAndUploadFileAction extends ItemTrackingAction<FileDescriptor> {
 
     public enum Mode {UPLOAD, DOWNLOAD}
+
     @Autowired
     private TemporaryStorage tempStorage;
 
@@ -42,6 +45,7 @@ public class UploadAndUploadFileAction extends ItemTrackingAction<FileDescriptor
 
     private Mode mode = Mode.UPLOAD;
 
+
     @Autowired
     private IFileDescriptorUploadAndDownloadService fileDescriptorService;
 
@@ -58,20 +62,24 @@ public class UploadAndUploadFileAction extends ItemTrackingAction<FileDescriptor
     public void setMode(Mode mode) {
         this.mode = mode;
     }
+
     public void setFolderSupplier(Supplier<Folder> folderSupplier) {
         this.folderSupplier = folderSupplier;
     }
+
     public void setStorageSupplier(Supplier<SourceStorage> storageSupplier) {
 
         this.storageSupplier = storageSupplier;
     }
-    public UploadAndUploadFileAction(String id)
-    {
+
+    public UploadAndUploadFileAction(String id) {
         super(id);
     }
+
     public UploadAndUploadFileAction() {
         this("UploadDownloadFile");
     }
+
     @Override
     public void execute() {
         if (mode == Mode.UPLOAD) {
@@ -80,6 +88,7 @@ public class UploadAndUploadFileAction extends ItemTrackingAction<FileDescriptor
             download();
         }
     }
+
     // Enable/disable tự động cho DOWNLOAD khi không chọn dòng
     @Override
     protected boolean isApplicable() {
@@ -92,7 +101,7 @@ public class UploadAndUploadFileAction extends ItemTrackingAction<FileDescriptor
         Folder folder = folderSupplier != null ? folderSupplier.get() : null;
         if (folder == null) return;
         User user = (User) currentAuthentication.getUser();
-        boolean per = permissionService.hasPermission(user,PermissionType.CREATE,folder);
+        boolean per = permissionService.hasPermission(user, PermissionType.CREATE, folder);
         if (!per) {
             notifications.create("Bạn không có quyền tải file này lên hệ thống.")
                     .withType(Notifications.Type.ERROR)
@@ -106,17 +115,17 @@ public class UploadAndUploadFileAction extends ItemTrackingAction<FileDescriptor
         Object receiver = uploadEvent.getReceiver();
         if (!(receiver instanceof FileTemporaryStorageBuffer)) return;
         FileTemporaryStorageBuffer buf = (FileTemporaryStorageBuffer) receiver;
-            UUID fileId = buf.getFileData().getFileInfo().getId();
-            File tmp = tempStorage.getFile(fileId);
-            if (tmp == null) return;
-            FileDescriptor fileDescriptor = fileDescriptorService.uploadFile(
-                    fileId,
-                    uploadEvent.getFileName(),
-                    uploadEvent.getContentLength() > 0 ? uploadEvent.getContentLength() : null,
-                    folder,
-                    storage,
-                    user.getUsername()
-            );
+        UUID fileId = buf.getFileData().getFileInfo().getId();
+        File tmp = tempStorage.getFile(fileId);
+        if (tmp == null) return;
+        FileDescriptor fileDescriptor = fileDescriptorService.uploadFile(
+                fileId,
+                uploadEvent.getFileName(),
+                uploadEvent.getContentLength() > 0 ? uploadEvent.getContentLength() : null,
+                folder,
+                storage,
+                user.getUsername()
+        );
         if (fileDescriptor != null) {
             permissionService.initializeFilePermission(user, fileDescriptor);
         }
@@ -134,7 +143,7 @@ public class UploadAndUploadFileAction extends ItemTrackingAction<FileDescriptor
             return;
         }
         User userCurr = (User) currentAuthentication.getUser();
-        boolean per = permissionService.hasPermission(userCurr, PermissionType.MODIFY, selected);
+        boolean per = permissionService.hasPermission(userCurr, PermissionType.READ, selected);
         if (!per) {
             notifications.create("Bạn không có quyền tải xuống File này.")
                     .withType(Notifications.Type.ERROR).withDuration(2000)
@@ -143,14 +152,13 @@ public class UploadAndUploadFileAction extends ItemTrackingAction<FileDescriptor
             return;
         }
         try {
-            byte[] bytes = fileDescriptorService.downloadFile(selected);
-            downloader.download(bytes, selected.getName());
+           byte[] bytes = fileDescriptorService.downloadFile(selected);
+            downloader.download(bytes, selected.getName(),DownloadFormat.OCTET_STREAM);
         } catch (Exception e) {
 //            throw new RuntimeException("Download failed for: " + selected.getName(), e);
             notifications.create("Lỗi tải xuống ")
                     .withType(Notifications.Type.ERROR)
                     .show();
-
         }
     }
 }

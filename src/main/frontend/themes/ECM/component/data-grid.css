@@ -6,7 +6,7 @@ vaadin-grid::part(row ) {
     --lumo-display-action-button:inline-block;
 }
 vaadin-grid::part(last-row){
-   border-bottom: solid 1px var(--lumo-shade-10pct);
+   border-bottom: none;
 }
 
 .my-grid-row-action{

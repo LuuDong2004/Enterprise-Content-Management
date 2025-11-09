@@ -35,24 +35,48 @@ public class FileDescriptorService implements IFileDescriptorService {
     public FileDescriptor renameFile(FileDescriptor file, String newName, String user) {
         if (file == null || newName == null || newName.isBlank()) return file;
 
-        Folder folder = file.getFolder();
-        SourceStorage src = file.getSourceStorage();
-        UUID selfId = file.getId();
+//        Folder folder = file.getFolder();
+//        SourceStorage src = file.getSourceStorage();
+//        UUID selfId = file.getId();
 
-        String unique = ensureUniqueName(folder, src, newName, selfId);
-
-        file.setName(unique);
+        file.setName(newName);
         // cập nhật extension
-        int dot = unique.lastIndexOf('.');
-        file.setExtension((dot > 0 && dot < unique.length() - 1) ? unique.substring(dot + 1) : null);
+        int dot = newName.lastIndexOf('.');
+        file.setExtension((dot > 0 && dot < newName.length() - 1) ? newName.substring(dot + 1) : null);
 
         file.setLastModified(LocalDateTime.now());
         file.setCreateBy(user);
         return dataManager.save(file);
     }
 
-    // ================= HELPERs GỌN =================
 
+    @Override
+    public FileDescriptor findByName(Folder folder, SourceStorage src, String name) {
+        return dataManager.load(FileDescriptor.class)
+                .query("select f from FileDescriptor f " +
+                        "where f.folder = :folder and f.sourceStorage = :src " +
+                        "and f.inTrash = false and lower(f.name) = lower(:name)")
+                .parameter("folder", folder)
+                .parameter("src", src)
+                .parameter("name", name)
+                .optional()
+                .orElse(null);
+    }
+
+    private boolean existsName(Folder folder, SourceStorage src, String name, UUID excludeId) {
+        Long cnt = dataManager.loadValue(
+                        "select count(f) from FileDescriptor f " +
+                                "where f.folder = :folder and f.sourceStorage = :src " +
+                                "and f.inTrash = false and f.name = :name " +
+                                "and (:id is null or f.id <> :id)",
+                        Long.class)
+                .parameter("folder", folder)
+                .parameter("src", src)
+                .parameter("name", name)
+                .parameter("id", excludeId)
+                .one();
+        return cnt != null && cnt > 0L;
+    }
     /**
      * Trả về tên không trùng trong Folder + SourceStorage (bỏ qua chính file có id = excludeId).
      * Dùng count(*) để kiểm tra tồn tại, tránh load list.
@@ -71,25 +95,6 @@ public class FileDescriptorService implements IFileDescriptorService {
             n++;
         }
     }
-
-    /**
-     * Kiểm tra tên đã tồn tại chưa (cùng Folder + SourceStorage + chưa vào thùng rác), bỏ qua id hiện tại.
-     */
-    private boolean existsName(Folder folder, SourceStorage src, String name, UUID excludeId) {
-        Long cnt = dataManager.loadValue(
-                        "select count(f) from FileDescriptor f " +
-                                "where f.folder = :folder and f.sourceStorage = :src " +
-                                "and f.inTrash = false and f.name = :name " +
-                                "and (:id is null or f.id <> :id)",
-                        Long.class)
-                .parameter("folder", folder)
-                .parameter("src", src)
-                .parameter("name", name)
-                .parameter("id", excludeId)
-                .one();
-        return cnt != null && cnt > 0L;
-    }
-
     /**
      * Tách tên thành base + ext. Ví dụ: "report.pdf" -> ["report","pdf"]; "README" -> ["README", null]
      */
@@ -103,4 +108,6 @@ public class FileDescriptorService implements IFileDescriptorService {
         // excludeId = null vì là file mới
         return ensureUniqueName(folder, src, proposed, null);
     }
+
+
 }

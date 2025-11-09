@@ -1,14 +1,17 @@
+
 package com.vn.ecm.view.userlist;
 
 import com.vaadin.flow.component.ClickEvent;
+import com.vaadin.flow.component.HasValue;
 import com.vaadin.flow.component.checkbox.Checkbox;
+import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.Route;
 import com.vn.ecm.entity.*;
 import com.vn.ecm.view.main.MainView;
 import io.jmix.core.DataManager;
+import io.jmix.flowui.component.checkbox.JmixCheckbox;
 import io.jmix.flowui.component.grid.DataGrid;
-import io.jmix.flowui.component.textarea.JmixTextArea;
 import io.jmix.flowui.kit.component.button.JmixButton;
 import io.jmix.flowui.model.CollectionContainer;
 import io.jmix.flowui.model.CollectionLoader;
@@ -16,20 +19,20 @@ import io.jmix.flowui.view.*;
 import io.jmix.securitydata.entity.ResourceRoleEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.ArrayList;
+import java.util.*;
 import java.util.List;
-import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Route(value = "user-list-view", layout = MainView.class)
 @ViewController(id = "UserListView")
 @ViewDescriptor(path = "user-list-view.xml")
-public class UserListView extends StandardListView<User> {
+public class UserListView extends StandardView {
 
     private User selectedUser;
 
     String path = "";
     @ViewComponent
-    private JmixTextArea pathArea;
+    private TextField pathArea;
 
     public void setPath(String path) {
         this.path = path;
@@ -52,68 +55,143 @@ public class UserListView extends StandardListView<User> {
     private CollectionLoader<User> usersDl;
     @ViewComponent
     private CollectionLoader<ResourceRoleEntity> rolesDl;
+
     @ViewComponent
     private CollectionContainer<EcmObject> objectsDc;
+
     @Autowired
     private DataManager dataManager;
+
     @ViewComponent
     private DataGrid<EcmObject> objectDataGrid;
+
     @ViewComponent
     private CollectionLoader<Permission> permissionsDl;
 
+    @ViewComponent
+    private JmixCheckbox usersFilterCb;
+    @ViewComponent
+    private JmixCheckbox rolesFilterCb;
+
     @Subscribe
     private void onInit(InitEvent event) {
+        // Cột checkbox "Thêm"
         objectDataGrid.addColumn(
-                new ComponentRenderer<>(permission -> {
-                    Checkbox checkbox = new Checkbox();
-                    checkbox.setValue(Boolean.TRUE.equals(permission.getSelected()));
-                    checkbox.addValueChangeListener(e -> {
-                        permission.setSelected(e.getValue());
-                    });
+                new ComponentRenderer<>(dto -> {
+                    Checkbox checkbox = new Checkbox(); // Vaadin Checkbox (OK)
+                    checkbox.setValue(Boolean.TRUE.equals(dto.getSelected()));
+                    checkbox.addValueChangeListener(e -> dto.setSelected(e.getValue()));
                     return checkbox;
                 })
         ).setHeader("Thêm");
+
+        usersFilterCb.addValueChangeListener(e -> {
+            loadObjects();
+        });
+
+        rolesFilterCb.addValueChangeListener(e -> {
+            loadObjects();
+        });
+        // (Tuỳ chọn) đặt mặc định: không tích ô nào → sẽ load cả Users lẫn Roles
+        usersFilterCb.setValue(true);
+        rolesFilterCb.setValue(true);
     }
 
     @Subscribe
     public void onBeforeShow(BeforeShowEvent event) {
         if (path != null) {
-            pathArea.setValue(path);
+            pathArea.setValue("Đường dẫn: " + path);
         }
+        loadObjects();
     }
 
-    @Subscribe("usersBtn")
-    public void onUsersBtnClick(ClickEvent<JmixButton> event) {
+    // Lắng nghe thay đổi 2 checkbox để lọc ngay
+//    @Subscribe(id = "usersFilterCb", subject = "valueChangeEvent")
+//    private void onUsersFilterChanged(AbstractField.ComponentValueChangeEvent<Checkbox, Boolean> event) {
+//        loadObjects();
+//    }
+
+    @Subscribe(id = "usersFilterCb", subject = "valueChangeEvent")
+    private void onUsersFilterChanged(HasValue.ValueChangeEvent<Boolean> event) {
+        loadObjects();
+    }
+
+    @Subscribe(id = "rolesFilterCb", subject = "valueChangeEvent")
+    private void onRolesFilterChanged(HasValue.ValueChangeEvent<Boolean> event) {
+        loadObjects();
+    }
+
+
+//    @Subscribe(id = "rolesFilterCb", subject = "valueChangeEvent")
+//    private void onRolesFilterChanged(AbstractField.ComponentValueChangeEvent<Checkbox, Boolean> event) {
+//        loadObjects();
+//    }
+
+    /**
+     * Hợp nhất logic load theo trạng thái 2 checkbox:
+     * - Cả hai cùng trạng thái (đều tích hoặc đều bỏ) → load cả Users và Roles
+     * - Chỉ Users tích → load Users
+     * - Chỉ Roles tích → load Roles
+     */
+    private void loadObjects() {
+        boolean usersChecked = Boolean.TRUE.equals(usersFilterCb.getValue());
+        boolean rolesChecked = Boolean.TRUE.equals(rolesFilterCb.getValue());
+
+        Map<String, Boolean> previouslySelected = objectsDc.getItems() == null ? Collections.emptyMap()
+                : objectsDc.getItems().stream()
+                .collect(Collectors.toMap(EcmObject::getId, x -> Boolean.TRUE.equals(x.getSelected()), (a, b) -> a));
+
+        List<EcmObject> dtos = new ArrayList<>();
+
+        if (usersChecked) {
+            loadUsersInto(dtos);
+        }
+        if (rolesChecked) {
+            loadRolesInto(dtos);
+        }
+
+        // Nếu không tích ô nào → không load gì cả
+        if (!usersChecked && !rolesChecked) {
+            dtos.clear();
+        }
+
+        // Phục hồi trạng thái đã chọn
+        for (EcmObject dto : dtos) {
+            if (previouslySelected.containsKey(dto.getId())) {
+                dto.setSelected(previouslySelected.get(dto.getId()));
+            }
+        }
+
+        objectsDc.setItems(dtos);
+    }
+
+
+    private void loadUsersInto(List<EcmObject> dtos) {
         usersDl.setParameter("file", selectedFile);
         usersDl.setParameter("folder", selectedFolder);
         usersDl.load();
-        List<User> users = usersDl.getContainer().getItems();
-        List<EcmObject> dtos = new ArrayList<>();
-        for (User u : users) {
+
+        for (User u : usersDl.getContainer().getItems()) {
             EcmObject dto = new EcmObject();
-            dto.setId(u.getId().toString());   // để sau này load User
+            dto.setId(u.getId().toString());
             dto.setName(u.getUsername());
             dto.setType(ObjectType.USER);
             dtos.add(dto);
         }
-        objectsDc.setItems(dtos);
     }
 
-    @Subscribe("rolesBtn")
-    public void onRolesBtnClick(ClickEvent<JmixButton> event) {
+    private void loadRolesInto(List<EcmObject> dtos) {
         rolesDl.setParameter("file", selectedFile);
         rolesDl.setParameter("folder", selectedFolder);
         rolesDl.load();
-        List<ResourceRoleEntity> roles = rolesDl.getContainer().getItems();
-        List<EcmObject> dtos = new ArrayList<>();
-        for (ResourceRoleEntity r : roles) {
+
+        for (ResourceRoleEntity r : rolesDl.getContainer().getItems()) {
             EcmObject dto = new EcmObject();
-            dto.setId(r.getCode());    // code dùng làm key cho role
+            dto.setId(r.getCode());
             dto.setName(r.getName());
             dto.setType(ObjectType.ROLE);
             dtos.add(dto);
         }
-        objectsDc.setItems(dtos);
     }
 
     @Subscribe("applyBtn")
@@ -152,7 +230,6 @@ public class UserListView extends StandardListView<User> {
                 selectedRoleCode = dto.getId();
             }
 
-            // Gán loại permission mặc định (nếu có)
             // p.setPermissionType(PermissionType.ALLOW);
             p.setInheritEnabled(true);
             p.setInherited(false);
