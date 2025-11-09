@@ -3,6 +3,10 @@ package com.vn.ecm.view.assignpermission;
 
 import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.checkbox.Checkbox;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.data.renderer.TextRenderer;
@@ -55,6 +59,8 @@ public class AssignPermissionView extends StandardView {
     private DataManager dataManager;
     @Autowired
     private PermissionService permissionService;
+    @ViewComponent
+    private Icon principalIcon;
 
     List<User> username = new ArrayList<>();
 
@@ -226,6 +232,30 @@ public class AssignPermissionView extends StandardView {
             }
             permissionsDc.setItems(list);
         });
+        objectDataGrid.getColumnByKey("name")
+                .setRenderer(new ComponentRenderer<>(obj -> {
+                    Icon icon = (obj.getType() == ObjectType.USER)
+                            ? VaadinIcon.USER.create()
+                            : VaadinIcon.GROUP.create();
+
+                    icon.setSize("var(--lumo-icon-size-s)");
+                    if (obj.getType() == ObjectType.USER) {
+                        icon.setColor("var(--lumo-primary-text-color)");
+                    } else {
+                        icon.setColor("var(--lumo-error-text-color)");
+                    }
+
+                    Span text = new Span(obj.getName() == null ? "" : obj.getName());
+                    HorizontalLayout layout = new HorizontalLayout(icon, text);
+                    layout.setPadding(false);
+                    layout.setSpacing(true);
+                    layout.setAlignItems(FlexComponent.Alignment.CENTER);
+                    return layout;
+                }));
+
+        objectDataGrid.getColumnByKey("name")
+                .setAutoWidth(true)
+                .setSortable(true);
     }
 
     @Subscribe(id = "editBtn", subject = "clickListener")
@@ -270,4 +300,5 @@ public class AssignPermissionView extends StandardView {
         String name = dto.getName() != null ? dto.getName() : "";
         principalTitle.setText("Quyền truy cập cho " + name + ":");
     }
+
 }

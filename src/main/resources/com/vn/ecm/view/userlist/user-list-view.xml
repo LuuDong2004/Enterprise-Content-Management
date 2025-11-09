@@ -92,7 +92,7 @@
             </columns>
         </dataGrid>
         <hbox width="100%" justifyContent="END">
-            <button id="applyBtn" text="Áp dụng" themeNames="primary"/>
+            <button id="applyBtn" text="Áp dụng" themeNames="primary" icon="CHECK_CIRCLE"/>
         </hbox>
     </layout>
 </view>

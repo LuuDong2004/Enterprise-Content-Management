@@ -20,6 +20,7 @@ import com.vn.ecm.view.main.MainView;
 import com.vn.ecm.view.sourcestorage.SourceStorageListView;
 import com.vn.ecm.view.viewmode.ViewModeFragment;
 import io.jmix.core.DataManager;
+import io.jmix.core.MetadataTools;
 import io.jmix.core.security.CurrentAuthentication;
 import io.jmix.flowui.DialogWindows;
 import io.jmix.flowui.Dialogs;
@@ -35,15 +36,12 @@ import io.jmix.flowui.kit.action.ActionPerformedEvent;
 import io.jmix.flowui.kit.component.button.JmixButton;
 import io.jmix.flowui.kit.component.upload.event.FileUploadSucceededEvent;
 import io.jmix.flowui.model.CollectionContainer;
-import io.jmix.flowui.model.CollectionLoader;
 import io.jmix.flowui.model.InstanceContainer;
 import io.jmix.flowui.view.*;
-import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -103,6 +101,8 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     private InstanceContainer<FileDescriptor> metadataFileDc;
     @ViewComponent
     private JmixButton previewBtn;
+    @Autowired
+    protected MetadataTools metadataTools;
 
     @Subscribe("fileDataGird")
     public void onFileDataGirdItemClick(final ItemClickEvent<FileDescriptor> event) {

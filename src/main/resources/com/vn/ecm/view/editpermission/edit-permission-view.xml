@@ -62,7 +62,7 @@
 
     <layout>
         <!-- Đường dẫn full width -->
-        <textField id="pathArea" readOnly="true" width="100%"/>
+        <textField id="pathArea" readOnly="true" width="100%" themeNames="no-border"/>
 
         <!-- CHIA NGANG: Trái (danh sách) | Phải (phân quyền) -->
         <split id="mainSplit"
@@ -77,18 +77,18 @@
                 </hbox>
                 <dataGrid id="objectDataGrid" dataContainer="objectsDc" width="100%" height="100%">
                     <columns>
-                        <column property="name" header="Tên" flexGrow="1"/>
-                        <column property="type" header="Loại" width="140px"/>
+                        <column property="name" header="Tên"/>
                     </columns>
                 </dataGrid>
                 <hbox width="100%" justifyContent="BETWEEN" alignItems="CENTER">
-                    <button id="addBtn" text="Thêm"/>
+                    <button id="addBtn" text="Thêm" icon="PLUS_CIRCLE_O"/>
                 </hbox>
             </vbox>
 
             <!-- Phải: tiêu đề + thao tác (Thêm/Lưu) + bảng phân quyền -->
             <vbox id="rightPane" width="100%" height="100%" spacing="true" expand="permissionDataGrid">
                 <hbox width="100%" alignItems="CENTER" justifyContent="BETWEEN">
+                    <icon id="principalIcon" icon="USER" visible="false" size="var(--lumo-icon-size-m)"/>
                     <span id="principalTitle" text="Quyền truy cập cho"/>
                 </hbox>
 
@@ -98,7 +98,7 @@
                     </columns>
                 </dataGrid>
                 <hbox width="100%" justifyContent="END">
-                    <button id="saveBtn" text="Lưu" themeNames="primary"/>
+                    <button id="saveBtn" text="Lưu" themeNames="primary" icon="CHECK_CIRCLE"/>
                 </hbox>
             </vbox>
         </split>
