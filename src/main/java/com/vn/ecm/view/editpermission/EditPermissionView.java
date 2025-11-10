@@ -3,7 +3,11 @@ package com.vn.ecm.view.editpermission;
 import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.data.renderer.TextRenderer;
@@ -285,6 +289,30 @@ public class EditPermissionView extends StandardView {
                 }
             }
         });
+        objectDataGrid.getColumnByKey("name")
+                .setRenderer(new ComponentRenderer<>(obj -> {
+                    Icon icon = (obj.getType() == ObjectType.USER)
+                            ? VaadinIcon.USER.create()
+                            : VaadinIcon.GROUP.create();
+
+                    icon.setSize("var(--lumo-icon-size-s)");
+                    if (obj.getType() == ObjectType.USER) {
+                        icon.setColor("var(--lumo-primary-text-color)");
+                    } else {
+                        icon.setColor("var(--lumo-error-text-color)");
+                    }
+
+                    Span text = new Span(obj.getName() == null ? "" : obj.getName());
+                    HorizontalLayout layout = new HorizontalLayout(icon, text);
+                    layout.setPadding(false);
+                    layout.setSpacing(true);
+                    layout.setAlignItems(FlexComponent.Alignment.CENTER);
+                    return layout;
+                }));
+
+        objectDataGrid.getColumnByKey("name")
+                .setAutoWidth(true)
+                .setSortable(true);
     }
 
     @Subscribe(id = "saveBtn", subject = "clickListener")
@@ -379,4 +407,5 @@ public class EditPermissionView extends StandardView {
             permissionsDc.getMutableItems().clear();
         }
     }
+
 }

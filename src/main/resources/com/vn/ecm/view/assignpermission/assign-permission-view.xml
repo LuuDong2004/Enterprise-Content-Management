@@ -60,7 +60,7 @@
     </data>
 
     <layout>
-        <textField id="pathArea" readOnly="true" width="100%"/>
+        <textField id="pathArea" readOnly="true" width="100%" themeNames="no-border"/>
 
         <!-- CHIA NGANG: Trái (danh sách) | Phải (phân quyền) -->
         <split id="mainSplit"
@@ -81,7 +81,7 @@
                 </dataGrid>
                 <hbox width="100%" justifyContent="BETWEEN" alignItems="CENTER">
                     <span text="Nhấn “Chỉnh sửa” để thay đổi quyền"/>
-                    <button id="editBtn" text="Chỉnh sửa"/>
+                    <button id="editBtn" text="Chỉnh sửa" icon="EDIT"/>
                 </hbox>
             </vbox>
 
@@ -91,7 +91,7 @@
                   themeNames="spacing-s"
                   expand="permissionDataGrid">
                 <hbox width="100%" justifyContent="BETWEEN" alignItems="CENTER">
-                    <!-- Tiêu đề sẽ được controller cập nhật theo lựa chọn -->
+                    <icon id="principalIcon" icon="USER" visible="false" size="var(--lumo-icon-size-m)"/>
                     <span id="principalTitle" text="Quyền truy cập cho (chưa chọn)"/>
                     <hbox spacing="true">
                     </hbox>
@@ -100,11 +100,11 @@
                 <dataGrid id="permissionDataGrid" dataContainer="permissionsDc"
                           width="100%" minHeight="12em">
                     <columns>
-                        <column property="permissionType" header="Quyền truy cập" width="50%"/>
+                        <column property="permissionType" header="Quyền truy cập" width="50%" sortable="false"/>
                     </columns>
                 </dataGrid>
                 <hbox width="100%" justifyContent="END">
-                    <button id="advanceBtn" text="Nâng cao"/>
+                    <button id="advanceBtn" text="Nâng cao" icon="SHIELD"/>
                 </hbox>
             </vbox>
         </split>

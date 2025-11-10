@@ -11,6 +11,7 @@ import com.vn.ecm.entity.FileDescriptor;
 import com.vn.ecm.entity.ViewModeType;
 import com.vn.ecm.service.ecm.viewmode.IViewModeAdapter;
 import com.vn.ecm.service.ecm.viewmode.Impl.ViewModeApdapterImpl;
+import io.jmix.flowui.action.list.ItemTrackingAction;
 import io.jmix.flowui.component.combobox.JmixComboBox;
 import io.jmix.flowui.component.grid.DataGrid;
 import io.jmix.flowui.fragment.Fragment;
@@ -20,6 +21,8 @@ import io.jmix.flowui.view.Subscribe;
 
 import io.jmix.flowui.view.ViewComponent;
 import io.jmix.flowui.kit.action.Action;
+
+import static com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment.CENTER;
 
 @FragmentDescriptor("view-mode-fragment.xml")
 public class ViewModeFragment extends Fragment<HorizontalLayout> {
@@ -73,27 +76,26 @@ public class ViewModeFragment extends Fragment<HorizontalLayout> {
         viewMode.setItemLabelGenerator(ViewModeType::toString);
         viewMode.setValue(ViewModeType.DEFAULT);
         if (iconTiles != null) iconTiles.setVisible(false);
-        // global context menu attached to tiles container so user can right/left click anywhere
-        if (iconTiles != null && globalMenu == null) {
-            globalMenu = new ContextMenu(iconTiles);
-            globalMenu.setOpenOnClick(false); // open by right-click only
-            addMenuItems(globalMenu);
-            globalMenu.addOpenedChangeListener(ev -> {
-                if (!ev.isOpened()) return;
-                boolean hasSelection = filesDc != null && filesDc.getItemOrNull() != null;
-                if (!hasSelection) {
-                    globalMenu.close(); // only open when there is a selection
-                    return;
-                }
-                updateMenuItemsState();
-            });
-        }
+
+        // KHÔNG tạo global menu ở đây vì sẽ xung đột với tile menu
+        // Mỗi tile đã có menu riêng trong createTile()
+        // Global menu chỉ cần khi click vào vùng trống (không phải tile)
+        // Nhưng trong trường hợp này, không cần global menu vì:
+        // 1. Mỗi tile đã có menu riêng
+        // 2. Global menu sẽ xung đột và gây ra hiện tượng menu mở rồi đóng ngay
+
         viewMode.addValueChangeListener(e -> {
             ViewModeType mode = e.getValue() == null ? ViewModeType.DEFAULT : e.getValue();
             switch (mode) {
-                case LIST -> { showGrid(); fileViewModeAdapter.applyList(fileDescriptorDataGrid); }
+                case LIST -> {
+                    showGrid();
+                    fileViewModeAdapter.applyList(fileDescriptorDataGrid);
+                }
                 case MEDIUM_ICONS -> showTiles();
-                default -> { showGrid(); fileViewModeAdapter.applyDefault(fileDescriptorDataGrid); }
+                default -> {
+                    showGrid();
+                    fileViewModeAdapter.applyDefault(fileDescriptorDataGrid);
+                }
             }
         });
     }
@@ -103,23 +105,45 @@ public class ViewModeFragment extends Fragment<HorizontalLayout> {
     }
 
     private void showTiles() {
-        if (fileDescriptorDataGrid != null) fileDescriptorDataGrid.setVisible(false);
+        // Ẩn datagrid nhưng vẫn giữ enabled để selection hoạt động
+        if (fileDescriptorDataGrid != null) {
+            fileDescriptorDataGrid.setVisible(false);
+            fileDescriptorDataGrid.setEnabled(true);
+        }
+
         if (iconTiles == null || filesDc == null) return;
+
+        // Lưu selection hiện tại để restore sau
+        FileDescriptor currentSelection = filesDc.getItemOrNull();
+
         iconTiles.removeAll();
-        // reset selection between folder/data changes
+
+        // Reset selection giữa các lần thay đổi folder/data
         clearSelection();
+
+        // Tạo tiles cho tất cả files
         for (FileDescriptor fd : filesDc.getItems()) {
             iconTiles.add(createTile(fd));
         }
+
         iconTiles.setVisible(true);
-        // ensure global menu exists
-        if (globalMenu == null) {
-            globalMenu = new ContextMenu(iconTiles);
-            globalMenu.setOpenOnClick(false);
-            addMenuItems(globalMenu);
-            globalMenu.addOpenedChangeListener(ev -> {
-                if (ev.isOpened()) updateMenuItemsState();
-            });
+
+        // Restore selection nếu có
+        if (currentSelection != null && filesDc.getItems().contains(currentSelection)) {
+            java.util.List<com.vaadin.flow.component.Component> children =
+                    iconTiles.getChildren().collect(java.util.stream.Collectors.toList());
+
+            for (int i = 0; i < children.size() && i < filesDc.getItems().size(); i++) {
+                com.vaadin.flow.component.Component component = children.get(i);
+                if (component instanceof Div) {
+                    Div tile = (Div) component;
+                    FileDescriptor fd = filesDc.getItems().get(i);
+                    if (fd.equals(currentSelection)) {
+                        selectTile(tile, fd);
+                        break;
+                    }
+                }
+            }
         }
         updateMenuItemsState();
     }
@@ -127,12 +151,22 @@ public class ViewModeFragment extends Fragment<HorizontalLayout> {
     private Div createTile(FileDescriptor fd) {
         Div tile = new Div();
         tile.addClassName("file-tile");
+
+        // Lưu reference đến FileDescriptor
+        tile.getElement().setProperty("fileDescriptorId",
+                fd.getId() != null ? fd.getId().toString() : "");
+
+        // Tạo icon
         Icon icon = pickIcon(fd).create();
         icon.setSize("48px");
         icon.addClassName("file-icon");
         icon.addClassName(fileTypeClass(fd));
+
+        // Tạo tên file
         Span name = new Span(fd.getName());
         name.addClassName("file-name");
+
+        // Layout chứa icon và tên
         VerticalLayout box = new VerticalLayout(icon, name);
         box.setPadding(false);
         box.setSpacing(false);
@@ -141,33 +175,67 @@ public class ViewModeFragment extends Fragment<HorizontalLayout> {
 
         tile.getStyle().set("cursor", "pointer");
 
-        // Context menu per tile (manual open when already selected and left-clicked)
+        // Context menu cho mỗi tile - CHỈ MỞ BẰNG CHUỘT PHẢI
         ContextMenu menu = new ContextMenu(tile);
         menu.setOpenOnClick(false);
-        var deleteItem = menu.addItem("Delete file", e -> executeGridAction("deleteFile"));
-        var renameItem = menu.addItem("Rename file", e -> executeGridAction("renameFile"));
-        var assignItem = menu.addItem("Assign Permission", e -> executeGridAction("onObjectAssignPermission"));
-        menu.addOpenedChangeListener(ev -> {
-            // right-click should also select the tile
-            if (ev.isOpened() && selectedTile != tile) {
-                selectTile(tile, fd);
-            }
-            boolean isSelectedHere = (selectedTile == tile) && filesDc != null && filesDc.getItemOrNull() != null;
-            deleteItem.setEnabled(isSelectedHere);
-            renameItem.setEnabled(isSelectedHere);
-            assignItem.setEnabled(true);
+
+        var deleteItem = menu.addItem("Delete file", e -> {
+            executeGridAction("deleteFile");
         });
+
+        var renameItem = menu.addItem("Rename file", e -> {
+            executeGridAction("renameFile");
+        });
+
+        var assignItem = menu.addItem("Assign Permission", e -> {
+            executeGridAction("onObjectAssignPermission");
+        });
+
+        // QUAN TRỌNG: Đóng menu ngay lập tức nếu chưa có selection
+        // Sử dụng UI.access để đóng đồng bộ
+        menu.addOpenedChangeListener(ev -> {
+            if (ev.isOpened()) {
+                // Kiểm tra ngay lập tức
+                boolean isSelectedHere = (selectedTile == tile) &&
+                        filesDc != null &&
+                        filesDc.getItemOrNull() != null &&
+                        filesDc.getItemOrNull().equals(fd);
+
+                if (!isSelectedHere) {
+                    // Đóng menu đồng bộ ngay lập tức
+                    com.vaadin.flow.component.UI.getCurrent().accessSynchronously(() -> {
+                        menu.close();
+                    });
+                    return;
+                }
+
+                // Enable actions nếu đã được chọn
+                deleteItem.setEnabled(true);
+                renameItem.setEnabled(true);
+                assignItem.setEnabled(true);
+            }
+        });
+
+        // Click handler cho tile - CHỈ XỬ LÝ CHUỘT TRÁI
         tile.addClickListener(e -> {
             handlingTileClick = true;
-            if (selectedTile == tile) {
-                clearSelection(); // second click on same tile: deselect
-            } else {
-                selectTile(tile, fd); // first click: select
+
+            try {
+                if (selectedTile == tile) {
+                    clearSelection();
+                } else {
+                    selectTile(tile, fd);
+                }
+            } finally {
+                com.vaadin.flow.component.UI.getCurrent().access(() -> {
+                    handlingTileClick = false;
+                });
             }
-            handlingTileClick = false;
         });
+
         return tile;
     }
+
     private void executeGridAction(String actionId) {
         if (fileDescriptorDataGrid == null) return;
         Action action = fileDescriptorDataGrid.getAction(actionId);
@@ -213,7 +281,16 @@ public class ViewModeFragment extends Fragment<HorizontalLayout> {
         selectedTile = tile;
         tile.addClassName("file-tile-selected");
         if (filesDc != null) filesDc.setItem(fd);
-        if (fileDescriptorDataGrid != null) fileDescriptorDataGrid.select(fd);
+        if (fileDescriptorDataGrid != null) {
+            // Đảm bảo datagrid selection được cập nhật ngay cả khi ẩn
+            fileDescriptorDataGrid.select(fd);
+            // Refresh actions để chúng được enable/disable đúng cách
+            fileDescriptorDataGrid.getActions().forEach(action -> {
+                if (action instanceof ItemTrackingAction) {
+                    ((ItemTrackingAction<?>) action).refreshState();
+                }
+            });
+        }
         updateMenuItemsState();
     }
 

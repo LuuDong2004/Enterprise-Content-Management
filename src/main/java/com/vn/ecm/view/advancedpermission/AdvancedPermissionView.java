@@ -2,7 +2,6 @@ package com.vn.ecm.view.advancedpermission;
 
 
 import com.vaadin.flow.component.ClickEvent;
-import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
 import com.vn.ecm.entity.*;

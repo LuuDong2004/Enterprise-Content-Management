@@ -132,6 +132,14 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         metadataPanel.setVisible(!currentlyVisible);
         boolean nowVisible = metadataPanel.isVisible();
         previewBtn.setText(nowVisible ? "Ẩn chi tiết" : "Xem chi tiết");
+
+
+        // sửa thêm fix - listener event
+        filesDc.addItemChangeListener(e -> {
+            if (e.getItem() != null) {
+                metadataFileDc.setItem(e.getItem());
+            }
+        });
     }
 
 

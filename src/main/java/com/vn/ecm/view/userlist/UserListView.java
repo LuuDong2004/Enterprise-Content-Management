@@ -1,9 +1,15 @@
 
+
 package com.vn.ecm.view.userlist;
 
 import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.HasValue;
 import com.vaadin.flow.component.checkbox.Checkbox;
+import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.Route;
@@ -95,6 +101,30 @@ public class UserListView extends StandardView {
         // (Tuỳ chọn) đặt mặc định: không tích ô nào → sẽ load cả Users lẫn Roles
         usersFilterCb.setValue(true);
         rolesFilterCb.setValue(true);
+        objectDataGrid.getColumnByKey("name")
+                .setRenderer(new ComponentRenderer<>(obj -> {
+                    Icon icon = (obj.getType() == ObjectType.USER)
+                            ? VaadinIcon.USER.create()
+                            : VaadinIcon.GROUP.create();
+
+                    icon.setSize("var(--lumo-icon-size-s)");
+                    if (obj.getType() == ObjectType.USER) {
+                        icon.setColor("var(--lumo-primary-text-color)");
+                    } else {
+                        icon.setColor("var(--lumo-error-text-color)");
+                    }
+
+                    Span text = new Span(obj.getName() == null ? "" : obj.getName());
+                    HorizontalLayout layout = new HorizontalLayout(icon, text);
+                    layout.setPadding(false);
+                    layout.setSpacing(true);
+                    layout.setAlignItems(FlexComponent.Alignment.CENTER);
+                    return layout;
+                }));
+
+        objectDataGrid.getColumnByKey("name")
+                .setAutoWidth(true)
+                .setSortable(true);
     }
 
     @Subscribe
@@ -104,12 +134,6 @@ public class UserListView extends StandardView {
         }
         loadObjects();
     }
-
-    // Lắng nghe thay đổi 2 checkbox để lọc ngay
-//    @Subscribe(id = "usersFilterCb", subject = "valueChangeEvent")
-//    private void onUsersFilterChanged(AbstractField.ComponentValueChangeEvent<Checkbox, Boolean> event) {
-//        loadObjects();
-//    }
 
     @Subscribe(id = "usersFilterCb", subject = "valueChangeEvent")
     private void onUsersFilterChanged(HasValue.ValueChangeEvent<Boolean> event) {
@@ -121,18 +145,6 @@ public class UserListView extends StandardView {
         loadObjects();
     }
 
-
-//    @Subscribe(id = "rolesFilterCb", subject = "valueChangeEvent")
-//    private void onRolesFilterChanged(AbstractField.ComponentValueChangeEvent<Checkbox, Boolean> event) {
-//        loadObjects();
-//    }
-
-    /**
-     * Hợp nhất logic load theo trạng thái 2 checkbox:
-     * - Cả hai cùng trạng thái (đều tích hoặc đều bỏ) → load cả Users và Roles
-     * - Chỉ Users tích → load Users
-     * - Chỉ Roles tích → load Roles
-     */
     private void loadObjects() {
         boolean usersChecked = Boolean.TRUE.equals(usersFilterCb.getValue());
         boolean rolesChecked = Boolean.TRUE.equals(rolesFilterCb.getValue());
@@ -142,26 +154,22 @@ public class UserListView extends StandardView {
                 .collect(Collectors.toMap(EcmObject::getId, x -> Boolean.TRUE.equals(x.getSelected()), (a, b) -> a));
 
         List<EcmObject> dtos = new ArrayList<>();
-
         if (usersChecked) {
             loadUsersInto(dtos);
         }
         if (rolesChecked) {
             loadRolesInto(dtos);
         }
-
         // Nếu không tích ô nào → không load gì cả
         if (!usersChecked && !rolesChecked) {
             dtos.clear();
         }
-
         // Phục hồi trạng thái đã chọn
         for (EcmObject dto : dtos) {
             if (previouslySelected.containsKey(dto.getId())) {
                 dto.setSelected(previouslySelected.get(dto.getId()));
             }
         }
-
         objectsDc.setItems(dtos);
     }
 
