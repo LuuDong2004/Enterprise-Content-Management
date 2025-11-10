@@ -65,7 +65,7 @@
             <button id="newFolderBtn" text="Tạo mới" action="foldersTree.createFolder" icon="PLUS_CIRCLE_O"/>
             <button id="phanquyenbtn" text="Phân quyền" action="foldersTree.assignPermission" icon="LOCK"/>
             <button id="renameFolderBtn" text="Đổi tên" action="foldersTree.renameFolder" icon="lumo:edit"/>
-            <button id="deleteFolderBtn" text="Xóa tệp" action="foldersTree.delete" icon="RECYCLE"/>
+            <button id="deleteFolderBtn" text="Xóa tệp" action="foldersTree.delete" icon="TRASH"/>
             <fileStorageUploadField id="fileRefField"
                                     property="fileRef"
                                     dataContainer="filesDc"

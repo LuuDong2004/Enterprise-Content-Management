@@ -119,7 +119,7 @@ public class EditPermissionView extends StandardView {
                 rolesDl.load();
                 for (ResourceRoleEntity r : rolesDl.getContainer().getItems()) {
                     EcmObject dto = new EcmObject();
-                    dto.setId(r.getId().toString());
+                    dto.setId(r.getCode());
                     dto.setType(ObjectType.ROLE);
                     dto.setName(r.getName());
                     dtos.add(dto);
