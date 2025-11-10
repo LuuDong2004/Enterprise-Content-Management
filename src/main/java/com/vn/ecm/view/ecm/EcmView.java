@@ -3,7 +3,7 @@ package com.vn.ecm.view.ecm;
 import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
-import com.vaadin.flow.component.grid.Grid;
+
 import com.vaadin.flow.component.grid.ItemClickEvent;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
@@ -17,6 +17,8 @@ import com.vn.ecm.entity.*;
 import com.vn.ecm.service.ecm.PermissionService;
 import com.vn.ecm.service.ecm.folderandfile.IFileDescriptorService;
 import com.vn.ecm.service.ecm.folderandfile.IFolderService;
+import com.vn.ecm.view.folder.CreateFolderDialogView;
+import com.vn.ecm.view.folder.EditNameFolderDialogView;
 import com.vn.ecm.view.main.MainView;
 import com.vn.ecm.view.sourcestorage.SourceStorageListView;
 import com.vn.ecm.view.viewmode.ViewModeFragment;
@@ -42,8 +44,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 import static io.jmix.flowui.app.inputdialog.InputParameter.stringParameter;
 
@@ -255,50 +256,16 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
 
     //new folder
     @Subscribe("foldersTree.createFolder")
-    public void onFoldersTreeCreateFolder(final ActionPerformedEvent event) {
+    public void onFoldersTreeCreateFolder(ActionPerformedEvent event) {
         User user = (User) currentAuthentication.getUser();
-        Folder selected = foldersTree.getSingleSelectedItem();
-        Folder parent;
-        if (selected != null) {
-            parent = selected;
-            boolean per = permissionService.hasPermission(user, PermissionType.CREATE, selected);
-            if (!per) {
-                notifications.create("Bạn không có quyền tạo folder")
-                        .withDuration(2000)
-                        .withCloseable(false)
-                        .withType(Notifications.Type.ERROR)
-                        .show();
-                return;
-            }
+        Folder parent = foldersTree.getSingleSelectedItem();
 
-        } else {
-            parent = null;
-        }
-        dialogs.createInputDialog(this)
-                .withHeader("Tạo mới folder")
-                .withParameters(
-                        stringParameter("name")
-                                .withLabel("Tên Folder ")
-                                .withRequired(true)
-                                .withDefaultValue("New Folder"))
-                .withActions(DialogActions.OK_CANCEL)
-                .withCloseListener(closeEvent -> {
-                    if (closeEvent.closedWith(DialogOutcome.OK)) {
-                        Folder existingFolder = folderService.findExistingFolder(parent, currentStorage, closeEvent.getValue("name"));
-                        if (existingFolder != null) {
-                            notifications.show(messageBundle.getMessage("ecmRenameFolderExistAlert"));
-                        } else {
-                            Folder folder = dataManager.create(Folder.class);
-                            folder.setName(closeEvent.getValue("name"));
-                            folder.setParent(foldersTree.getSingleSelectedItem());
-                            folder.setSourceStorage(currentStorage);
-                            folderService.createFolder(folder);
-                            loadAccessibleFolders(user);
-                            notifications.show(messageBundle.getMessage("ecmCreateFolderAlert"));
-                        }
-                    }
-                })
-                .open();
+		var dw = dialogWindows.view(this, CreateFolderDialogView.class).build();
+		dw.getView().setContext(parent, currentStorage);
+		dw.addAfterCloseListener(e -> {
+			loadAccessibleFolders(user);
+		});
+		dw.open();
     }
 
     //rename folder
@@ -317,27 +284,12 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
                     .show();
             return;
         }
-        dialogs.createInputDialog(this)
-                .withHeader("Đổi tên thư mục")
-                .withParameters(
-                        stringParameter("name")
-                                .withLabel("Tên thư mục")
-                                .withDefaultValue(selected.getName())
-                                .withRequired(true)
-                )
-                .withActions(DialogActions.OK_CANCEL)
-                .withCloseListener(closeEvent -> {
-                    if (closeEvent.closedWith(DialogOutcome.OK)) {
-                        Folder existingFolder = folderService.findExistingFolder(selected.getParent(), currentStorage, closeEvent.getValue("name"));
-                        if (existingFolder != null) {
-                            notifications.show(messageBundle.getMessage("ecmRenameFolderExistAlert"));
-                        } else {
-                            folderService.renameFolder(selected, closeEvent.getValue("name"));
-                            notifications.show(messageBundle.getMessage("ecmRenameFolderAlert"));
-                        }
-                    }
-                })
-                .open();
+        var dw = dialogWindows.view(this, EditNameFolderDialogView.class).build();
+        dw.getView().setContext(selected, currentStorage);
+        dw.addAfterCloseListener(e -> {
+            loadAccessibleFolders(userCurr);
+        });
+        dw.open();
     }
 
     //xóa vào thùng rác
