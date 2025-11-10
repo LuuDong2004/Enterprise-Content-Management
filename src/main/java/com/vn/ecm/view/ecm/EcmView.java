@@ -3,6 +3,7 @@ package com.vn.ecm.view.ecm;
 import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
+import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.ItemClickEvent;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
@@ -100,10 +101,57 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     private InstanceContainer<FileDescriptor> metadataFileDc;
     @ViewComponent
     private JmixButton previewBtn;
+    @ViewComponent
+    private Span emptyStateText;
 
     @Subscribe("fileDataGird")
     public void onFileDataGirdItemClick(final ItemClickEvent<FileDescriptor> event) {
         metadataFileDc.setItem(event.getItem());
+    }
+
+    @Subscribe
+    public void onInit(InitEvent event) {
+        previewBtn.getElement().getStyle().set("position", "fixed");
+        previewBtn.getElement().getStyle().set("right", "16px");
+
+        metadataPanel.setVisible(false);
+        viewModeFragment.bind(fileDataGird, filesDc, iconTiles);
+
+        // Thêm listener để tự động ẩn metadata khi bỏ selection
+        if (filesDc != null) {
+            filesDc.addItemChangeListener(e -> {
+                if (e.getItem() != null) {
+                    // Có selection: cập nhật metadata
+                    metadataFileDc.setItem(e.getItem());
+                } else {
+                    // Không có selection: ẩn metadata panel
+                    if (metadataPanel.isVisible()) {
+                        metadataPanel.setVisible(false);
+                        metadataPanel.setEnabled(false);
+                        previewBtn.setText("Xem chi tiết");
+                    }
+                }
+            });
+        }
+        initFolderGridColumn();
+        fileRefField.setEnabled(false);
+        uploadAction.setMode(UploadAndDownloadFileAction.Mode.UPLOAD);
+        uploadAction.setFolderSupplier(() -> foldersTree.getSingleSelectedItem());
+        uploadAction.setStorageSupplier(() -> currentStorage);
+        //download
+        downloadAction.setMode(UploadAndDownloadFileAction.Mode.DOWNLOAD);
+        downloadAction.setTarget(fileDataGird);
+        if (btnDownload.getAction() == null) {
+            btnDownload.setAction(downloadAction);
+        }
+
+        if (foldersTree != null) {
+            foldersTree.addSelectionListener(e -> updateEmptyStateText());
+        }
+        if (filesDc != null) {
+            filesDc.addCollectionChangeListener(e -> updateEmptyStateText());
+        }
+
     }
 
     @Subscribe(id = "previewBtn", subject = "clickListener")
@@ -130,36 +178,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         boolean nowVisible = metadataPanel.isVisible();
         previewBtn.setText(nowVisible ? "Ẩn chi tiết" : "Xem chi tiết");
 
-
-        // sửa thêm fix - listener event
-        filesDc.addItemChangeListener(e -> {
-            if (e.getItem() != null) {
-                metadataFileDc.setItem(e.getItem());
-            }
-        });
-    }
-
-
-    @Subscribe
-    public void onInit(InitEvent event) {
-        previewBtn.getElement().getStyle().set("position", "fixed");
-        previewBtn.getElement().getStyle().set("right", "16px");
-
-        metadataPanel.setVisible(false);
-        viewModeFragment.bind(fileDataGird, filesDc, iconTiles);
-
-        initFolderGridColumn();
-        // Mặc định ẩn upload nếu chưa chọn thư mục
-        fileRefField.setEnabled(false);
-        uploadAction.setMode(UploadAndDownloadFileAction.Mode.UPLOAD);
-        uploadAction.setFolderSupplier(() -> foldersTree.getSingleSelectedItem());
-        uploadAction.setStorageSupplier(() -> currentStorage);
-        //download
-        downloadAction.setMode(UploadAndDownloadFileAction.Mode.DOWNLOAD);
-        downloadAction.setTarget(fileDataGird);
-        if (btnDownload.getAction() == null) {
-            btnDownload.setAction(downloadAction);
-        }
     }
 
 
@@ -418,21 +436,21 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
                 .withCloseListener(closeEvent -> {
                     String newName = closeEvent.getValue("name");
                     if (closeEvent.closedWith(DialogOutcome.OK)) {
-                       FileDescriptor fileExist = fileDescriptorService.findByName(selectedFolder,currentStorage,newName);
-                       if(fileExist == null){
-                            fileDescriptorService.renameFile(selected,newName,userCurr.getUsername());
+                        FileDescriptor fileExist = fileDescriptorService.findByName(selectedFolder, currentStorage, newName);
+                        if (fileExist == null) {
+                            fileDescriptorService.renameFile(selected, newName, userCurr.getUsername());
                             notifications.create(messageBundle.getMessage("ecmRenameFileAlert"))
                                     .withType(Notifications.Type.SUCCESS)
                                     .withDuration(2000)
                                     .withCloseable(false)
                                     .show();
-                       }else{
-                           notifications.create(messageBundle.getMessage("ecmRenameFileExistAlert"))
-                                   .withDuration(2000)
-                                   .withCloseable(false)
-                                   .withType(Notifications.Type.ERROR)
-                                   .show();
-                       }
+                        } else {
+                            notifications.create(messageBundle.getMessage("ecmRenameFileExistAlert"))
+                                    .withDuration(2000)
+                                    .withCloseable(false)
+                                    .withType(Notifications.Type.ERROR)
+                                    .show();
+                        }
                     }
                 })
                 .open();
@@ -487,6 +505,22 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
             foldersDc.setItem(item);
         });
         return hboxMain;
+    }
+
+    private void updateEmptyStateText() {
+        if (emptyStateText == null) return;
+
+        Folder selectedFolder = foldersTree.getSingleSelectedItem();
+        boolean hasFolderSelected = selectedFolder != null;
+        boolean hasFiles = filesDc != null && !filesDc.getItems().isEmpty();
+
+        if (!hasFolderSelected) {
+            emptyStateText.setText("Chưa chọn thư mục");
+        } else if (!hasFiles) {
+            emptyStateText.setText("Thư mục trống");
+        } else {
+            emptyStateText.setText("Không có dữ liệu");
+        }
     }
 }
 
