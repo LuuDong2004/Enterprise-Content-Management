@@ -24,7 +24,7 @@ import java.util.function.Supplier;
 @ActionType("UploadDownloadFile")
 @Component("ecm_UploadAndUploadFileAction")
 @Scope("prototype")
-public class UploadAndUploadFileAction extends ItemTrackingAction<FileDescriptor> {
+public class UploadAndDownloadFileAction extends ItemTrackingAction<FileDescriptor> {
 
     public enum Mode {UPLOAD, DOWNLOAD}
 
@@ -72,11 +72,11 @@ public class UploadAndUploadFileAction extends ItemTrackingAction<FileDescriptor
         this.storageSupplier = storageSupplier;
     }
 
-    public UploadAndUploadFileAction(String id) {
+    public UploadAndDownloadFileAction(String id) {
         super(id);
     }
 
-    public UploadAndUploadFileAction() {
+    public UploadAndDownloadFileAction() {
         this("UploadDownloadFile");
     }
 
@@ -146,7 +146,8 @@ public class UploadAndUploadFileAction extends ItemTrackingAction<FileDescriptor
         boolean per = permissionService.hasPermission(userCurr, PermissionType.READ, selected);
         if (!per) {
             notifications.create("Bạn không có quyền tải xuống File này.")
-                    .withType(Notifications.Type.ERROR).withDuration(2000)
+                    .withType(Notifications.Type.ERROR)
+                    .withDuration(2000)
                     .withCloseable(false)
                     .show();
             return;
@@ -158,6 +159,8 @@ public class UploadAndUploadFileAction extends ItemTrackingAction<FileDescriptor
 //            throw new RuntimeException("Download failed for: " + selected.getName(), e);
             notifications.create("Lỗi tải xuống ")
                     .withType(Notifications.Type.ERROR)
+                    .withDuration(2000)
+                    .withCloseable(false)
                     .show();
         }
     }

@@ -35,15 +35,12 @@ import io.jmix.flowui.kit.action.ActionPerformedEvent;
 import io.jmix.flowui.kit.component.button.JmixButton;
 import io.jmix.flowui.kit.component.upload.event.FileUploadSucceededEvent;
 import io.jmix.flowui.model.CollectionContainer;
-import io.jmix.flowui.model.CollectionLoader;
 import io.jmix.flowui.model.InstanceContainer;
 import io.jmix.flowui.view.*;
-import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -82,9 +79,9 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     @Autowired
     private Actions actions;
     @ViewComponent("uploadAction")
-    private UploadAndUploadFileAction uploadAction;
+    private UploadAndDownloadFileAction uploadAction;
     @ViewComponent("downloadAction")
-    private UploadAndUploadFileAction downloadAction;
+    private UploadAndDownloadFileAction downloadAction;
     @ViewComponent
     private JmixButton btnDownload;
     @Autowired
@@ -154,11 +151,11 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         initFolderGridColumn();
         // Mặc định ẩn upload nếu chưa chọn thư mục
         fileRefField.setEnabled(false);
-        uploadAction.setMode(UploadAndUploadFileAction.Mode.UPLOAD);
+        uploadAction.setMode(UploadAndDownloadFileAction.Mode.UPLOAD);
         uploadAction.setFolderSupplier(() -> foldersTree.getSingleSelectedItem());
         uploadAction.setStorageSupplier(() -> currentStorage);
         //download
-        downloadAction.setMode(UploadAndUploadFileAction.Mode.DOWNLOAD);
+        downloadAction.setMode(UploadAndDownloadFileAction.Mode.DOWNLOAD);
         downloadAction.setTarget(fileDataGird);
         if (btnDownload.getAction() == null) {
             btnDownload.setAction(downloadAction);

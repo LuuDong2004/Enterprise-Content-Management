@@ -34,6 +34,7 @@ public class ViewModeFragment extends Fragment<HorizontalLayout> {
     private CollectionContainer<FileDescriptor> filesDc;
     private HorizontalLayout iconTiles;
     private Div selectedTile;
+    private FileDescriptor selectedFileDescriptor; // Lưu FileDescriptor đã chọn để so sánh chính xác
     private ContextMenu globalMenu;
     private MenuItem globalDeleteItem;
     private MenuItem globalRenameItem;
@@ -156,17 +157,17 @@ public class ViewModeFragment extends Fragment<HorizontalLayout> {
         tile.getElement().setProperty("fileDescriptorId",
                 fd.getId() != null ? fd.getId().toString() : "");
 
-        // Tạo icon
+        // Icon
         Icon icon = pickIcon(fd).create();
         icon.setSize("48px");
         icon.addClassName("file-icon");
         icon.addClassName(fileTypeClass(fd));
 
-        // Tạo tên file
+        // Tên file
         Span name = new Span(fd.getName());
         name.addClassName("file-name");
 
-        // Layout chứa icon và tên
+        // Layout
         VerticalLayout box = new VerticalLayout(icon, name);
         box.setPadding(false);
         box.setSpacing(false);
@@ -179,47 +180,39 @@ public class ViewModeFragment extends Fragment<HorizontalLayout> {
         ContextMenu menu = new ContextMenu(tile);
         menu.setOpenOnClick(false);
 
-        var deleteItem = menu.addItem("Delete file", e -> {
-            executeGridAction("deleteFile");
-        });
+        var deleteItem = menu.addItem("Xóa", e -> executeGridAction("deleteFile"));
+        var renameItem = menu.addItem("Đổi tên", e -> executeGridAction("renameFile"));
+        var downloadItem = menu.addItem("Tải xuống", e -> executeGridAction("downloadFile"));
+        var assignItem = menu.addItem("Phân quyền", e -> executeGridAction("onObjectAssignPermission"));
 
-        var renameItem = menu.addItem("Rename file", e -> {
-            executeGridAction("renameFile");
-        });
+        // Mặc định disable; sẽ bật khi menu mở
+        deleteItem.setEnabled(false);
+        renameItem.setEnabled(false);
+        downloadItem.setEnabled(false);
+        assignItem.setEnabled(false);
 
-        var assignItem = menu.addItem("Assign Permission", e -> {
-            executeGridAction("onObjectAssignPermission");
-        });
-
-        // QUAN TRỌNG: Đóng menu ngay lập tức nếu chưa có selection
-        // Sử dụng UI.access để đóng đồng bộ
-        menu.addOpenedChangeListener(ev -> {
-            if (ev.isOpened()) {
-                // Kiểm tra ngay lập tức
-                boolean isSelectedHere = (selectedTile == tile) &&
-                        filesDc != null &&
-                        filesDc.getItemOrNull() != null &&
-                        filesDc.getItemOrNull().equals(fd);
-
-                if (!isSelectedHere) {
-                    // Đóng menu đồng bộ ngay lập tức
-                    com.vaadin.flow.component.UI.getCurrent().accessSynchronously(() -> {
-                        menu.close();
-                    });
-                    return;
-                }
-
-                // Enable actions nếu đã được chọn
-                deleteItem.setEnabled(true);
-                renameItem.setEnabled(true);
-                assignItem.setEnabled(true);
+        // ⭐ Quan trọng: chọn tile NGAY TRƯỚC khi ContextMenu của Vaadin mở
+        // Bằng cách lắng nghe sự kiện DOM "contextmenu" (right click) trên tile
+        tile.getElement().addEventListener("contextmenu", domEvent -> {
+            // nếu tile này chưa được chọn, chọn nó trước khi menu hiển thị
+            if (selectedTile != tile) {
+                selectTile(tile, fd);
             }
         });
 
-        // Click handler cho tile - CHỈ XỬ LÝ CHUỘT TRÁI
+        // Bật/tắt action khi menu đã mở (selection đã được đảm bảo ở trên)
+        menu.addOpenedChangeListener(ev -> {
+            if (!ev.isOpened()) return;
+            boolean hasSelection = filesDc != null && filesDc.getItemOrNull() != null;
+            deleteItem.setEnabled(hasSelection);
+            renameItem.setEnabled(hasSelection);
+            downloadItem.setEnabled(hasSelection);
+            assignItem.setEnabled(true);
+        });
+
+        // Click trái: toggle chọn
         tile.addClickListener(e -> {
             handlingTileClick = true;
-
             try {
                 if (selectedTile == tile) {
                     clearSelection();
@@ -227,14 +220,13 @@ public class ViewModeFragment extends Fragment<HorizontalLayout> {
                     selectTile(tile, fd);
                 }
             } finally {
-                com.vaadin.flow.component.UI.getCurrent().access(() -> {
-                    handlingTileClick = false;
-                });
+                com.vaadin.flow.component.UI.getCurrent().access(() -> handlingTileClick = false);
             }
         });
 
         return tile;
     }
+
 
     private void executeGridAction(String actionId) {
         if (fileDescriptorDataGrid == null) return;
@@ -268,6 +260,7 @@ public class ViewModeFragment extends Fragment<HorizontalLayout> {
             selectedTile.removeClassName("file-tile-selected");
             selectedTile = null;
         }
+        selectedFileDescriptor = null; // Clear selected FileDescriptor
         if (filesDc != null) {
             try { filesDc.setItem(null); } catch (Exception ignored) {}
         }
@@ -279,6 +272,7 @@ public class ViewModeFragment extends Fragment<HorizontalLayout> {
     private void selectTile(Div tile, FileDescriptor fd) {
         if (selectedTile != null) selectedTile.removeClassName("file-tile-selected");
         selectedTile = tile;
+        selectedFileDescriptor = fd; // Lưu FileDescriptor đã chọn
         tile.addClassName("file-tile-selected");
         if (filesDc != null) filesDc.setItem(fd);
         if (fileDescriptorDataGrid != null) {
