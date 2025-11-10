@@ -260,7 +260,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         Folder selected = foldersTree.getSingleSelectedItem();
         Folder parent;
         if (selected != null) {
-            parent = null;
+            parent = selected;
             boolean per = permissionService.hasPermission(user, PermissionType.CREATE, selected);
             if (!per) {
                 notifications.create("Bạn không có quyền tạo folder")
@@ -272,7 +272,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
             }
 
         } else {
-            parent = selected;
+            parent = null;
         }
         dialogs.createInputDialog(this)
                 .withHeader("Tạo mới folder")

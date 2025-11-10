@@ -181,7 +181,6 @@ public class FolderServiceImpl implements IFolderService {
                     .parameter("name", name.trim().toLowerCase())
                     .one();
         } catch (Exception e) {
-            // Nếu không tìm thấy hoặc trả về nhiều bản ghi
             return null;
         }
     }
