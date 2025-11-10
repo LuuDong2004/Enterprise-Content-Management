@@ -50,7 +50,7 @@ public class EditNameFolderDialogView extends StandardView {
 			return;
 		}
 		Folder existing = folderService.findExistingFolder(currentFolder.getParent(), storage, value);
-		if (existing != null) {
+		if (existing != null && !existing.getId().equals(currentFolder.getId()) ) {
 			nameField.setInvalid(true);
             nameField.setErrorMessage(messageBundle.getMessage("ecmCreateFolderExistAlert"));
 			return;
