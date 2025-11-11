@@ -17,6 +17,7 @@ import com.vn.ecm.entity.*;
 import com.vn.ecm.service.ecm.PermissionService;
 import com.vn.ecm.service.ecm.folderandfile.IFileDescriptorService;
 import com.vn.ecm.service.ecm.folderandfile.IFolderService;
+import com.vn.ecm.view.file.EditFileNameDialogView;
 import com.vn.ecm.view.folder.CreateFolderDialogView;
 import com.vn.ecm.view.folder.EditNameFolderDialogView;
 import com.vn.ecm.view.main.MainView;
@@ -28,8 +29,6 @@ import io.jmix.flowui.DialogWindows;
 import io.jmix.flowui.Dialogs;
 import io.jmix.flowui.Notifications;
 import io.jmix.flowui.UiComponents;
-import io.jmix.flowui.app.inputdialog.DialogActions;
-import io.jmix.flowui.app.inputdialog.DialogOutcome;
 import io.jmix.flowui.component.grid.DataGrid;
 import io.jmix.flowui.component.grid.TreeDataGrid;
 import io.jmix.flowui.component.upload.FileStorageUploadField;
@@ -43,10 +42,7 @@ import io.jmix.flowui.view.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
-
 import java.util.*;
-
-import static io.jmix.flowui.app.inputdialog.InputParameter.stringParameter;
 
 @Route(value = "source-storages/:id", layout = MainView.class)
 @ViewController("EcmView")
@@ -105,18 +101,10 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     @ViewComponent
     private Span emptyStateText;
     @ViewComponent
-    private com.vaadin.flow.component.orderedlayout.VerticalLayout metadataContent;
+    private VerticalLayout metadataContent;
     @ViewComponent
-    private com.vaadin.flow.component.orderedlayout.VerticalLayout metadataEmptyState;
+    private VerticalLayout metadataEmptyState;
 
-    @Subscribe("fileDataGird")
-    public void onFileDataGirdItemClick(final ItemClickEvent<FileDescriptor> event) {
-        if (event.getItem() != null) {
-            metadataFileDc.setItem(event.getItem());
-            metadataContent.setVisible(true);
-            metadataEmptyState.setVisible(false);
-        }
-    }
 
     @Subscribe
     public void onInit(InitEvent event) {
@@ -129,26 +117,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         metadataEmptyState.setVisible(true);
         viewModeFragment.bind(fileDataGird, filesDc, iconTiles);
 
-        // Thêm listener để cập nhật metadata khi selection thay đổi
-        if (filesDc != null) {
-            filesDc.addItemChangeListener(e -> {
-                if (e.getItem() != null) {
-                    // Có selection: hiển thị metadata, ẩn empty state
-                    metadataFileDc.setItem(e.getItem());
-                    metadataContent.setVisible(true);
-                    metadataEmptyState.setVisible(false);
-                } else {
-                    // Không có selection: hiển thị panel với empty state
-                    metadataFileDc.setItem(null);
-                    metadataContent.setVisible(false);
-                    metadataEmptyState.setVisible(true);
-                    // Hiển thị panel nếu đang mở
-                    if (metadataPanel.isVisible()) {
-                        metadataPanel.setVisible(true);
-                    }
-                }
-            });
-        }
         initFolderGridColumn();
         fileRefField.setEnabled(false);
         uploadAction.setMode(UploadAndDownloadFileAction.Mode.UPLOAD);
@@ -167,6 +135,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         if (filesDc != null) {
             filesDc.addCollectionChangeListener(e -> updateEmptyStateText());
         }
+
 
     }
 
@@ -219,7 +188,24 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
             filesDc.getMutableItems().clear();
         }
     }
-
+    @Subscribe(id = "fileDataGird", subject = "selectionListener")
+    public void onFileDataGirdSelectionChange(SelectionEvent<DataGrid<FileDescriptor>, FileDescriptor> event) {
+        FileDescriptor selected = event.getFirstSelectedItem().orElse(null);
+        boolean selection = selected != null;
+        fileRefField.setEnabled(selection);
+        User user = (User) currentAuthentication.getUser();
+        if (selection) {
+            boolean hasDownloadPermission = permissionService.hasPermission(user, PermissionType.READ, selected);
+            fileRefField.setEnabled(hasDownloadPermission);
+            metadataFileDc.setItem(selected);
+            metadataContent.setVisible(true);
+            metadataEmptyState.setVisible(false);
+        }else{
+            metadataFileDc.setItem(null);
+            metadataContent.setVisible(false);
+            metadataEmptyState.setVisible(true);
+        }
+    }
     //upload file
     @Subscribe("fileRefField")
     public void onFileRefFieldFileUploadSucceeded(final FileUploadSucceededEvent<FileStorageUploadField> event) {
@@ -362,9 +348,9 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     @Subscribe("fileDataGird.renameFile")
     public void onFileDataGirdRenameFile(final ActionPerformedEvent event) {
         Folder selectedFolder = foldersTree.getSingleSelectedItem();
-        FileDescriptor selected = fileDataGird.getSingleSelectedItem();
+        FileDescriptor selectedFile = fileDataGird.getSingleSelectedItem();
         User userCurr = (User) currentAuthentication.getUser();
-        boolean per = permissionService.hasPermission(userCurr, PermissionType.MODIFY, selected);
+        boolean per = permissionService.hasPermission(userCurr, PermissionType.MODIFY, selectedFile);
         if (!per) {
             notifications.create("Bạn không có quyền đổi tên tệp này.")
                     .withType(Notifications.Type.ERROR)
@@ -373,36 +359,13 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
                     .show();
             return;
         }
-        dialogs.createInputDialog(this)
-                .withHeader("Đổi tên tệp")
-                .withParameters(
-                        stringParameter("name")
-                                .withLabel("Tên thư mục")
-                                .withDefaultValue(selected.getName())
-                                .withRequired(true)
-                )
-                .withActions(DialogActions.OK_CANCEL)
-                .withCloseListener(closeEvent -> {
-                    String newName = closeEvent.getValue("name");
-                    if (closeEvent.closedWith(DialogOutcome.OK)) {
-                        FileDescriptor fileExist = fileDescriptorService.findByName(selectedFolder, currentStorage, newName);
-                        if (fileExist == null) {
-                            fileDescriptorService.renameFile(selected, newName, userCurr.getUsername());
-                            notifications.create(messageBundle.getMessage("ecmRenameFileAlert"))
-                                    .withType(Notifications.Type.SUCCESS)
-                                    .withDuration(2000)
-                                    .withCloseable(false)
-                                    .show();
-                        } else {
-                            notifications.create(messageBundle.getMessage("ecmRenameFileExistAlert"))
-                                    .withDuration(2000)
-                                    .withCloseable(false)
-                                    .withType(Notifications.Type.ERROR)
-                                    .show();
-                        }
-                    }
-                })
-                .open();
+        var dw = dialogWindows.view(this, EditFileNameDialogView.class).build();
+        dw.getView().setContext(selectedFolder, selectedFile, currentStorage);
+        dw.addAfterCloseListener(e -> {
+            loadAccessibleFiles(userCurr, selectedFolder);
+        });
+        dw.open();
+
 
     }
 
