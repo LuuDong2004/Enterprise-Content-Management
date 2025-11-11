@@ -104,10 +104,18 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     private JmixButton previewBtn;
     @ViewComponent
     private Span emptyStateText;
+    @ViewComponent
+    private com.vaadin.flow.component.orderedlayout.VerticalLayout metadataContent;
+    @ViewComponent
+    private com.vaadin.flow.component.orderedlayout.VerticalLayout metadataEmptyState;
 
     @Subscribe("fileDataGird")
     public void onFileDataGirdItemClick(final ItemClickEvent<FileDescriptor> event) {
-        metadataFileDc.setItem(event.getItem());
+        if (event.getItem() != null) {
+            metadataFileDc.setItem(event.getItem());
+            metadataContent.setVisible(true);
+            metadataEmptyState.setVisible(false);
+        }
     }
 
     @Subscribe
@@ -115,21 +123,28 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         previewBtn.getElement().getStyle().set("position", "fixed");
         previewBtn.getElement().getStyle().set("right", "16px");
 
+        // Mặc định ẩn metadata panel
         metadataPanel.setVisible(false);
+        metadataContent.setVisible(false);
+        metadataEmptyState.setVisible(true);
         viewModeFragment.bind(fileDataGird, filesDc, iconTiles);
 
-        // Thêm listener để tự động ẩn metadata khi bỏ selection
+        // Thêm listener để cập nhật metadata khi selection thay đổi
         if (filesDc != null) {
             filesDc.addItemChangeListener(e -> {
                 if (e.getItem() != null) {
-                    // Có selection: cập nhật metadata
+                    // Có selection: hiển thị metadata, ẩn empty state
                     metadataFileDc.setItem(e.getItem());
+                    metadataContent.setVisible(true);
+                    metadataEmptyState.setVisible(false);
                 } else {
-                    // Không có selection: ẩn metadata panel
+                    // Không có selection: hiển thị panel với empty state
+                    metadataFileDc.setItem(null);
+                    metadataContent.setVisible(false);
+                    metadataEmptyState.setVisible(true);
+                    // Hiển thị panel nếu đang mở
                     if (metadataPanel.isVisible()) {
-                        metadataPanel.setVisible(false);
-                        metadataPanel.setEnabled(false);
-                        previewBtn.setText("Xem chi tiết");
+                        metadataPanel.setVisible(true);
                     }
                 }
             });
@@ -157,28 +172,10 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
 
     @Subscribe(id = "previewBtn", subject = "clickListener")
     public void onPreviewBtnClick(final ClickEvent<JmixButton> event) {
-        boolean selection = fileDataGird.getSingleSelectedItem() != null;
         boolean currentlyVisible = metadataPanel.isVisible();
-
-        if (!selection) {
-            if (currentlyVisible) {
-                metadataPanel.setVisible(false);
-                metadataPanel.setEnabled(false);
-                previewBtn.setText("Xem chi tiết");
-            } else {
-                notifications.create("Vui lòng chọn tệp để xem chi tiết")
-                        .withDuration(2000)
-                        .withCloseable(false)
-                        .withType(Notifications.Type.WARNING)
-                        .show();
-            }
-            return;
-        }
-        metadataPanel.setEnabled(true);
         metadataPanel.setVisible(!currentlyVisible);
         boolean nowVisible = metadataPanel.isVisible();
         previewBtn.setText(nowVisible ? "Ẩn chi tiết" : "Xem chi tiết");
-
     }
 
 
