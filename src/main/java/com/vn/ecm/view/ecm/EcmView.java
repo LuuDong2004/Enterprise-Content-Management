@@ -42,6 +42,7 @@ import io.jmix.flowui.view.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
+
 import java.util.*;
 
 @Route(value = "source-storages/:id", layout = MainView.class)
@@ -185,6 +186,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
             filesDc.getMutableItems().clear();
         }
     }
+
     @Subscribe(id = "fileDataGird", subject = "selectionListener")
     public void onFileDataGirdSelectionChange(SelectionEvent<DataGrid<FileDescriptor>, FileDescriptor> event) {
         FileDescriptor selected = event.getFirstSelectedItem().orElse(null);
@@ -194,12 +196,13 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
             metadataFileDc.setItem(selected);
             metadataContent.setVisible(true);
             metadataEmptyState.setVisible(false);
-        }else{
+        } else {
             metadataFileDc.setItem(null);
             metadataContent.setVisible(false);
             metadataEmptyState.setVisible(true);
         }
     }
+
     //upload file
     @Subscribe("fileRefField")
     public void onFileRefFieldFileUploadSucceeded(final FileUploadSucceededEvent<FileStorageUploadField> event) {
@@ -236,13 +239,24 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     public void onFoldersTreeCreateFolder(ActionPerformedEvent event) {
         User user = (User) currentAuthentication.getUser();
         Folder parent = foldersTree.getSingleSelectedItem();
+        if(parent != null) {
+            boolean per = permissionService.hasPermission(user, PermissionType.CREATE, parent);
+            if (!per) {
+                notifications.create("Bạn không có quyền tạo mới thư mục")
+                        .withType(Notifications.Type.ERROR)
+                        .withDuration(2000)
+                        .withCloseable(false)
+                        .show();
+                return;
+            }
+        }
 
-		var dw = dialogWindows.view(this, CreateFolderDialogView.class).build();
-		dw.getView().setContext(parent, currentStorage);
-		dw.addAfterCloseListener(e -> {
-			loadAccessibleFolders(user);
-		});
-		dw.open();
+        var dw = dialogWindows.view(this, CreateFolderDialogView.class).build();
+        dw.getView().setContext(parent, currentStorage);
+        dw.addAfterCloseListener(e -> {
+            loadAccessibleFolders(user);
+        });
+        dw.open();
     }
 
     //rename folder
