@@ -110,7 +110,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     public void onInit(InitEvent event) {
         previewBtn.getElement().getStyle().set("position", "fixed");
         previewBtn.getElement().getStyle().set("right", "16px");
-
         // Mặc định ẩn metadata panel
         metadataPanel.setVisible(false);
         metadataContent.setVisible(false);
@@ -192,11 +191,8 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     public void onFileDataGirdSelectionChange(SelectionEvent<DataGrid<FileDescriptor>, FileDescriptor> event) {
         FileDescriptor selected = event.getFirstSelectedItem().orElse(null);
         boolean selection = selected != null;
-        fileRefField.setEnabled(selection);
         User user = (User) currentAuthentication.getUser();
         if (selection) {
-            boolean hasDownloadPermission = permissionService.hasPermission(user, PermissionType.READ, selected);
-            fileRefField.setEnabled(hasDownloadPermission);
             metadataFileDc.setItem(selected);
             metadataContent.setVisible(true);
             metadataEmptyState.setVisible(false);
