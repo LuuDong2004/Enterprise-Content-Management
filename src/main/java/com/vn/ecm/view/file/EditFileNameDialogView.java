@@ -59,10 +59,6 @@ public class EditFileNameDialogView extends StandardView {
             nameField.setErrorMessage("Tên thư mục không được để trống");
             return;
         }
-        if (currentFile == null) {
-            close(StandardOutcome.CLOSE);
-            return;
-        }
         FileDescriptor existing = fileDescriptorService.findByName(currentFolder,storage, value);
         if (existing != null && !existing.getId().equals(currentFile.getId()) ) {
             nameField.setInvalid(true);
@@ -77,6 +73,7 @@ public class EditFileNameDialogView extends StandardView {
 
     @Subscribe(id = "cancelBtn", subject = "clickListener")
     public void onCancelBtnClick(final ClickEvent<JmixButton> event) {
+
         close(StandardOutcome.CLOSE);
     }
 

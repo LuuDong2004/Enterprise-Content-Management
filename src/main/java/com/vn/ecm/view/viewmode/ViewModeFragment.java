@@ -1,5 +1,7 @@
 package com.vn.ecm.view.viewmode;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
@@ -22,7 +24,8 @@ import io.jmix.flowui.view.Subscribe;
 import io.jmix.flowui.view.ViewComponent;
 import io.jmix.flowui.kit.action.Action;
 
-import static com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment.CENTER;
+import java.util.Locale;
+import java.util.stream.Collectors;
 
 @FragmentDescriptor("view-mode-fragment.xml")
 public class ViewModeFragment extends Fragment<HorizontalLayout> {
@@ -132,7 +135,7 @@ public class ViewModeFragment extends Fragment<HorizontalLayout> {
         // Restore selection nếu có
         if (currentSelection != null && filesDc.getItems().contains(currentSelection)) {
             java.util.List<com.vaadin.flow.component.Component> children =
-                    iconTiles.getChildren().collect(java.util.stream.Collectors.toList());
+                    iconTiles.getChildren().collect(Collectors.toList());
 
             for (int i = 0; i < children.size() && i < filesDc.getItems().size(); i++) {
                 com.vaadin.flow.component.Component component = children.get(i);
@@ -171,7 +174,7 @@ public class ViewModeFragment extends Fragment<HorizontalLayout> {
         VerticalLayout box = new VerticalLayout(icon, name);
         box.setPadding(false);
         box.setSpacing(false);
-        box.setAlignItems(com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment.CENTER);
+        box.setAlignItems(FlexComponent.Alignment.CENTER);
         tile.add(box);
 
         tile.getStyle().set("cursor", "pointer");
@@ -191,7 +194,7 @@ public class ViewModeFragment extends Fragment<HorizontalLayout> {
         downloadItem.setEnabled(false);
         assignItem.setEnabled(false);
 
-        // ⭐ Quan trọng: chọn tile NGAY TRƯỚC khi ContextMenu của Vaadin mở
+
         // Bằng cách lắng nghe sự kiện DOM "contextmenu" (right click) trên tile
         tile.getElement().addEventListener("contextmenu", domEvent -> {
             // nếu tile này chưa được chọn, chọn nó trước khi menu hiển thị
@@ -220,7 +223,7 @@ public class ViewModeFragment extends Fragment<HorizontalLayout> {
                     selectTile(tile, fd);
                 }
             } finally {
-                com.vaadin.flow.component.UI.getCurrent().access(() -> handlingTileClick = false);
+                UI.getCurrent().access(() -> handlingTileClick = false);
             }
         });
 
@@ -289,7 +292,7 @@ public class ViewModeFragment extends Fragment<HorizontalLayout> {
     }
 
     private VaadinIcon pickIcon(FileDescriptor fd) {
-        String ext = fd.getExtension() == null ? "" : fd.getExtension().toLowerCase(java.util.Locale.ROOT);
+        String ext = fd.getExtension() == null ? "" : fd.getExtension().toLowerCase(Locale.ROOT);
         return switch (ext) {
             case "png", "jpg", "jpeg", "gif", "bmp", "svg" -> VaadinIcon.PICTURE;
             case "pdf" -> VaadinIcon.FILE_TEXT;
@@ -303,7 +306,7 @@ public class ViewModeFragment extends Fragment<HorizontalLayout> {
     }
 
     private String fileTypeClass(FileDescriptor fd) {
-        String ext = fd.getExtension() == null ? "" : fd.getExtension().toLowerCase(java.util.Locale.ROOT);
+        String ext = fd.getExtension() == null ? "" : fd.getExtension().toLowerCase(Locale.ROOT);
         return switch (ext) {
             case "png", "jpg", "jpeg", "gif", "bmp", "svg" -> "ext-image";
             case "pdf" -> "ext-pdf";

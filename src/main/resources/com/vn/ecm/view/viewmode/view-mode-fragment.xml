@@ -2,8 +2,7 @@
 <fragment xmlns="http://jmix.io/schema/flowui/fragment">
     <content>
         <hbox id="root">
-                <comboBox id="viewMode"
-                          itemsEnum="com.vn.ecm.entity.ViewModeType"/>
+                <comboBox id="viewMode" itemsEnum="com.vn.ecm.entity.ViewModeType" width="80%"/>
         </hbox>
     </content>
 </fragment>
