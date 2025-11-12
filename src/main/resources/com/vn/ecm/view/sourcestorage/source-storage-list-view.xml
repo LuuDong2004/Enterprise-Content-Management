@@ -48,8 +48,8 @@
                   columnReorderingAllowed="true">
             <actions>
 <!--                <action id="createAction" type="list_create"/>-->
-                <action id="editAction" text="chỉnh sửa" type="list_edit"/>
-                <action id="removeAction" text="xóa" type="list_remove"/>
+                <action id="editAction" text="Chỉnh sửa" type="list_edit"/>
+                <action id="removeAction" text="Xóa" type="list_remove"/>
                 <action id="s3CreateAction" text="Kho lưu trữ S3"/>
                 <action id="ftpCreateAction" text="Kho lưu trữ FTP"/>
             </actions>

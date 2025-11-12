@@ -107,7 +107,6 @@
                               height="100%"
                               dataContainer="filesDc"
                               themeNames="compact, no-row-borders">
-
                         <actions>
                             <action id="deleteFile" type="fileActionSelected" text="Xóa" icon="CLOSE_CIRCLE_O"/>
                             <action id="renameFile" type="fileActionSelected" text="Đổi tên"/>

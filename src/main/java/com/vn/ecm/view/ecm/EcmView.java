@@ -134,8 +134,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         if (filesDc != null) {
             filesDc.addCollectionChangeListener(e -> updateEmptyStateText());
         }
-
-
     }
 
     @Subscribe(id = "previewBtn", subject = "clickListener")

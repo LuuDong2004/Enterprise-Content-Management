@@ -56,7 +56,7 @@ public class SourceStorageDetailView extends StandardDetailView<SourceStorage> {
 
     @Subscribe(id = "testConnection", subject = "clickListener")
     public void onTestConnectionClick(final ClickEvent<JmixButton> event) {
-        SourceStorage sourceStorage = getEditedEntityContainer().getItemOrNull();
+        SourceStorage sourceStorage = getEditedEntity();
         String result = s3ClientFactory.testConnection(sourceStorage);
         Notifications.Type type = result.trim().startsWith("Kết nối thành công")
                 || result.trim().startsWith("✅")
@@ -82,7 +82,6 @@ public class SourceStorageDetailView extends StandardDetailView<SourceStorage> {
                         .show();
             }
             dynamicStorageManager.refreshFileStorage(s);
-            // event.preventSave();
         }
     }
 

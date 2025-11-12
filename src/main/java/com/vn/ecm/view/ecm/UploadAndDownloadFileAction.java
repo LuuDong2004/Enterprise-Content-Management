@@ -1,5 +1,6 @@
 package com.vn.ecm.view.ecm;
 
+import com.vn.ecm.ecm.storage.s3.S3ClientFactory;
 import com.vn.ecm.entity.*;
 import com.vn.ecm.service.ecm.folderandfile.IFileDescriptorUploadAndDownloadService;
 import com.vn.ecm.service.ecm.PermissionService;
@@ -44,6 +45,8 @@ public class UploadAndDownloadFileAction extends ItemTrackingAction<FileDescript
     private Notifications notifications;
 
     private Mode mode = Mode.UPLOAD;
+    @Autowired
+    private S3ClientFactory s3ClientFactory;
 
 
     @Autowired
@@ -142,6 +145,7 @@ public class UploadAndDownloadFileAction extends ItemTrackingAction<FileDescript
         if (selected.getSourceStorage() == null) {
             return;
         }
+        String result = s3ClientFactory.testConnection(selected.getSourceStorage());
         User userCurr = (User) currentAuthentication.getUser();
         boolean per = permissionService.hasPermission(userCurr, PermissionType.READ, selected);
         if (!per) {
@@ -157,7 +161,7 @@ public class UploadAndDownloadFileAction extends ItemTrackingAction<FileDescript
             downloader.download(bytes, selected.getName(),DownloadFormat.OCTET_STREAM);
         } catch (Exception e) {
 //            throw new RuntimeException("Download failed for: " + selected.getName(), e);
-            notifications.create("Lỗi tải xuống ")
+            notifications.create(result)
                     .withType(Notifications.Type.ERROR)
                     .withDuration(2000)
                     .withCloseable(false)

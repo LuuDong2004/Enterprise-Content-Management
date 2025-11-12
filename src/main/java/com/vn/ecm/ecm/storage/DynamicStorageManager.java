@@ -72,9 +72,9 @@ public class DynamicStorageManager {
      * Nếu đã tồn tại trong Spring context thì lấy ra, nếu chưa thì tạo mới và đăng ký
      */
     public FileStorage getOrCreateFileStorage(SourceStorage sourceStorage) {
-        if (!isStorageValid(sourceStorage)) {
-            throw new IllegalArgumentException("SourceStorage không hợp lệ hoặc không active: " + sourceStorage.getId());
-        }
+//        if (!isStorageValid(sourceStorage)) {
+//            throw new IllegalArgumentException("SourceStorage không hợp lệ hoặc không active: " + sourceStorage.getId());
+//        }
         
         String beanName = generateBeanName(sourceStorage);
         String storageName = generateStorageName(sourceStorage);
@@ -112,6 +112,7 @@ public class DynamicStorageManager {
     /**
      * Làm mới FileStorage instance (xóa cũ và tạo mới)
      */
+
     public FileStorage refreshFileStorage(SourceStorage sourceStorage) {
         removeFileStorageFromContext(sourceStorage);
         return getOrCreateFileStorage(sourceStorage);
@@ -133,6 +134,7 @@ public class DynamicStorageManager {
         if (springBeanFactory.containsSingleton(storageName)) {
             springBeanFactory.destroySingleton(storageName);
         }
+
     }
     /**
      * Đảm bảo storage được đăng ký trong Spring context

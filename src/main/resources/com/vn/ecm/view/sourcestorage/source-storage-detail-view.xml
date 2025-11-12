@@ -36,7 +36,7 @@
             <textField id="accessKeyField" required="true" property="accessKey"/>
             <passwordField id="secretAccessKeyField" required="true"  property="secretAccessKey" />
             <textField id="regionField" required="false" property="region"/>
-            <textField id="bucketField" property="bucket" required="true" />
+            <textField id="bucketField" property="bucket" required="true" helperText="Thay đổi ổ cấu hình đã lưu trước đó sẽ có thể gây lỗi các tài nguyên lưu trữ trước đó"/>
             <textField id="endpointUrlField" required="true" property="endpointUrl"/>
 <!--            <textField id="chunkSizeField" required="true" property="chunkSize"/>-->
             <checkbox id="activeS3Field" property="active"/>
@@ -49,8 +49,7 @@
                 <responsiveStep minWidth="0" columns="1"/>
                 <responsiveStep minWidth="40em" columns="2"/>
             </responsiveSteps>
-
-            <textField id="webRootPathField" required="true" property="webRootPath"/>
+            <textField id="webRootPathField" required="true" property="webRootPath" helperText="Thay đổi đường dẫn đã cấu hình trước đó sẽ có thể gây lỗi các tài nguyên lưu trữ trước đó"/>
             <checkbox id="activeWebDirField" property="active"/>
         </formLayout>
 

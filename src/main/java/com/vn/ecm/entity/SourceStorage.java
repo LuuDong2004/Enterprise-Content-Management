@@ -121,7 +121,7 @@ public class SourceStorage {
     }
 
     public void setBucket(String bucket) {
-        this.bucket = bucket.toLowerCase();
+        this.bucket = bucket;
     }
 
     public String getChunkSize() {

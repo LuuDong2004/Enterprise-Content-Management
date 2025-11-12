@@ -10,15 +10,18 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouteParameters;
 
 
-
+import com.vn.ecm.ecm.storage.DynamicStorageManager;
 import com.vn.ecm.entity.SourceStorage;
 import com.vn.ecm.entity.StorageType;
 import com.vn.ecm.view.ecm.EcmView;
 import com.vn.ecm.view.main.MainView;
+import groovy.transform.Final;
 import io.jmix.core.DataManager;
 import io.jmix.flowui.DialogWindows;
 import io.jmix.flowui.UiComponents;
 
+import io.jmix.flowui.action.list.EditAction;
+import io.jmix.flowui.action.list.RemoveAction;
 import io.jmix.flowui.component.grid.DataGrid;
 import io.jmix.flowui.kit.action.ActionPerformedEvent;
 import io.jmix.flowui.model.CollectionLoader;
@@ -74,7 +77,6 @@ public class SourceStorageListView extends StandardListView<SourceStorage> {
         DialogWindow<View<?>> window = dialogWindows.detail(this,SourceStorage.class )
                 .newEntity(newSourceStorage)
                 .build();
-
         window.addAfterCloseListener(afterCloseEvent -> {
             sourceStoragesDl.load();
         });
