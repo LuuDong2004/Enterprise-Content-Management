@@ -247,7 +247,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
                         .show();
                 return;
             }
-
         } else {
             parent = selected;
         }
