@@ -1,6 +1,7 @@
 package com.vn.ecm.view.confirmreplacedialog;
 
 
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.router.Route;
 import com.vn.ecm.service.ecm.PermissionService;
 import com.vn.ecm.view.main.MainView;
@@ -26,6 +27,8 @@ import java.util.UUID;
 @ViewDescriptor(path = "confirm-replace-dialog.xml")
 public class ConfirmReplaceDialog extends StandardView {
 
+    @ViewComponent
+    private Notification notification;
     @Autowired
     private PermissionService permissionService;
     @Autowired
@@ -40,6 +43,9 @@ public class ConfirmReplaceDialog extends StandardView {
 
     private UUID userId;  // Thay đổi: lưu ID thay vì entity
     private String roleCode;
+    @ViewComponent
+    private MessageBundle messageBundle;
+
     public void setObjectName(String objectName) {
         this.objectName = objectName;
     }
@@ -94,6 +100,7 @@ public class ConfirmReplaceDialog extends StandardView {
                 permissionService.replaceChildPermissions(role, targetFolder, permissionMask);
             }
         }
+        notification.show(messageBundle.getMessage("confirm"));
         close(StandardOutcome.SAVE);
     }
 
