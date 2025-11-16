@@ -258,7 +258,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         });
         dw.open();
     }
-
     //rename folder
     @Subscribe("foldersTree.renameFolder")
     public void onFoldersTreeRenameFolder(final ActionPerformedEvent event) {
@@ -428,7 +427,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         });
         return hboxMain;
     }
-
     private void updateEmptyStateText() {
         if (emptyStateText == null) return;
 
