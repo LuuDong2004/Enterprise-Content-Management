@@ -45,6 +45,7 @@ dependencies {
     implementation 'software.amazon.awssdk:url-connection-client:2.25.46'
 
     implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'gr.netmechanics.jmix:jmix-tinymce-starter:1.7.0'
 
     runtimeOnly 'org.hsqldb:hsqldb'
 

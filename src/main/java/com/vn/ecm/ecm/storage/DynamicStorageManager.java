@@ -215,6 +215,18 @@ public class DynamicStorageManager {
         }
     }
 
+    public FileStorage getFileStorageByName(String storageName) {
+        // đảm bảo đã đăng ký bean nếu có thể
+        ensureStorageRegistered(storageName);
+
+        if (springBeanFactory.containsBean(storageName)) {
+            return springBeanFactory.getBean(storageName, FileStorage.class);
+        }
+
+        throw new IllegalArgumentException("Dynamic FileStorage not found: " + storageName);
+    }
+
+
 
 
 }

@@ -17,6 +17,7 @@ import com.vn.ecm.entity.*;
 import com.vn.ecm.service.ecm.PermissionService;
 import com.vn.ecm.service.ecm.folderandfile.IFileDescriptorService;
 import com.vn.ecm.service.ecm.folderandfile.IFolderService;
+import com.vn.ecm.view.component.filepreview.TextPreview;
 import com.vn.ecm.view.file.EditFileNameDialogView;
 import com.vn.ecm.view.folder.CreateFolderDialogView;
 import com.vn.ecm.view.folder.EditNameFolderDialogView;
@@ -24,6 +25,7 @@ import com.vn.ecm.view.main.MainView;
 import com.vn.ecm.view.sourcestorage.SourceStorageListView;
 import com.vn.ecm.view.viewmode.ViewModeFragment;
 import io.jmix.core.DataManager;
+import io.jmix.core.FileRef;
 import io.jmix.core.security.CurrentAuthentication;
 import io.jmix.flowui.DialogWindows;
 import io.jmix.flowui.Dialogs;
@@ -71,6 +73,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     private PermissionService permissionService;
     @Autowired
     private Dialogs dialogs;
+
     private SourceStorage currentStorage;
     private UUID id;
     @ViewComponent
@@ -427,6 +430,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         });
         return hboxMain;
     }
+
     private void updateEmptyStateText() {
         if (emptyStateText == null) return;
 
@@ -441,6 +445,20 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         } else {
             emptyStateText.setText("Không có dữ liệu");
         }
+    }
+
+    @Subscribe("fileDataGird.preViewFile")
+    public void onFileDataGirdPreViewFile(final ActionPerformedEvent event) {
+        FileDescriptor file = fileDataGird.getSingleSelectedItem();
+        if(file == null){
+            return;
+        }
+
+        FileRef fileRef = file.getFileRef();
+        DialogWindow<TextPreview> window = dialogWindows.view(this, TextPreview.class).build();
+        window.getView().setInputFile(fileRef);
+        window.setResizable(true);
+        window.open();
     }
 }
 
