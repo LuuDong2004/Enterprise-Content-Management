@@ -4,7 +4,6 @@ import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 
-import com.vaadin.flow.component.grid.ItemClickEvent;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -475,7 +474,14 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
                 || extension.startsWith("webm")) {
             preViewVideoFile(fileRef);
         }
-        if(extension.startsWith("html") || extension.startsWith("htm")){
+        if (extension.startsWith("html")
+                || extension.startsWith("htm")
+                || extension.startsWith("java")
+                || extension.startsWith("js")
+                || extension.startsWith("css")
+                || extension.startsWith("md")
+                || extension.startsWith("xml")
+                || extension.startsWith("sql")) {
             preViewHtmlFile(fileRef);
         }
 
@@ -508,8 +514,9 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         window.setResizable(true);
         window.open();
     }
-    private void preViewHtmlFile(FileRef fileRelf){
-        DialogWindow<HtmlPreview> window = dialogWindows.view(this, HtmlPreview.class).build();
+
+    private void preViewHtmlFile(FileRef fileRelf) {
+        DialogWindow<CodePreview> window = dialogWindows.view(this, CodePreview.class).build();
         window.getView().setInputFile(fileRelf);
         window.setResizable(true);
         window.open();

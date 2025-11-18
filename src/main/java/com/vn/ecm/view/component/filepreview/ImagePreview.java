@@ -13,7 +13,7 @@ import java.io.InputStream;
 
 
 @ViewController(id = "ImagePreview")
-@ViewDescriptor(path = "Image-preview.xml")
+@ViewDescriptor(path = "image-preview.xml")
 @DialogMode(width = "80%", height = "100%")
 public class ImagePreview extends StandardView {
 
