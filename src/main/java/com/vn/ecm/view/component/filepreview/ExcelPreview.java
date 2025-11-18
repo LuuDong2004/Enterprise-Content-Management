@@ -11,8 +11,4 @@ import io.jmix.flowui.view.ViewDescriptor;
 @ViewController(id = "ExcelPreview")
 @ViewDescriptor(path = "excel-preview.xml")
 public class ExcelPreview extends StandardView {
-
-
-
-
 }

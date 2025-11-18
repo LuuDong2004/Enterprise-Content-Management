@@ -1,11 +1,8 @@
 package com.vn.ecm.view.component.filepreview;
 
-
-import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.streams.DownloadHandler;
 import com.vaadin.flow.server.streams.DownloadResponse;
 import com.vn.ecm.ecm.storage.DynamicStorageManager;
-import com.vn.ecm.view.main.MainView;
 import io.jmix.core.FileRef;
 import io.jmix.core.FileStorage;
 import io.jmix.flowui.component.image.JmixImage;

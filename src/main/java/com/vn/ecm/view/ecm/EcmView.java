@@ -17,10 +17,7 @@ import com.vn.ecm.entity.*;
 import com.vn.ecm.service.ecm.PermissionService;
 import com.vn.ecm.service.ecm.folderandfile.IFileDescriptorService;
 import com.vn.ecm.service.ecm.folderandfile.IFolderService;
-import com.vn.ecm.view.component.filepreview.ImagePreview;
-import com.vn.ecm.view.component.filepreview.PdfPreview;
-import com.vn.ecm.view.component.filepreview.TextPreview;
-import com.vn.ecm.view.component.filepreview.VideoPreview;
+import com.vn.ecm.view.component.filepreview.*;
 import com.vn.ecm.view.file.EditFileNameDialogView;
 import com.vn.ecm.view.folder.CreateFolderDialogView;
 import com.vn.ecm.view.folder.EditNameFolderDialogView;
@@ -457,12 +454,13 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         if (file == null) {
             return;
         }
+        FileRef fileRef = file.getFileRef();
         String extension = file.getExtension();
         if (extension.startsWith("pdf")) {
-            previewPdfFile();
+            previewPdfFile(fileRef);
         }
         if (extension.startsWith("txt") || extension.startsWith("docx")) {
-            previewTextFile();
+            previewTextFile(fileRef);
         }
         if (extension.startsWith("jpg")
                 || extension.startsWith("png")
@@ -470,40 +468,49 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
                 || extension.startsWith("webp")
                 || extension.startsWith("svg")
                 || extension.startsWith("gif")) {
-            previewImageFile();
+            previewImageFile(fileRef);
         }
         if (extension.startsWith("mp4")
                 || extension.startsWith("mov")
                 || extension.startsWith("webm")) {
-            preViewVideoFile();
+            preViewVideoFile(fileRef);
+        }
+        if(extension.startsWith("html") || extension.startsWith("htm")){
+            preViewHtmlFile(fileRef);
         }
 
     }
 
-    private void previewPdfFile() {
+    private void previewPdfFile(FileRef fileRelf) {
         DialogWindow<PdfPreview> window = dialogWindows.view(this, PdfPreview.class).build();
-        window.getView().setInputFile(Objects.requireNonNull(fileDataGird.getSingleSelectedItem()).getFileRef());
+        window.getView().setInputFile(fileRelf);
         window.setResizable(true);
         window.open();
     }
 
-    private void previewTextFile() {
+    private void previewTextFile(FileRef fileRelf) {
         DialogWindow<TextPreview> window = dialogWindows.view(this, TextPreview.class).build();
-        window.getView().setInputFile(Objects.requireNonNull(fileDataGird.getSingleSelectedItem()).getFileRef());
+        window.getView().setInputFile(fileRelf);
         window.setResizable(true);
         window.open();
     }
 
-    private void previewImageFile() {
+    private void previewImageFile(FileRef fileRelf) {
         DialogWindow<ImagePreview> window = dialogWindows.view(this, ImagePreview.class).build();
-        window.getView().setInputFile(Objects.requireNonNull(fileDataGird.getSingleSelectedItem()).getFileRef());
+        window.getView().setInputFile(fileRelf);
         window.setResizable(true);
         window.open();
     }
 
-    private void preViewVideoFile() {
+    private void preViewVideoFile(FileRef fileRelf) {
         DialogWindow<VideoPreview> window = dialogWindows.view(this, VideoPreview.class).build();
-        window.getView().setInputFile(Objects.requireNonNull(fileDataGird.getSingleSelectedItem()).getFileRef());
+        window.getView().setInputFile(fileRelf);
+        window.setResizable(true);
+        window.open();
+    }
+    private void preViewHtmlFile(FileRef fileRelf){
+        DialogWindow<HtmlPreview> window = dialogWindows.view(this, HtmlPreview.class).build();
+        window.getView().setInputFile(fileRelf);
         window.setResizable(true);
         window.open();
     }

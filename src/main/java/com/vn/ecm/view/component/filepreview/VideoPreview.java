@@ -30,6 +30,9 @@ public class VideoPreview extends StandardView {
 
     @Subscribe
     public void onReady(ReadyEvent event) {
+        if (inputFile == null) {
+            return;
+        }
 
         String storageName = inputFile.getStorageName();
         FileStorage storage = dynamicStorageManager.getFileStorageByName(storageName);
@@ -45,7 +48,7 @@ public class VideoPreview extends StandardView {
                     contentType,
                     -1
             );
-        }).inline(); // cho browser play inline
+        }).inline();
         videoPreView.setSrc(handler);
     }
 
