@@ -29,7 +29,6 @@ public class TextPreview extends StandardView {
     @Autowired
     private Notifications notifications;
 
-
     public void setInputFile(FileRef inputFile) {
         this.inputFile = inputFile;
     }
@@ -54,6 +53,7 @@ public class TextPreview extends StandardView {
                     .withType(Notifications.Type.ERROR)
                     .show();
         }
+
     }
 
     

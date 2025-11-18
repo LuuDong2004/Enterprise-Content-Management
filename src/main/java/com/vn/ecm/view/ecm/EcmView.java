@@ -17,7 +17,10 @@ import com.vn.ecm.entity.*;
 import com.vn.ecm.service.ecm.PermissionService;
 import com.vn.ecm.service.ecm.folderandfile.IFileDescriptorService;
 import com.vn.ecm.service.ecm.folderandfile.IFolderService;
+import com.vn.ecm.view.component.filepreview.ImagePreview;
+import com.vn.ecm.view.component.filepreview.PdfPreview;
 import com.vn.ecm.view.component.filepreview.TextPreview;
+import com.vn.ecm.view.component.filepreview.VideoPreview;
 import com.vn.ecm.view.file.EditFileNameDialogView;
 import com.vn.ecm.view.folder.CreateFolderDialogView;
 import com.vn.ecm.view.folder.EditNameFolderDialogView;
@@ -242,7 +245,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     public void onFoldersTreeCreateFolder(ActionPerformedEvent event) {
         User user = (User) currentAuthentication.getUser();
         Folder parent = foldersTree.getSingleSelectedItem();
-        if(parent != null) {
+        if (parent != null) {
             boolean per = permissionService.hasPermission(user, PermissionType.CREATE, parent);
             if (!per) {
                 notifications.create("Bạn không có quyền tạo mới thư mục")
@@ -261,6 +264,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         });
         dw.open();
     }
+
     //rename folder
     @Subscribe("foldersTree.renameFolder")
     public void onFoldersTreeRenameFolder(final ActionPerformedEvent event) {
@@ -450,13 +454,56 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     @Subscribe("fileDataGird.preViewFile")
     public void onFileDataGirdPreViewFile(final ActionPerformedEvent event) {
         FileDescriptor file = fileDataGird.getSingleSelectedItem();
-        if(file == null){
+        if (file == null) {
             return;
         }
+        String extension = file.getExtension();
+        if (extension.startsWith("pdf")) {
+            previewPdfFile();
+        }
+        if (extension.startsWith("txt") || extension.startsWith("docx")) {
+            previewTextFile();
+        }
+        if (extension.startsWith("jpg")
+                || extension.startsWith("png")
+                || extension.startsWith("jpeg")
+                || extension.startsWith("webp")
+                || extension.startsWith("svg")
+                || extension.startsWith("gif")) {
+            previewImageFile();
+        }
+        if (extension.startsWith("mp4")
+                || extension.startsWith("mov")
+                || extension.startsWith("webm")) {
+            preViewVideoFile();
+        }
 
-        FileRef fileRef = file.getFileRef();
+    }
+
+    private void previewPdfFile() {
+        DialogWindow<PdfPreview> window = dialogWindows.view(this, PdfPreview.class).build();
+        window.getView().setInputFile(Objects.requireNonNull(fileDataGird.getSingleSelectedItem()).getFileRef());
+        window.setResizable(true);
+        window.open();
+    }
+
+    private void previewTextFile() {
         DialogWindow<TextPreview> window = dialogWindows.view(this, TextPreview.class).build();
-        window.getView().setInputFile(fileRef);
+        window.getView().setInputFile(Objects.requireNonNull(fileDataGird.getSingleSelectedItem()).getFileRef());
+        window.setResizable(true);
+        window.open();
+    }
+
+    private void previewImageFile() {
+        DialogWindow<ImagePreview> window = dialogWindows.view(this, ImagePreview.class).build();
+        window.getView().setInputFile(Objects.requireNonNull(fileDataGird.getSingleSelectedItem()).getFileRef());
+        window.setResizable(true);
+        window.open();
+    }
+
+    private void preViewVideoFile() {
+        DialogWindow<VideoPreview> window = dialogWindows.view(this, VideoPreview.class).build();
+        window.getView().setInputFile(Objects.requireNonNull(fileDataGird.getSingleSelectedItem()).getFileRef());
         window.setResizable(true);
         window.open();
     }

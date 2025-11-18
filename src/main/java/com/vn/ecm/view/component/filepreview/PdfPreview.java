@@ -1,14 +1,47 @@
 package com.vn.ecm.view.component.filepreview;
+import com.vaadin.flow.component.html.IFrame;
+import com.vaadin.flow.server.streams.DownloadHandler;
+import com.vaadin.flow.server.streams.DownloadResponse;
+import com.vn.ecm.ecm.storage.DynamicStorageManager;
+import io.jmix.core.FileRef;
+import io.jmix.core.FileStorage;
+import io.jmix.flowui.view.*;
+import org.springframework.beans.factory.annotation.Autowired;
 
-
-import com.vaadin.flow.router.Route;
-import com.vn.ecm.view.main.MainView;
-import io.jmix.flowui.view.StandardView;
-import io.jmix.flowui.view.ViewController;
-import io.jmix.flowui.view.ViewDescriptor;
-
-@Route(value = "pdf-preview", layout = MainView.class)
+import java.io.InputStream;
 @ViewController(id = "PdfPreview")
 @ViewDescriptor(path = "pdf-preview.xml")
+@DialogMode(width = "80%", height = "100%")
 public class PdfPreview extends StandardView {
+    @ViewComponent
+    private IFrame pdfFrame;
+    @Autowired
+    private DynamicStorageManager dynamicStorageManager;
+
+    private FileRef inputFile;
+
+    public void setInputFile(FileRef inputFile) {
+        this.inputFile = inputFile;
+    }
+
+    @Subscribe
+    public void onReady(ReadyEvent event) {
+        if (inputFile == null) {
+            return;
+        }
+        String storageName = inputFile.getStorageName();
+        FileStorage storage = dynamicStorageManager.getFileStorageByName(storageName);
+
+        DownloadHandler handler = DownloadHandler.fromInputStream(downloadEvent -> {
+            InputStream is = storage.openStream(inputFile);
+            return new DownloadResponse(
+                    is,
+                    inputFile.getFileName(),
+                    "application/pdf",
+                    -1
+            );
+        }).inline();
+        pdfFrame.setSrc(handler);
+    }
+
 }
