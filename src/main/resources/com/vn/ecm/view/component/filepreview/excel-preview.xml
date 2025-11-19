@@ -2,6 +2,8 @@
 <view xmlns="http://jmix.io/schema/flowui/view"
       title="msg://excelPreview.title">
     <layout>
+        <vbox>
 
+        </vbox>
     </layout>
 </view>
