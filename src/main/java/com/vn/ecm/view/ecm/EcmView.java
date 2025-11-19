@@ -1,5 +1,6 @@
 package com.vn.ecm.view.ecm;
 
+import com.helger.css.ECSSUnit;
 import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
@@ -484,6 +485,9 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
                 || extension.startsWith("sql")) {
             preViewHtmlFile(fileRef);
         }
+        if(extension.startsWith("xlsx")){
+            previewExcelFile(fileRef);
+        }
 
     }
 
@@ -518,6 +522,12 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     private void preViewHtmlFile(FileRef fileRelf) {
         DialogWindow<CodePreview> window = dialogWindows.view(this, CodePreview.class).build();
         window.getView().setInputFile(fileRelf);
+        window.setResizable(true);
+        window.open();
+    }
+    private void previewExcelFile(FileRef fileRelf){
+        DialogWindow<ExcelPreview> window = dialogWindows.view(this, ExcelPreview.class).build();
+//        window.getView().setInputFile(fileRelf);
         window.setResizable(true);
         window.open();
     }
