@@ -85,8 +85,7 @@
             <checkbox id="exactSearchCheckbox" 
                       label="Tìm đích danh"/>
             <checkbox id="ignoreDiacriticsCheckbox" 
-                      label="Không dấu"
-                      tooltipText="Khi bật, có thể tìm bằng 'Quản lý' hoặc 'Quan ly'"/>
+                      label="Không dấu"/>
             <button id="ocrSearchBtn" text="Tìm nội dung" icon="SEARCH"/>
             <fragment id="viewModeFragment" class="com.vn.ecm.view.viewmode.ViewModeFragment"/>
             <button id="previewBtn" text="Xem chi tiết" icon="MENU"/>

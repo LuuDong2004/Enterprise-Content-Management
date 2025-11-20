@@ -24,4 +24,8 @@ public interface OcrFileDescriptorRepository extends MongoRepository<OcrFileDesc
     // đích danh không dấu bằng regex
     @Query("{ 'extractedTextWithoutDiacritics': { '$regex': ?0, '$options': '' } }")
     List<OcrFileDescriptorDocument> searchExactTextWithoutDiacritics(String exactText);
+
+    // đích danh bằng regex case-insensitive (cho tìm kiếm tương đối)
+    @Query("{ 'extractedText': { '$regex': ?0, '$options': 'i' } }")
+    List<OcrFileDescriptorDocument> searchExactTextCaseInsensitive(String exactText);
 }

@@ -436,13 +436,16 @@ public class EcmView extends StandardView {
             return;
         }
         User user = (User) currentAuthentication.getUser();
+        // Lấy folder đang được chọn
+        Folder selectedFolder = foldersTree.getSingleSelectedItem();
         // Xác định chế độ tìm kiếm: đích danh nếu checkbox được chọn
         SearchMode searchMode = Boolean.TRUE.equals(exactSearchCheckbox.getValue()) ? SearchMode.EXACT
                 : SearchMode.FUZZY;
         // Kiểm tra checkbox "Không dấu" (chỉ có hiệu lực khi tìm đích danh)
         boolean ignoreDiacritics = Boolean.TRUE.equals(exactSearchCheckbox.getValue())
                 && Boolean.TRUE.equals(ignoreDiacriticsCheckbox.getValue());
-        List<FileDescriptor> matches = ocrFileTextSearchService.searchFilesByText(keyword, currentStorage, searchMode,
+        List<FileDescriptor> matches = ocrFileTextSearchService.searchFilesByText(keyword, currentStorage,
+                selectedFolder, searchMode,
                 ignoreDiacritics);
         List<FileDescriptor> accessible = matches.stream()
                 .filter(file -> permissionService.hasPermission(user, PermissionType.READ, file))

@@ -1,6 +1,7 @@
 package com.vn.ecm.ocr.log;
 
 import com.vn.ecm.entity.FileDescriptor;
+import com.vn.ecm.entity.Folder;
 import com.vn.ecm.entity.SourceStorage;
 import io.jmix.core.DataManager;
 import net.sourceforge.tess4j.TesseractException;
@@ -76,23 +77,28 @@ public class OcrFileTextSearchService {
     }
 
     public List<FileDescriptor> searchFilesByText(String freeText) {
-        return searchFilesByText(freeText, null, SearchMode.FUZZY);
+        return searchFilesByText(freeText, null, null, SearchMode.FUZZY, false);
     }
 
     public List<FileDescriptor> searchFilesByText(String freeText, SourceStorage scopeStorage) {
-        return searchFilesByText(freeText, scopeStorage, SearchMode.FUZZY);
+        return searchFilesByText(freeText, scopeStorage, null, SearchMode.FUZZY, false);
     }
 
     public List<FileDescriptor> searchFilesByText(String freeText, SourceStorage scopeStorage, SearchMode searchMode) {
-        return searchFilesByText(freeText, scopeStorage, searchMode, false);
+        return searchFilesByText(freeText, scopeStorage, null, searchMode, false);
     }
 
     public List<FileDescriptor> searchFilesByText(String freeText, SourceStorage scopeStorage, SearchMode searchMode,
             boolean ignoreDiacritics) {
+        return searchFilesByText(freeText, scopeStorage, null, searchMode, ignoreDiacritics);
+    }
+
+    public List<FileDescriptor> searchFilesByText(String freeText, SourceStorage scopeStorage, Folder folder,
+            SearchMode searchMode,
+            boolean ignoreDiacritics) {
         if (!StringUtils.hasText(freeText)) {
             return List.of();
         }
-
         List<OcrFileDescriptorDocument> documents;
         if (searchMode == SearchMode.EXACT) {
             if (ignoreDiacritics) {
@@ -102,17 +108,32 @@ public class OcrFileTextSearchService {
                 String regexPattern = ".*" + escapedText + ".*";
                 documents = ocrFileDescriptorRepository.searchExactTextWithoutDiacritics(regexPattern);
             } else {
-                // Tìm kiếm đích danh có dấu: escape các ký tự đặc biệt trong regex và tìm chính
-                // xác
+                // Tìm kiếm đích danh có dấu: escape các ký tự đặc biệt trong regex
                 String escapedText = escapeRegexSpecialChars(freeText);
                 String regexPattern = ".*" + escapedText + ".*";
                 documents = ocrFileDescriptorRepository.searchExactText(regexPattern);
             }
         } else {
             // Tìm kiếm tương đối: sử dụng MongoDB text search
-            documents = ocrFileDescriptorRepository.searchFullText(freeText);
+            String normalizedSearchText = normalizeWhitespaceForFuzzySearch(freeText);
+            List<OcrFileDescriptorDocument> originalDocs = ocrFileDescriptorRepository.searchFullText(freeText);
+            List<OcrFileDescriptorDocument> normalizedDocs = originalDocs;
+            if (!freeText.equals(normalizedSearchText) && !normalizedSearchText.contains(" ")) {
+                String escapedText = escapeRegexSpecialChars(normalizedSearchText);
+                String regexPattern = ".*" + escapedText.replaceAll("(.)", "$1\\s*") + ".*";
+                // Sử dụng case-insensitive regex để match cả hoa và thường
+                List<OcrFileDescriptorDocument> regexDocs = ocrFileDescriptorRepository
+                        .searchExactTextCaseInsensitive(regexPattern);
+                // Gộp kết quả
+                normalizedDocs = regexDocs;
+                for (OcrFileDescriptorDocument doc : originalDocs) {
+                    if (!normalizedDocs.stream().anyMatch(d -> d.getId().equals(doc.getId()))) {
+                        normalizedDocs.add(doc);
+                    }
+                }
+            }
+            documents = normalizedDocs;
         }
-
         List<UUID> fileIds = documents.stream()
                 .map(OcrFileDescriptorDocument::getOcrFileDescriptorId)
                 .filter(StringUtils::hasText)
@@ -125,9 +146,11 @@ public class OcrFileTextSearchService {
 
         return dataManager.load(FileDescriptor.class)
                 .query("select f from FileDescriptor f where f.id in :ids and f.inTrash = false " +
-                        "and (:storage is null or f.sourceStorage = :storage)")
+                        "and (:storage is null or f.sourceStorage = :storage) " +
+                        "and (:folder is null or f.folder = :folder)")
                 .parameter("ids", fileIds)
                 .parameter("storage", scopeStorage)
+                .parameter("folder", folder)
                 .list();
     }
 
@@ -148,10 +171,7 @@ public class OcrFileTextSearchService {
                 .replace("|", "\\|");
     }
 
-    /**
-     * Remove Vietnamese diacritics (dấu) từ text
-     * Ví dụ: "Quản lý" -> "Quan ly"
-     */
+    // không dấu
     private String removeVietnameseDiacritics(String text) {
         if (text == null) {
             return null;
@@ -159,6 +179,28 @@ public class OcrFileTextSearchService {
         String nfdNormalizedString = Normalizer.normalize(text, Normalizer.Form.NFD);
         Pattern pattern = Pattern.compile("\\p{InCombiningDiacriticalMarks}+");
         return pattern.matcher(nfdNormalizedString).replaceAll("");
+    }
+
+    private String normalizeWhitespaceForFuzzySearch(String text) {
+        if (text == null || text.isEmpty()) {
+            return text;
+        }
+        String normalized = text.trim();
+        // xử lí có nhiều khoảng trắng
+        Pattern singleCharWithSpaces = Pattern.compile("(\\S)\\s+(\\S)");
+        String temp = normalized;
+        String previous = "";
+        // Lặp cho đến khi không còn thay đổi
+        while (!temp.equals(previous)) {
+            previous = temp;
+            // Nếu có nhiều khoảng trắng giữa các ký tự đơn lẻ, loại bỏ chúng
+            // Nhưng chỉ khi cả hai ký tự đều là ký tự đơn (không phải từ dài)
+            temp = singleCharWithSpaces.matcher(temp).replaceAll("$1$2");
+        }
+        // Normalize nhiều khoảng trắng thành một khoảng trắng
+        normalized = temp.replaceAll("\\s+", " ");
+
+        return normalized.trim();
     }
 
     private String extractText(FileDescriptor descriptor, File file) {
