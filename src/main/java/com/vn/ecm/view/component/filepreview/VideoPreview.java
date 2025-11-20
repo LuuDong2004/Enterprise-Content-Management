@@ -33,7 +33,6 @@ public class VideoPreview extends StandardView {
         if (inputFile == null) {
             return;
         }
-
         String storageName = inputFile.getStorageName();
         FileStorage storage = dynamicStorageManager.getFileStorageByName(storageName);
 

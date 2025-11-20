@@ -459,7 +459,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         if (extension.startsWith("pdf")) {
             previewPdfFile(fileRef);
         }
-        if (extension.startsWith("txt")) {
+        if (extension.startsWith("txt") || extension.startsWith("doc")) {
             previewTextFile(fileRef);
         }
         if (extension.startsWith("jpg")
@@ -531,6 +531,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         window.setResizable(true);
         window.open();
     }
+
 }
 
 
