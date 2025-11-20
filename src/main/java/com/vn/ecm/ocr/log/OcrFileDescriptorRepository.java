@@ -20,4 +20,8 @@ public interface OcrFileDescriptorRepository extends MongoRepository<OcrFileDesc
     // đích danh bằng regex
     @Query("{ 'extractedText': { '$regex': ?0, '$options': '' } }")
     List<OcrFileDescriptorDocument> searchExactText(String exactText);
+
+    // đích danh không dấu bằng regex
+    @Query("{ 'extractedTextWithoutDiacritics': { '$regex': ?0, '$options': '' } }")
+    List<OcrFileDescriptorDocument> searchExactTextWithoutDiacritics(String exactText);
 }

@@ -26,12 +26,23 @@ public class OcrFileDescriptorDocument {
     @TextIndexed(weight = 5)
     private String extractedText;
 
+    // Text không dấu để hỗ trợ tìm kiếm không dấu
+    private String extractedTextWithoutDiacritics;
+
     public String getExtractedText() {
         return extractedText;
     }
 
     public void setExtractedText(String extractedText) {
         this.extractedText = extractedText;
+    }
+
+    public String getExtractedTextWithoutDiacritics() {
+        return extractedTextWithoutDiacritics;
+    }
+
+    public void setExtractedTextWithoutDiacritics(String extractedTextWithoutDiacritics) {
+        this.extractedTextWithoutDiacritics = extractedTextWithoutDiacritics;
     }
 
     public String getFileName() {

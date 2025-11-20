@@ -10,17 +10,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.io.File;
+import java.io.IOException;
+import java.text.Normalizer;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-/**
- * Coordinates OCR extraction, persistence in MongoDB, and full-text search
- * capabilities.
- */
 @Service
 public class OcrFileTextSearchService {
 
@@ -28,6 +27,8 @@ public class OcrFileTextSearchService {
 
     private static final Set<String> SUPPORTED_IMAGE_EXTENSIONS = Set.of(
             "png", "jpg", "jpeg", "bmp", "tif", "tiff", "gif", "webp");
+
+    private static final Set<String> SUPPORTED_PDF_EXTENSIONS = Set.of("pdf");
 
     private final OcrFileDescriptorService ocrFileDescriptorService;
     private final OcrFileDescriptorRepository ocrFileDescriptorRepository;
@@ -41,18 +42,11 @@ public class OcrFileTextSearchService {
         this.dataManager = dataManager;
     }
 
-    /**
-     * Performs OCR for the provided file and saves/updates the MongoDB document for
-     * full-text search.
-     *
-     * @return Optional text that was extracted and saved. Empty if extraction is
-     *         skipped or fails.
-     */
-    public Optional<String> indexFile(FileDescriptor descriptor, File imageFile) {
-        if (!isEligible(descriptor, imageFile)) {
+    public Optional<String> indexFile(FileDescriptor descriptor, File file) {
+        if (!isEligible(descriptor, file)) {
             return Optional.empty();
         }
-        String extractedText = extractText(imageFile);
+        String extractedText = extractText(descriptor, file);
         if (!StringUtils.hasText(extractedText)) {
             return Optional.empty();
         }
@@ -63,7 +57,10 @@ public class OcrFileTextSearchService {
         document.setId(descriptor.getId().toString());
         document.setOcrFileDescriptorId(descriptor.getId().toString());
         document.setFileName(descriptor.getName());
-        document.setExtractedText(extractedText.trim());
+        String trimmedText = extractedText.trim();
+        document.setExtractedText(trimmedText);
+        // Lưu thêm text không dấu để hỗ trợ tìm kiếm không dấu
+        document.setExtractedTextWithoutDiacritics(removeVietnameseDiacritics(trimmedText));
 
         ocrFileDescriptorRepository.save(document);
         return Optional.of(document.getExtractedText());
@@ -87,16 +84,30 @@ public class OcrFileTextSearchService {
     }
 
     public List<FileDescriptor> searchFilesByText(String freeText, SourceStorage scopeStorage, SearchMode searchMode) {
+        return searchFilesByText(freeText, scopeStorage, searchMode, false);
+    }
+
+    public List<FileDescriptor> searchFilesByText(String freeText, SourceStorage scopeStorage, SearchMode searchMode,
+            boolean ignoreDiacritics) {
         if (!StringUtils.hasText(freeText)) {
             return List.of();
         }
 
         List<OcrFileDescriptorDocument> documents;
         if (searchMode == SearchMode.EXACT) {
-            // Tìm kiếm đích danh: escape các ký tự đặc biệt trong regex và tìm chính xác
-            String escapedText = escapeRegexSpecialChars(freeText);
-            String regexPattern = ".*" + escapedText + ".*";
-            documents = ocrFileDescriptorRepository.searchExactText(regexPattern);
+            if (ignoreDiacritics) {
+                // Tìm kiếm đích danh không dấu: normalize text và tìm trong normalizedText
+                String normalizedSearchText = removeVietnameseDiacritics(freeText);
+                String escapedText = escapeRegexSpecialChars(normalizedSearchText);
+                String regexPattern = ".*" + escapedText + ".*";
+                documents = ocrFileDescriptorRepository.searchExactTextWithoutDiacritics(regexPattern);
+            } else {
+                // Tìm kiếm đích danh có dấu: escape các ký tự đặc biệt trong regex và tìm chính
+                // xác
+                String escapedText = escapeRegexSpecialChars(freeText);
+                String regexPattern = ".*" + escapedText + ".*";
+                documents = ocrFileDescriptorRepository.searchExactText(regexPattern);
+            }
         } else {
             // Tìm kiếm tương đối: sử dụng MongoDB text search
             documents = ocrFileDescriptorRepository.searchFullText(freeText);
@@ -120,9 +131,6 @@ public class OcrFileTextSearchService {
                 .list();
     }
 
-    /**
-     * Escape các ký tự đặc biệt trong regex để tìm kiếm chính xác
-     */
     private String escapeRegexSpecialChars(String text) {
         return text.replace("\\", "\\\\")
                 .replace(".", "\\.")
@@ -140,23 +148,56 @@ public class OcrFileTextSearchService {
                 .replace("|", "\\|");
     }
 
-    private String extractText(File imageFile) {
+    /**
+     * Remove Vietnamese diacritics (dấu) từ text
+     * Ví dụ: "Quản lý" -> "Quan ly"
+     */
+    private String removeVietnameseDiacritics(String text) {
+        if (text == null) {
+            return null;
+        }
+        String nfdNormalizedString = Normalizer.normalize(text, Normalizer.Form.NFD);
+        Pattern pattern = Pattern.compile("\\p{InCombiningDiacriticalMarks}+");
+        return pattern.matcher(nfdNormalizedString).replaceAll("");
+    }
+
+    private String extractText(FileDescriptor descriptor, File file) {
+        String extension = descriptor.getExtension();
+        if (extension == null) {
+            return null;
+        }
+        String lowerExtension = extension.toLowerCase(Locale.ROOT);
+
         try {
-            return ocrFileDescriptorService.extractText(imageFile);
+            if (SUPPORTED_PDF_EXTENSIONS.contains(lowerExtension)) {
+                // Extract text từ PDF - tự động phát hiện PDF có text hay scan
+                return ocrFileDescriptorService.extractTextFromPdf(file);
+            } else if (SUPPORTED_IMAGE_EXTENSIONS.contains(lowerExtension)) {
+                // Extract text từ ảnh sử dụng OCR
+                return ocrFileDescriptorService.extractText(file);
+            } else {
+                log.debug("Unsupported file type for text extraction: {}", extension);
+                return null;
+            }
         } catch (TesseractException e) {
-            log.warn("OCR extraction failed for file {}", imageFile, e);
+            log.warn("OCR extraction failed for file {}", file.getName(), e);
+            return null;
+        } catch (IOException e) {
+            log.warn("PDF text extraction failed for file {}", file.getName(), e);
             return null;
         }
     }
 
-    private boolean isEligible(FileDescriptor descriptor, File imageFile) {
-        if (descriptor == null || imageFile == null || !imageFile.exists()) {
+    private boolean isEligible(FileDescriptor descriptor, File file) {
+        if (descriptor == null || file == null || !file.exists()) {
             return false;
         }
         String extension = descriptor.getExtension();
         if (!StringUtils.hasText(extension)) {
             return false;
         }
-        return SUPPORTED_IMAGE_EXTENSIONS.contains(extension.toLowerCase(Locale.ROOT));
+        String lowerExtension = extension.toLowerCase(Locale.ROOT);
+        return SUPPORTED_IMAGE_EXTENSIONS.contains(lowerExtension)
+                || SUPPORTED_PDF_EXTENSIONS.contains(lowerExtension);
     }
 }

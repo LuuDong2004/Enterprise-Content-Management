@@ -108,6 +108,8 @@ public class EcmView extends StandardView {
     @ViewComponent
     private JmixCheckbox exactSearchCheckbox;
     @ViewComponent
+    private JmixCheckbox ignoreDiacriticsCheckbox;
+    @ViewComponent
     private Span emptyStateText;
     @ViewComponent
     private VerticalLayout metadataContent;
@@ -151,6 +153,16 @@ public class EcmView extends StandardView {
                 clearMetadataPanel();
             }
         });
+
+        // Chỉ hiển thị checkbox "Không dấu" khi "Tìm đích danh" được chọn
+        exactSearchCheckbox.addValueChangeListener(e -> {
+            boolean isExact = Boolean.TRUE.equals(e.getValue());
+            ignoreDiacriticsCheckbox.setVisible(isExact);
+            if (!isExact) {
+                ignoreDiacriticsCheckbox.setValue(false);
+            }
+        });
+        ignoreDiacriticsCheckbox.setVisible(false);
     }
 
     @Subscribe(id = "previewBtn", subject = "clickListener")
@@ -427,7 +439,11 @@ public class EcmView extends StandardView {
         // Xác định chế độ tìm kiếm: đích danh nếu checkbox được chọn
         SearchMode searchMode = Boolean.TRUE.equals(exactSearchCheckbox.getValue()) ? SearchMode.EXACT
                 : SearchMode.FUZZY;
-        List<FileDescriptor> matches = ocrFileTextSearchService.searchFilesByText(keyword, currentStorage, searchMode);
+        // Kiểm tra checkbox "Không dấu" (chỉ có hiệu lực khi tìm đích danh)
+        boolean ignoreDiacritics = Boolean.TRUE.equals(exactSearchCheckbox.getValue())
+                && Boolean.TRUE.equals(ignoreDiacriticsCheckbox.getValue());
+        List<FileDescriptor> matches = ocrFileTextSearchService.searchFilesByText(keyword, currentStorage, searchMode,
+                ignoreDiacritics);
         List<FileDescriptor> accessible = matches.stream()
                 .filter(file -> permissionService.hasPermission(user, PermissionType.READ, file))
                 .collect(Collectors.toList());

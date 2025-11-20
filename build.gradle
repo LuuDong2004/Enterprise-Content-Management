@@ -49,6 +49,9 @@ dependencies {
 
     // tesseract
     implementation 'net.sourceforge.tess4j:tess4j:5.5.0'
+    
+    // Apache PDFBox for PDF text extraction
+    implementation 'org.apache.pdfbox:pdfbox:3.0.1'
 
     // MongoDB Starter for Spring Data
     implementation('org.springframework.boot:spring-boot-starter-data-mongodb') {
