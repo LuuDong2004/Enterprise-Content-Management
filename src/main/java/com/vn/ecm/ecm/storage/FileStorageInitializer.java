@@ -35,7 +35,6 @@ public class FileStorageInitializer {
                     try {
                         storageManager.getOrCreateFileStorage(sourceStorage);
                     } catch (Exception e) {
-                        // Không chặn app start, chỉ log lỗi
                         System.err.println("Cannot init storage for " + sourceStorage.getId() + ": " + e.getMessage());
                     }
                 }
@@ -43,6 +42,7 @@ public class FileStorageInitializer {
             return null;
         });
     }
+
     public boolean findSourceStorage(SourceStorage sourceStorage) {
         return storageManager.isStorageValid(sourceStorage);
     }

@@ -459,7 +459,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         if (extension.startsWith("pdf")) {
             previewPdfFile(fileRef);
         }
-        if (extension.startsWith("txt") || extension.startsWith("docx")) {
+        if (extension.startsWith("txt")) {
             previewTextFile(fileRef);
         }
         if (extension.startsWith("jpg")
@@ -527,7 +527,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     }
     private void previewExcelFile(FileRef fileRelf){
         DialogWindow<ExcelPreview> window = dialogWindows.view(this, ExcelPreview.class).build();
-//       window.getView().setInputFile(fileRelf);
+        window.getView().setInputFile(fileRelf);
         window.setResizable(true);
         window.open();
     }
