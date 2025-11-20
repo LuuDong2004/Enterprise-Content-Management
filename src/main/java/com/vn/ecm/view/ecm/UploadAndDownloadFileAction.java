@@ -2,6 +2,7 @@ package com.vn.ecm.view.ecm;
 
 import com.vn.ecm.ecm.storage.s3.S3ClientFactory;
 import com.vn.ecm.entity.*;
+import com.vn.ecm.ocr.log.OcrFileTextSearchService;
 import com.vn.ecm.service.ecm.folderandfile.IFileDescriptorUploadAndDownloadService;
 import com.vn.ecm.service.ecm.PermissionService;
 import io.jmix.core.security.CurrentAuthentication;
@@ -27,7 +28,9 @@ import java.util.function.Supplier;
 @Scope("prototype")
 public class UploadAndDownloadFileAction extends ItemTrackingAction<FileDescriptor> {
 
-    public enum Mode {UPLOAD, DOWNLOAD}
+    public enum Mode {
+        UPLOAD, DOWNLOAD
+    }
 
     @Autowired
     private TemporaryStorage tempStorage;
@@ -48,9 +51,10 @@ public class UploadAndDownloadFileAction extends ItemTrackingAction<FileDescript
     @Autowired
     private S3ClientFactory s3ClientFactory;
 
-
     @Autowired
     private IFileDescriptorUploadAndDownloadService fileDescriptorService;
+    @Autowired
+    private OcrFileTextSearchService ocrFileTextSearchService;
 
     private Supplier<Folder> folderSupplier;
 
@@ -99,38 +103,53 @@ public class UploadAndDownloadFileAction extends ItemTrackingAction<FileDescript
                 || (getTarget() != null && getTarget().getSingleSelectedItem() != null);
     }
 
-
     private void upload() {
         Folder folder = folderSupplier != null ? folderSupplier.get() : null;
-        if (folder == null) return;
+        if (folder == null)
+            return;
         User user = (User) currentAuthentication.getUser();
         boolean per = permissionService.hasPermission(user, PermissionType.CREATE, folder);
         if (!per) {
             notifications.create("Bạn không có quyền tải file này lên hệ thống.")
                     .withType(Notifications.Type.ERROR)
+                    .withDuration(2000)
                     .show();
             return;
         }
         SourceStorage storage = storageSupplier != null ? storageSupplier.get() : null;
-        if (storage == null) return;
+        if (storage == null)
+            return;
 
-        if (uploadEvent == null) return;
+        if (uploadEvent == null)
+            return;
         Object receiver = uploadEvent.getReceiver();
-        if (!(receiver instanceof FileTemporaryStorageBuffer)) return;
+        if (!(receiver instanceof FileTemporaryStorageBuffer))
+            return;
         FileTemporaryStorageBuffer buf = (FileTemporaryStorageBuffer) receiver;
         UUID fileId = buf.getFileData().getFileInfo().getId();
         File tmp = tempStorage.getFile(fileId);
-        if (tmp == null) return;
+        if (tmp == null)
+            return;
         FileDescriptor fileDescriptor = fileDescriptorService.uploadFile(
                 fileId,
                 uploadEvent.getFileName(),
                 uploadEvent.getContentLength() > 0 ? uploadEvent.getContentLength() : null,
                 folder,
                 storage,
-                user.getUsername()
-        );
+                user.getUsername(),
+                tmp);
         if (fileDescriptor != null) {
             permissionService.initializeFilePermission(user, fileDescriptor);
+            ocrFileTextSearchService.getExtractedText(fileDescriptor.getId())
+                    .filter(text -> !text.isBlank())
+                    .ifPresent(text -> {
+                        String preview = text.length() > 250 ? text.substring(0, 250) + "..." : text;
+                        notifications.create("OCR đã lưu")
+                                .withType(Notifications.Type.SUCCESS)
+                                .withDuration(2000)
+                                .withCloseable(false)
+                                .show();
+                    });
         }
     }
 
@@ -157,10 +176,10 @@ public class UploadAndDownloadFileAction extends ItemTrackingAction<FileDescript
             return;
         }
         try {
-           byte[] bytes = fileDescriptorService.downloadFile(selected);
-            downloader.download(bytes, selected.getName(),DownloadFormat.OCTET_STREAM);
+            byte[] bytes = fileDescriptorService.downloadFile(selected);
+            downloader.download(bytes, selected.getName(), DownloadFormat.OCTET_STREAM);
         } catch (Exception e) {
-//            throw new RuntimeException("Download failed for: " + selected.getName(), e);
+            // throw new RuntimeException("Download failed for: " + selected.getName(), e);
             notifications.create(result)
                     .withType(Notifications.Type.ERROR)
                     .withDuration(2000)
@@ -169,4 +188,3 @@ public class UploadAndDownloadFileAction extends ItemTrackingAction<FileDescript
         }
     }
 }
-

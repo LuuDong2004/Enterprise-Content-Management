@@ -4,7 +4,6 @@ import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 
-import com.vaadin.flow.component.grid.ItemClickEvent;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -12,8 +11,11 @@ import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.data.selection.SelectionEvent;
-import com.vaadin.flow.router.*;
+import com.vaadin.flow.router.AfterNavigationEvent;
+import com.vaadin.flow.router.BeforeEnterEvent;
+import com.vaadin.flow.router.Route;
 import com.vn.ecm.entity.*;
+import com.vn.ecm.ocr.log.OcrFileTextSearchService;
 import com.vn.ecm.service.ecm.PermissionService;
 import com.vn.ecm.service.ecm.folderandfile.IFileDescriptorService;
 import com.vn.ecm.service.ecm.folderandfile.IFolderService;
@@ -28,13 +30,12 @@ import io.jmix.core.DataManager;
 import io.jmix.core.FileRef;
 import io.jmix.core.security.CurrentAuthentication;
 import io.jmix.flowui.DialogWindows;
-import io.jmix.flowui.Dialogs;
 import io.jmix.flowui.Notifications;
 import io.jmix.flowui.UiComponents;
 import io.jmix.flowui.component.grid.DataGrid;
 import io.jmix.flowui.component.grid.TreeDataGrid;
+import io.jmix.flowui.component.textfield.TypedTextField;
 import io.jmix.flowui.component.upload.FileStorageUploadField;
-import io.jmix.flowui.Actions;
 import io.jmix.flowui.kit.action.ActionPerformedEvent;
 import io.jmix.flowui.kit.component.button.JmixButton;
 import io.jmix.flowui.kit.component.upload.event.FileUploadSucceededEvent;
@@ -42,15 +43,15 @@ import io.jmix.flowui.model.CollectionContainer;
 import io.jmix.flowui.model.InstanceContainer;
 import io.jmix.flowui.view.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import com.vaadin.flow.router.BeforeEnterEvent;
-import com.vaadin.flow.router.BeforeEnterObserver;
+import org.springframework.util.StringUtils;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Route(value = "source-storages/:id", layout = MainView.class)
 @ViewController("EcmView")
 @ViewDescriptor("ECM-view.xml")
-public class EcmView extends StandardView implements BeforeEnterObserver, AfterNavigationObserver {
+public class EcmView extends StandardView {
     @ViewComponent
     private CollectionContainer<Folder> foldersDc;
     @ViewComponent
@@ -72,14 +73,12 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     @Autowired
     private PermissionService permissionService;
     @Autowired
-    private Dialogs dialogs;
+    private OcrFileTextSearchService ocrFileTextSearchService;
 
     private SourceStorage currentStorage;
     private UUID id;
     @ViewComponent
     private MessageBundle messageBundle;
-    @Autowired
-    private Actions actions;
     @ViewComponent("uploadAction")
     private UploadAndDownloadFileAction uploadAction;
     @ViewComponent("downloadAction")
@@ -103,12 +102,13 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     @ViewComponent
     private JmixButton previewBtn;
     @ViewComponent
+    private TypedTextField<String> ocrSearchField;
+    @ViewComponent
     private Span emptyStateText;
     @ViewComponent
     private VerticalLayout metadataContent;
     @ViewComponent
     private VerticalLayout metadataEmptyState;
-
 
     @Subscribe
     public void onInit(InitEvent event) {
@@ -125,7 +125,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         uploadAction.setMode(UploadAndDownloadFileAction.Mode.UPLOAD);
         uploadAction.setFolderSupplier(() -> foldersTree.getSingleSelectedItem());
         uploadAction.setStorageSupplier(() -> currentStorage);
-        //download
+        // download
         downloadAction.setMode(UploadAndDownloadFileAction.Mode.DOWNLOAD);
         downloadAction.setTarget(fileDataGird);
         if (btnDownload.getAction() == null) {
@@ -138,6 +138,15 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         if (filesDc != null) {
             filesDc.addCollectionChangeListener(e -> updateEmptyStateText());
         }
+
+        ocrSearchField.addValueChangeListener(valueChangeEvent -> {
+            if (valueChangeEvent.isFromClient() && !StringUtils.hasText(valueChangeEvent.getValue())) {
+                User user = (User) currentAuthentication.getUser();
+                loadAccessibleFiles(user, foldersTree.getSingleSelectedItem());
+                fileDataGird.deselectAll();
+                clearMetadataPanel();
+            }
+        });
     }
 
     @Subscribe(id = "previewBtn", subject = "clickListener")
@@ -147,7 +156,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         boolean nowVisible = metadataPanel.isVisible();
         previewBtn.setText(nowVisible ? "Ẩn chi tiết" : "Xem chi tiết");
     }
-
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
@@ -194,7 +202,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     public void onFileDataGirdSelectionChange(SelectionEvent<DataGrid<FileDescriptor>, FileDescriptor> event) {
         FileDescriptor selected = event.getFirstSelectedItem().orElse(null);
         boolean selection = selected != null;
-        User user = (User) currentAuthentication.getUser();
         if (selection) {
             metadataFileDc.setItem(selected);
             metadataContent.setVisible(true);
@@ -206,7 +213,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         }
     }
 
-    //upload file
+    // upload file
     @Subscribe("fileRefField")
     public void onFileRefFieldFileUploadSucceeded(final FileUploadSucceededEvent<FileStorageUploadField> event) {
         User user = (User) currentAuthentication.getUser();
@@ -237,12 +244,17 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         }
     }
 
-    //new folder
+    @Subscribe(id = "ocrSearchBtn", subject = "clickListener")
+    public void onOcrSearchBtnClick(final ClickEvent<JmixButton> event) {
+        executeOcrSearch();
+    }
+
+    // new folder
     @Subscribe("foldersTree.createFolder")
     public void onFoldersTreeCreateFolder(ActionPerformedEvent event) {
         User user = (User) currentAuthentication.getUser();
         Folder parent = foldersTree.getSingleSelectedItem();
-        if(parent != null) {
+        if (parent != null) {
             boolean per = permissionService.hasPermission(user, PermissionType.CREATE, parent);
             if (!per) {
                 notifications.create("Bạn không có quyền tạo mới thư mục")
@@ -261,7 +273,8 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         });
         dw.open();
     }
-    //rename folder
+
+    // rename folder
     @Subscribe("foldersTree.renameFolder")
     public void onFoldersTreeRenameFolder(final ActionPerformedEvent event) {
         Folder selected = foldersTree.getSingleSelectedItem();
@@ -287,7 +300,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         dw.open();
     }
 
-    //xóa vào thùng rác
+    // xóa vào thùng rác
     @Subscribe("foldersTree.delete")
     public void onFoldersTreeDelete(final ActionPerformedEvent event) {
         Folder selected = foldersTree.getSingleSelectedItem();
@@ -319,7 +332,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         dlg.open();
     }
 
-    //remove file
+    // remove file
     @Subscribe("fileDataGird.deleteFile")
     public void onFileDataGirdDeleteFile(final ActionPerformedEvent event) {
         FileDescriptor selected = fileDataGird.getSingleSelectedItem();
@@ -350,13 +363,13 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         dlg.open();
     }
 
-    //action download file
+    // action download file
     @Subscribe("fileDataGird.downloadFile")
     public void onFileDataGirdDownloadFile(final ActionPerformedEvent event) {
         btnDownload.click();
     }
 
-    //action rename file
+    // action rename file
     @Subscribe("fileDataGird.renameFile")
     public void onFileDataGirdRenameFile(final ActionPerformedEvent event) {
         Folder selectedFolder = foldersTree.getSingleSelectedItem();
@@ -378,7 +391,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         });
         dw.open();
 
-
     }
 
     private void loadAccessibleFolders(User user) {
@@ -391,14 +403,60 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         filesDc.setItems(accessibleFiles);
     }
 
-    //css
+    private void executeOcrSearch() {
+        if (currentStorage == null) {
+            notifications.create("Vui lòng chọn kho lưu trữ trước khi tìm kiếm.")
+                    .withType(Notifications.Type.WARNING)
+                    .withDuration(2000)
+                    .show();
+            return;
+        }
+        String keyword = ocrSearchField.getValue();
+        if (!StringUtils.hasText(keyword)) {
+            notifications.create("Vui lòng nhập nội dung để tìm kiếm.")
+                    .withType(Notifications.Type.WARNING)
+                    .withDuration(2000)
+                    .show();
+            return;
+        }
+        User user = (User) currentAuthentication.getUser();
+        List<FileDescriptor> matches = ocrFileTextSearchService.searchFilesByText(keyword, currentStorage);
+        List<FileDescriptor> accessible = matches.stream()
+                .filter(file -> permissionService.hasPermission(user, PermissionType.READ, file))
+                .collect(Collectors.toList());
+
+        filesDc.setItems(accessible);
+        fileDataGird.deselectAll();
+        clearMetadataPanel();
+
+        if (accessible.isEmpty()) {
+            notifications.create("Không tìm thấy tệp chứa: \"" + keyword + "\"")
+                    .withType(Notifications.Type.DEFAULT)
+                    .withDuration(2000)
+                    .show();
+        } else {
+            notifications.create("Tìm thấy " + accessible.size() + " tệp phù hợp.")
+                    .withType(Notifications.Type.SUCCESS)
+                    .withDuration(2500)
+                    .show();
+        }
+    }
+
+    private void clearMetadataPanel() {
+        metadataFileDc.setItem(null);
+        metadataContent.setVisible(false);
+        metadataEmptyState.setVisible(true);
+    }
+
+    // css
     private void initFolderGridColumn() {
-        //remove column by key
+        // remove column by key
         if (foldersTree.getColumnByKey("name") != null) {
             foldersTree.removeColumn(foldersTree.getColumnByKey("name"));
         }
-        //Add hierarchy column
-        TreeDataGrid.Column<Folder> nameColumn = foldersTree.addComponentHierarchyColumn(item -> renderFolderItem(item));
+        // Add hierarchy column
+        TreeDataGrid.Column<Folder> nameColumn = foldersTree
+                .addComponentHierarchyColumn(item -> renderFolderItem(item));
         nameColumn.setHeader("Thư mục");
         nameColumn.setFlexGrow(1);
         nameColumn.setResizable(true);
@@ -432,7 +490,8 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     }
 
     private void updateEmptyStateText() {
-        if (emptyStateText == null) return;
+        if (emptyStateText == null)
+            return;
 
         Folder selectedFolder = foldersTree.getSingleSelectedItem();
         boolean hasFolderSelected = selectedFolder != null;
@@ -450,7 +509,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     @Subscribe("fileDataGird.preViewFile")
     public void onFileDataGirdPreViewFile(final ActionPerformedEvent event) {
         FileDescriptor file = fileDataGird.getSingleSelectedItem();
-        if(file == null){
+        if (file == null) {
             return;
         }
 
@@ -461,5 +520,3 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         window.open();
     }
 }
-
-

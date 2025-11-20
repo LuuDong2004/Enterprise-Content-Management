@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<menu-config xmlns="http://jmix.io/schema/flowui/menu">
+
+    <menu id="application" title="Quản lý người dùng" opened="true" icon="vaadin:user-card">
+    </menu>
+    <menu id="storage" title="msg://com.vn.ecm.view.ecm/ecmView.title" icon="vaadin:database">
+        <item view="SourceStorage.list" title="Kho dữ liệu" icon="vaadin:storage"/>
+    </menu>
+
+    <menu id="security" title="Bảo mật" icon="vaadin:shield">
+    </menu>
+    <menu id="datatools" title="Công cụ quản lí dữ liệu" icon="vaadin:tools">
+    </menu>
+
+</menu-config>

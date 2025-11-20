@@ -1,28 +1,35 @@
 package com.vn.ecm.service.ecm.folderandfile.Impl;
 
 import com.vn.ecm.ecm.storage.DynamicStorageManager;
-import com.vn.ecm.ecm.storage.s3.S3ClientFactory;
 import com.vn.ecm.entity.FileDescriptor;
 import com.vn.ecm.entity.Folder;
 import com.vn.ecm.entity.SourceStorage;
+import com.vn.ecm.ocr.log.OcrFileTextSearchService;
 import com.vn.ecm.service.ecm.folderandfile.IFileDescriptorUploadAndDownloadService;
 import io.jmix.core.DataManager;
 import io.jmix.core.FileRef;
 import io.jmix.core.FileStorage;
 import io.jmix.flowui.upload.TemporaryStorage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
+import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
-import java.net.ConnectException;
-import java.net.UnknownHostException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Service
 public class FileDescriptorUploadAndDownloadService implements IFileDescriptorUploadAndDownloadService {
+    private static final Logger log = LoggerFactory.getLogger(FileDescriptorUploadAndDownloadService.class);
+
     @Autowired
     private DataManager dataManager;
     @Autowired
@@ -31,13 +38,17 @@ public class FileDescriptorUploadAndDownloadService implements IFileDescriptorUp
     private DynamicStorageManager storageManager;
     @Autowired
     private FileDescriptorService fileDescriptorService;
+    @Autowired
+    private OcrFileTextSearchService ocrFileTextSearchService;
 
     public FileDescriptor uploadFile(UUID fileId,
-                                     String fileName,
-                                     Long contentLength,
-                                     Folder folder,
-                                     SourceStorage sourceStorage,
-                                     String username){
+            String fileName,
+            Long contentLength,
+            Folder folder,
+            SourceStorage sourceStorage,
+            String username,
+            File tempFile) {
+        File ocrTempCopy = duplicateTempFile(tempFile, fileName);
         try {
             String uniqueName = fileDescriptorService.suggestUniqueName(folder, sourceStorage, fileName);
             FileStorage fileStorage = storageManager.getOrCreateFileStorage(sourceStorage);
@@ -56,11 +67,20 @@ public class FileDescriptorUploadAndDownloadService implements IFileDescriptorUp
             fileDescriptor.setSourceStorage(sourceStorage);
             fileDescriptor.setInTrash(false);
             fileDescriptor.setCreateBy(username);
-            return dataManager.save(fileDescriptor);
+            FileDescriptor savedDescriptor = dataManager.save(fileDescriptor);
 
-        }catch(NoSuchKeyException e){
+            File fileForOcr = resolveFileForOcr(tempFile, ocrTempCopy, fileName);
+            if (fileForOcr != null) {
+                ocrFileTextSearchService.indexFile(savedDescriptor, fileForOcr);
+            } else {
+                log.debug("Skip OCR for {} because source file is not available anymore", fileName);
+            }
+
+            return savedDescriptor;
+
+        } catch (NoSuchKeyException e) {
             throw new RuntimeException("Tệp không tồn tại trên S3: " + fileName, e);
-        }catch (S3Exception e) {
+        } catch (S3Exception e) {
             if (e.statusCode() == 403) {
                 throw new RuntimeException("Lỗi xác thực S3: Sai Access key hoặc Secret access key.");
             }
@@ -68,9 +88,10 @@ public class FileDescriptorUploadAndDownloadService implements IFileDescriptorUp
                 throw new RuntimeException("Bucket không tồn tại: " + sourceStorage.getBucket(), e);
             }
             throw new RuntimeException("Lỗi S3 (" + e.statusCode() + "): " + e.getMessage(), e);
+        } finally {
+            cleanupTempFile(ocrTempCopy);
         }
     }
-
 
     public byte[] downloadFile(FileDescriptor fileDescriptor) {
         FileStorage fileStorage = storageManager.getOrCreateFileStorage(fileDescriptor.getSourceStorage());
@@ -78,6 +99,46 @@ public class FileDescriptorUploadAndDownloadService implements IFileDescriptorUp
             return inputStream.readAllBytes();
         } catch (Exception e) {
             throw new RuntimeException("Lỗi khi tải xuống: " + e.getMessage(), e);
+        }
+    }
+
+    private File duplicateTempFile(File original, String fileName) {
+        if (original == null || !original.exists()) {
+            return null;
+        }
+        try {
+            String suffix = "";
+            if (fileName != null && fileName.contains(".")) {
+                suffix = fileName.substring(fileName.lastIndexOf('.'));
+            }
+            Path copyPath = Files.createTempFile("ecm-ocr-", suffix);
+            Files.copy(original.toPath(), copyPath, StandardCopyOption.REPLACE_EXISTING);
+            return copyPath.toFile();
+        } catch (IOException e) {
+            log.warn("Unable to duplicate temp file for OCR, skipping copy", e);
+            return null;
+        }
+    }
+
+    private File resolveFileForOcr(File original, File duplicated, String fileName) {
+        if (duplicated != null && duplicated.exists()) {
+            return duplicated;
+        }
+        if (original != null && original.exists()) {
+            return original;
+        }
+        log.debug("Original temp file for {} has already been removed", fileName);
+        return null;
+    }
+
+    private void cleanupTempFile(File tempFile) {
+        if (tempFile == null) {
+            return;
+        }
+        try {
+            Files.deleteIfExists(tempFile.toPath());
+        } catch (IOException e) {
+            log.warn("Failed to delete OCR temp file {}", tempFile, e);
         }
     }
 

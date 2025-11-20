@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<view xmlns="http://jmix.io/schema/flowui/view"
+      title="Kho dữ liệu"
+      focusComponent="sourceStoragesDataGrid">
+    <data>
+        <collection id="sourceStoragesDc"
+                    class="com.vn.ecm.entity.SourceStorage">
+            <fetchPlan extends="_instance_name">
+                <property name="accessKey"/>
+                <property name="secretAccessKey"/>
+                <property name="endpointUrl"/>
+                <property name="type"/>
+                <property name="active"/>
+            </fetchPlan>
+            <loader id="sourceStoragesDl" readOnly="true">
+                <query>
+                    <![CDATA[select e from SourceStorage e]]>
+                </query>
+            </loader>
+        </collection>
+    </data>
+    <facets>
+        <dataLoadCoordinator auto="true"/>
+        <urlQueryParameters>
+        </urlQueryParameters>
+    </facets>
+    <actions>
+        <action id="selectAction" type="lookup_select"/>
+        <action id="discardAction" type="lookup_discard"/>
+    </actions>
+    <layout>
+        <hbox id="buttonsPanel" classNames="buttons-panel">
+
+            <dropdownButton id="createGroup" text="Tạo mới kho">
+                <items>
+                    <actionItem id="s3CreateActionItem"  ref="sourceStoragesDataGrid.s3CreateAction"/>
+                    <actionItem id="ftpCreateActionItem" ref="sourceStoragesDataGrid.ftpCreateAction"/>
+                </items>
+            </dropdownButton>
+            <button id="editButton" text="Chỉnh sửa" action="sourceStoragesDataGrid.editAction"/>
+            <button id="removeButton" text="Xóa" action="sourceStoragesDataGrid.removeAction"/>
+            <simplePagination id="pagination" dataLoader="sourceStoragesDl"/>
+        </hbox>
+        <dataGrid id="sourceStoragesDataGrid"
+                  width="100%"
+                  minHeight="20em"
+                  dataContainer="sourceStoragesDc"
+                  columnReorderingAllowed="true">
+            <actions>
+<!--                <action id="createAction" type="list_create"/>-->
+                <action id="editAction" text="Chỉnh sửa" type="list_edit"/>
+                <action id="removeAction" text="Xóa" type="list_remove"/>
+                <action id="s3CreateAction" text="Kho lưu trữ S3"/>
+                <action id="ftpCreateAction" text="Kho lưu trữ FTP"/>
+            </actions>
+            <columns resizable="true">
+                <column property="name"/>
+<!--                <column property="accessKey"/>-->
+<!--                <column property="secretAccessKey"/>-->
+                <column property="endpointUrl"/>
+                <column property="type"/>
+                <column property="active"/>
+                <column key="actions" header="Hành động" />
+            </columns>
+        </dataGrid>
+        <hbox id="lookupActions" visible="false">
+            <button id="selectButton" action="selectAction"/>
+            <button id="discardButton" action="discardAction"/>
+        </hbox>
+    </layout>
+</view>
