@@ -84,18 +84,18 @@ public class ExcelPreview extends StandardView {
                                 promise: (async () => {
                                     // CSS & core libs
                                     loadCss("https://unpkg.com/@univerjs/preset-sheets-core/lib/index.css");
-
-                                    await loadScript("https://unpkg.com/react@18.3.1/umd/react.production.min.js");
-                                    await loadScript("https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js");
-                                    await loadScript("https://unpkg.com/rxjs/dist/bundles/rxjs.umd.min.js");
-                                    await loadScript("https://unpkg.com/echarts@5.6.0/dist/echarts.min.js");
-
-                                    await loadScript("https://unpkg.com/@univerjs/presets/lib/umd/index.js");
-                                    await loadScript("https://unpkg.com/@univerjs/preset-sheets-core/lib/umd/index.js");
-                                    await loadScript("https://unpkg.com/@univerjs/preset-sheets-core/lib/umd/locales/en-US.js");
-
-                                    // SheetJS
-                                    await loadScript("https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js");
+                                   await loadScript("/react/react.production.min.js");
+                                   await loadScript("/react/react-dom.production.min.js");
+                                           // RxJS
+                                   await loadScript("/rxjs/rxjs.umd.min.js");
+                                           // ECharts
+                                   await loadScript("/echarts/echarts.min.js");
+                                           // UniverJS
+                                   await loadScript("/univer/presets.umd.js");
+                                   await loadScript("/univer/sheets-core.umd.js");
+                                   await loadScript("/univer/sheets-core-en-US.js");
+                                           // SheetJS
+                                   await loadScript("/sheetjs/xlsx.full.min.js");
 
                                     const { createUniver } = window.UniverPresets || {};
                                     const { LocaleType, mergeLocales } = window.UniverCore || {};
@@ -144,12 +144,9 @@ public class ExcelPreview extends StandardView {
                                 }),
                             ],
                         });
-
                         console.log("[ExcelPreview JS] Univer initialized", univerAPI);
-
                         // Tạo workbook & sheet trống để hiển thị
                         univerAPI.createWorkbook({ name: "Preview" });
-
                         // ==============================
                         // 3) LOAD & ĐỔ DỮ LIỆU EXCEL
                         // ==============================
