@@ -79,14 +79,29 @@ public class OcrFileTextSearchService {
     }
 
     public List<FileDescriptor> searchFilesByText(String freeText) {
-        return searchFilesByText(freeText, null);
+        return searchFilesByText(freeText, null, SearchMode.FUZZY);
     }
 
     public List<FileDescriptor> searchFilesByText(String freeText, SourceStorage scopeStorage) {
+        return searchFilesByText(freeText, scopeStorage, SearchMode.FUZZY);
+    }
+
+    public List<FileDescriptor> searchFilesByText(String freeText, SourceStorage scopeStorage, SearchMode searchMode) {
         if (!StringUtils.hasText(freeText)) {
             return List.of();
         }
-        List<OcrFileDescriptorDocument> documents = ocrFileDescriptorRepository.searchFullText(freeText);
+
+        List<OcrFileDescriptorDocument> documents;
+        if (searchMode == SearchMode.EXACT) {
+            // Tìm kiếm đích danh: escape các ký tự đặc biệt trong regex và tìm chính xác
+            String escapedText = escapeRegexSpecialChars(freeText);
+            String regexPattern = ".*" + escapedText + ".*";
+            documents = ocrFileDescriptorRepository.searchExactText(regexPattern);
+        } else {
+            // Tìm kiếm tương đối: sử dụng MongoDB text search
+            documents = ocrFileDescriptorRepository.searchFullText(freeText);
+        }
+
         List<UUID> fileIds = documents.stream()
                 .map(OcrFileDescriptorDocument::getOcrFileDescriptorId)
                 .filter(StringUtils::hasText)
@@ -103,6 +118,26 @@ public class OcrFileTextSearchService {
                 .parameter("ids", fileIds)
                 .parameter("storage", scopeStorage)
                 .list();
+    }
+
+    /**
+     * Escape các ký tự đặc biệt trong regex để tìm kiếm chính xác
+     */
+    private String escapeRegexSpecialChars(String text) {
+        return text.replace("\\", "\\\\")
+                .replace(".", "\\.")
+                .replace("^", "\\^")
+                .replace("$", "\\$")
+                .replace("*", "\\*")
+                .replace("+", "\\+")
+                .replace("?", "\\?")
+                .replace("(", "\\(")
+                .replace(")", "\\)")
+                .replace("[", "\\[")
+                .replace("]", "\\]")
+                .replace("{", "\\{")
+                .replace("}", "\\}")
+                .replace("|", "\\|");
     }
 
     private String extractText(File imageFile) {

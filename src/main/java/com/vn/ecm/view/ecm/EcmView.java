@@ -16,6 +16,7 @@ import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.Route;
 import com.vn.ecm.entity.*;
 import com.vn.ecm.ocr.log.OcrFileTextSearchService;
+import com.vn.ecm.ocr.log.SearchMode;
 import com.vn.ecm.service.ecm.PermissionService;
 import com.vn.ecm.service.ecm.folderandfile.IFileDescriptorService;
 import com.vn.ecm.service.ecm.folderandfile.IFolderService;
@@ -32,6 +33,7 @@ import io.jmix.core.security.CurrentAuthentication;
 import io.jmix.flowui.DialogWindows;
 import io.jmix.flowui.Notifications;
 import io.jmix.flowui.UiComponents;
+import io.jmix.flowui.component.checkbox.JmixCheckbox;
 import io.jmix.flowui.component.grid.DataGrid;
 import io.jmix.flowui.component.grid.TreeDataGrid;
 import io.jmix.flowui.component.textfield.TypedTextField;
@@ -103,6 +105,8 @@ public class EcmView extends StandardView {
     private JmixButton previewBtn;
     @ViewComponent
     private TypedTextField<String> ocrSearchField;
+    @ViewComponent
+    private JmixCheckbox exactSearchCheckbox;
     @ViewComponent
     private Span emptyStateText;
     @ViewComponent
@@ -420,7 +424,10 @@ public class EcmView extends StandardView {
             return;
         }
         User user = (User) currentAuthentication.getUser();
-        List<FileDescriptor> matches = ocrFileTextSearchService.searchFilesByText(keyword, currentStorage);
+        // Xác định chế độ tìm kiếm: đích danh nếu checkbox được chọn
+        SearchMode searchMode = Boolean.TRUE.equals(exactSearchCheckbox.getValue()) ? SearchMode.EXACT
+                : SearchMode.FUZZY;
+        List<FileDescriptor> matches = ocrFileTextSearchService.searchFilesByText(keyword, currentStorage, searchMode);
         List<FileDescriptor> accessible = matches.stream()
                 .filter(file -> permissionService.hasPermission(user, PermissionType.READ, file))
                 .collect(Collectors.toList());

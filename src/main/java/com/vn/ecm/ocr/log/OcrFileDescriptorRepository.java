@@ -13,6 +13,11 @@ public interface OcrFileDescriptorRepository extends MongoRepository<OcrFileDesc
 
     List<OcrFileDescriptorDocument> findByOcrFileDescriptorId(String ocrFileDescriptorId);
 
+    // tìm kiếm tương đối bằng fulltextsearch của MongoDB
     @Query("{ '$text': { '$search': ?0 } }")
     List<OcrFileDescriptorDocument> searchFullText(String freeText);
+
+    // đích danh bằng regex
+    @Query("{ 'extractedText': { '$regex': ?0, '$options': '' } }")
+    List<OcrFileDescriptorDocument> searchExactText(String exactText);
 }

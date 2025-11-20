@@ -82,6 +82,9 @@
                        placeholder="Tìm nội dung (OCR)"
                        clearButtonVisible="true"
                        width="250px"/>
+            <checkbox id="exactSearchCheckbox" 
+                      label="Tìm đích danh"
+                      tooltipText="Khi bật, chỉ tìm được khi nhập đúng chính xác nội dung"/>
             <button id="ocrSearchBtn" text="Tìm nội dung" icon="SEARCH"/>
             <fragment id="viewModeFragment" class="com.vn.ecm.view.viewmode.ViewModeFragment"/>
             <button id="previewBtn" text="Xem chi tiết" icon="MENU"/>
