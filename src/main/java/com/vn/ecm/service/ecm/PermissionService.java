@@ -783,9 +783,10 @@ public class PermissionService {
         }
 
         // User thường: chỉ trả folder có quyền READ+ trong storage này
+
         return dataManager.load(Folder.class)
                 .query("""
-                select distinct f from Folder f   
+                select distinct f from Folder f
                 join Permission p on p.folder = f
                 where p.user = :user
                 and f.sourceStorage = :storage

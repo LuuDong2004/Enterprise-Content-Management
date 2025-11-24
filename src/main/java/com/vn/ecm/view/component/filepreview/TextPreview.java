@@ -38,7 +38,6 @@ public class TextPreview extends StandardView {
         String storageName = inputFile.getStorageName();
         try {
             FileStorage storage = dynamicStorageManager.getFileStorageByName(storageName);
-
             try (InputStream is = storage.openStream(inputFile)) {
                 String resultText = new String(is.readAllBytes(), StandardCharsets.UTF_8);
                 textFormField.setValue(resultText);

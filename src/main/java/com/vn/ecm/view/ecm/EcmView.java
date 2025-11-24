@@ -5,6 +5,7 @@ import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 
+import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -21,11 +22,13 @@ import com.vn.ecm.view.component.filepreview.*;
 import com.vn.ecm.view.file.EditFileNameDialogView;
 import com.vn.ecm.view.folder.CreateFolderDialogView;
 import com.vn.ecm.view.folder.EditNameFolderDialogView;
+import com.vn.ecm.view.folder.FolderLazyTreeItems;
 import com.vn.ecm.view.main.MainView;
 import com.vn.ecm.view.sourcestorage.SourceStorageListView;
 import com.vn.ecm.view.viewmode.ViewModeFragment;
 import io.jmix.core.DataManager;
 import io.jmix.core.FileRef;
+import io.jmix.core.Metadata;
 import io.jmix.core.security.CurrentAuthentication;
 import io.jmix.flowui.DialogWindows;
 import io.jmix.flowui.Dialogs;
@@ -109,6 +112,15 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     @ViewComponent
     private VerticalLayout metadataEmptyState;
 
+//    @ViewComponent
+//    private TreeDataGrid<Folder> folderTreeGird;
+
+     FolderLazyTreeItems dataProvider;
+
+     @Autowired
+     private Metadata metadata;
+
+     private String conditions = " and e.inTrash = false and e.sourceStorage = :storage";;
 
     @Subscribe
     public void onInit(InitEvent event) {
@@ -171,7 +183,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
             return;
         }
         User currentUser = (User) currentAuthentication.getUser();
-        loadAccessibleFolders(currentUser);
+        loadLazyFolder();
         loadAccessibleFiles(currentUser, null);
     }
 
@@ -257,7 +269,8 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         var dw = dialogWindows.view(this, CreateFolderDialogView.class).build();
         dw.getView().setContext(parent, currentStorage);
         dw.addAfterCloseListener(e -> {
-            loadAccessibleFolders(user);
+            //loadAccessibleFolders(user);
+            loadLazyFolder();
         });
         dw.open();
     }
@@ -283,7 +296,8 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         var dw = dialogWindows.view(this, EditNameFolderDialogView.class).build();
         dw.getView().setContext(selected, currentStorage);
         dw.addAfterCloseListener(e -> {
-            loadAccessibleFolders(userCurr);
+            //loadAccessibleFolders(userCurr);
+            loadLazyFolder();
         });
         dw.open();
     }
@@ -311,7 +325,8 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
             try {
                 String useName = userCurr.getUsername();
                 folderService.moveToTrash(selected, useName);
-                loadAccessibleFolders(userCurr);
+                //loadAccessibleFolders(userCurr);
+                loadLazyFolder();
                 notifications.show(messageBundle.getMessage("ecmDeleteFolderAlert"));
             } catch (Exception ex) {
                 notifications.show("Lỗi " + ex.getMessage());
@@ -380,6 +395,11 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         dw.open();
 
 
+    }
+    private void loadLazyFolder(){
+        dataProvider = new FolderLazyTreeItems(dataManager , metadata ,conditions ,currentStorage);
+        foldersTree.setDataProvider(dataProvider);
+        foldersDc.setItems(dataProvider.getItems());
     }
 
     private void loadAccessibleFolders(User user) {
