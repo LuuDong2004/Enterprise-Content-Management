@@ -42,6 +42,13 @@ public class PermissionService {
         return mask != null ? mask : 0;
     }
 
+    public void updateFolderClosureForMove(UUID folderId) {
+        if (folderId == null) {
+            return;
+        }
+        jdbcTemplate.update("EXEC dbo.usp_UpdateFolderClosureForMove @FolderId = ?", folderId);
+    }
+
     @Transactional
     // SAVE permission (User)
     public void savePermission(Collection<Permission> permissions, User user, Folder folder) {

@@ -417,3 +417,64 @@ BEGIN
 END
 GO
 
+-- 4.4: Cập nhật closure cho subtree khi di chuyển folder sang node khác
+CREATE OR ALTER PROCEDURE dbo.usp_UpdateFolderClosureForMove
+    @FolderId UNIQUEIDENTIFIER
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF @FolderId IS NULL
+        RETURN;
+
+    CREATE TABLE #Subtree (
+        ID        UNIQUEIDENTIFIER PRIMARY KEY,
+        ParentId  UNIQUEIDENTIFIER
+    );
+
+    ;WITH Subtree AS (
+        SELECT
+            f.ID,
+            f.PARENT_ID
+        FROM dbo.FOLDER f
+        WHERE f.ID = @FolderId
+        UNION ALL
+        SELECT
+            child.ID,
+            child.PARENT_ID
+        FROM dbo.FOLDER child
+        JOIN Subtree st ON child.PARENT_ID = st.ID
+    )
+    INSERT INTO #Subtree (ID, ParentId)
+    SELECT ID, Parent_ID
+    FROM Subtree;
+
+    DELETE fc
+    FROM dbo.folder_closure fc
+    JOIN #Subtree st ON fc.descendant = st.ID;
+
+    ;WITH AncestorPaths AS (
+        SELECT
+            st.ID AS descendant,
+            st.ID AS ancestor,
+            0 AS depth,
+            st.ParentId
+        FROM #Subtree st
+        UNION ALL
+        SELECT
+            ap.descendant,
+            parent.ID AS ancestor,
+            ap.depth + 1 AS depth,
+            parent.PARENT_ID
+        FROM AncestorPaths ap
+        JOIN dbo.FOLDER parent ON ap.ParentId = parent.ID
+    )
+    INSERT INTO dbo.folder_closure (ancestor, descendant, depth)
+    SELECT DISTINCT ancestor, descendant, depth
+    FROM AncestorPaths
+    OPTION (MAXRECURSION 0);
+
+    DROP TABLE #Subtree;
+END
+GO
+

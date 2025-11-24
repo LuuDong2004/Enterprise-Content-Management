@@ -10,11 +10,12 @@ import io.jmix.core.Messages;
 import io.jmix.core.security.CurrentAuthentication;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
-
 
 @Service
 public class FolderServiceImpl implements IFolderService {
@@ -48,10 +49,12 @@ public class FolderServiceImpl implements IFolderService {
         permissionService.initializeFolderPermission(user, f2);
         return f2;
     }
-    //xóa cứng
+
+    // xóa cứng
     @Override
-    public boolean deleteFolderFromTrash(Folder folder){
-        if(folder == null)  return false;
+    public boolean deleteFolderFromTrash(Folder folder) {
+        if (folder == null)
+            return false;
         List<FileDescriptor> files = dataManager.load(FileDescriptor.class)
                 .query("select f from FileDescriptor f where f.folder = :folder")
                 .parameter("folder", folder)
@@ -70,10 +73,12 @@ public class FolderServiceImpl implements IFolderService {
         dataManager.remove(folder);
         return true;
     }
+
     // xử lý logic xóa folder - đệ quy khỏi thùng rác
     @Override
     public int deleteFolderRecursivelyFromTrash(Folder folder) {
-        if (folder == null) return 0;
+        if (folder == null)
+            return 0;
 
         int deletedCount = 0;
 
@@ -104,31 +109,32 @@ public class FolderServiceImpl implements IFolderService {
         return deletedCount + 1;
     }
 
-
-    //xóa vào thùng rác
+    // xóa vào thùng rác
     @Override
     public void moveToTrash(Folder folder, String username) {
         if (folder == null)
-            return ;
+            return;
         folder.setInTrash(true);
         folder.setDeleteDate(LocalDateTime.now());
         folder.setDeletedBy(username);
         dataManager.save(folder);
     }
 
-    //  khôi phục từ thùng rác
+    // khôi phục từ thùng rác
     @Override
     public Folder restoreFromTrash(Folder folder) {
-        if (folder == null) return null;
+        if (folder == null)
+            return null;
         folder.setInTrash(false);
         folder.setDeletedBy(null);
         folder.setDeletedBy(null);
         return dataManager.save(folder);
     }
+
     // đổi tên folder
     @Override
-    public Folder renameFolder(Folder folder , String newName){
-        if(folder == null || newName == null || newName.isBlank()){
+    public Folder renameFolder(Folder folder, String newName) {
+        if (folder == null || newName == null || newName.isBlank()) {
             return null;
         }
         folder.setName(newName);
@@ -140,6 +146,20 @@ public class FolderServiceImpl implements IFolderService {
 
         return saved;
     }
+
+    private boolean isDescendant(Folder ancestor, Folder candidate) {
+        if (ancestor == null || candidate == null)
+            return false;
+        Folder current = candidate;
+        while (current != null) {
+            if (Objects.equals(current.getId(), ancestor.getId())) {
+                return true;
+            }
+            current = current.getParent();
+        }
+        return false;
+    }
+
     // cập nhập full path đệ quy của các folder con
     private void updateChildFullPaths(Folder parentFolder) {
         List<Folder> children = dataManager.load(Folder.class)
@@ -153,8 +173,9 @@ public class FolderServiceImpl implements IFolderService {
             updateChildFullPaths(child); // đệ quy tiếp
         }
     }
+
     @Override
-    public String buildFolderPath(Folder folder){
+    public String buildFolderPath(Folder folder) {
         StringBuilder path = new StringBuilder();
         Folder parent = folder.getParent();
         while (parent != null) {
