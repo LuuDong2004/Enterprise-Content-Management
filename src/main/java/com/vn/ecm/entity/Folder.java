@@ -1,4 +1,5 @@
 package com.vn.ecm.entity;
+
 //v1
 import io.jmix.core.entity.annotation.JmixGeneratedValue;
 import io.jmix.core.metamodel.annotation.JmixEntity;
@@ -6,6 +7,7 @@ import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
+
 @JmixEntity
 @Table(name = "FOLDER")
 @Entity
@@ -26,7 +28,7 @@ public class Folder {
     private String fullPath;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "SOURCE_STORAGE_ID")   // <-- dùng đúng 1 cột FK
+    @JoinColumn(name = "SOURCE_STORAGE_ID") // <-- dùng đúng 1 cột FK
     private SourceStorage sourceStorage;
 
     @Column(name = "createdDate")
@@ -81,7 +83,6 @@ public class Folder {
         this.fullPath = fullPath;
     }
 
-
     public UUID getId() {
         return id;
     }
@@ -101,9 +102,11 @@ public class Folder {
     public Folder getParent() {
         return parent;
     }
+
     public void setParent(Folder parent) {
         this.parent = parent;
     }
+
     public LocalDateTime getCreatedDate() {
         return createdDate;
     }

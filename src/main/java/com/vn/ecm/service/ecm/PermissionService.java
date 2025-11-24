@@ -1,11 +1,10 @@
 package com.vn.ecm.service.ecm;
 
-
 import com.vn.ecm.entity.*;
-
 
 import io.jmix.core.DataManager;
 import io.jmix.securitydata.entity.ResourceRoleEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,12 +15,35 @@ public class PermissionService {
 
     private final DataManager dataManager;
 
-    public PermissionService(DataManager dataManager) {
+    private final JdbcTemplate jdbcTemplate;
+
+    public PermissionService(DataManager dataManager, JdbcTemplate jdbcTemplate) {
         this.dataManager = dataManager;
+        this.jdbcTemplate = jdbcTemplate;
+    }
+
+    public void recalcAccessForUser(UUID userId) {
+        jdbcTemplate.update("EXEC dbo.usp_RecalculateAccessForUser @UserId = ?", userId);
+    }
+
+    public Map<String, Object> getEffectiveForUserFolder(UUID userId, UUID folderId) {
+        return jdbcTemplate.queryForMap("EXEC dbo.usp_GetEffectivePermissionForUserFolder @UserId = ?, @FolderId = ?",
+                userId, folderId);
+    }
+
+    public int getEffectiveMask(UUID userId, UUID folderId) {
+        Integer mask = dataManager.loadValue(
+                "select calculate_effective_permission(:userId, :folderId)",
+                Integer.class)
+                .parameter("userId", userId)
+                .parameter("folderId", folderId)
+                .one();
+
+        return mask != null ? mask : 0;
     }
 
     @Transactional
-    //SAVE permission (User)
+    // SAVE permission (User)
     public void savePermission(Collection<Permission> permissions, User user, Folder folder) {
         normalizePermissions(permissions);
         int mask = buildMask(permissions);
@@ -82,7 +104,8 @@ public class PermissionService {
     }
 
     @Transactional
-    public void savePermission(Collection<Permission> permissions, ResourceRoleEntity role, FileDescriptor FileDescriptor) {
+    public void savePermission(Collection<Permission> permissions, ResourceRoleEntity role,
+            FileDescriptor FileDescriptor) {
         normalizePermissions(permissions);
         int mask = buildMask(permissions);
 
@@ -206,7 +229,8 @@ public class PermissionService {
 
     // build full path
     public String getFullPath(Folder folder) {
-        if (folder == null) return "";
+        if (folder == null)
+            return "";
         List<String> parts = new ArrayList<>();
         Folder cur = folder;
         while (cur != null) {
@@ -223,10 +247,13 @@ public class PermissionService {
     }
 
     public String getFullPath(FileDescriptor FileDescriptor) {
-        if (FileDescriptor == null) return "";
+        if (FileDescriptor == null)
+            return "";
         String folderPath = getFullPath(FileDescriptor.getFolder());
-        String FileDescriptorName = FileDescriptor.getName() != null ? FileDescriptor.getName() : (FileDescriptor.getId() != null ? FileDescriptor.getId().toString() : "");
-        if (folderPath.isEmpty()) return FileDescriptorName;
+        String FileDescriptorName = FileDescriptor.getName() != null ? FileDescriptor.getName()
+                : (FileDescriptor.getId() != null ? FileDescriptor.getId().toString() : "");
+        if (folderPath.isEmpty())
+            return FileDescriptorName;
         return folderPath + "/" + FileDescriptorName;
     }
 
@@ -235,7 +262,8 @@ public class PermissionService {
      * Previously returned "FOLDER:<id>" — now returns full path string (no prefix).
      */
     private String ancestorIdentifier(Permission anc) {
-        if (anc == null) return null;
+        if (anc == null)
+            return null;
         if (anc.getFolder() != null) {
             return getFullPath(anc.getFolder());
         }
@@ -245,81 +273,24 @@ public class PermissionService {
         return null;
     }
 
-
-    //Propagate to children
+    // Propagate to children
     @Transactional
     protected void propagateToChildren(User user, ResourceRoleEntity role, Folder parentFolder, int parentMask) {
-        List<Folder> childrenFolders = dataManager.load(Folder.class)
-                .query("select f from Folder f where f.parent = :parent")
-                .parameter("parent", parentFolder)
-                .list();
-
-        List<FileDescriptor> childrenFiles = dataManager.load(FileDescriptor.class)
-                .query("select o from FileDescriptor o where o.folder = :folder")
-                .parameter("folder", parentFolder)
-                .list();
-
-
-        // Use full path of parent as inheritedFrom value
-        String inheritedFromValue = getFullPath(parentFolder);
-        // FileDescriptors - update only if exists
-        for (FileDescriptor childFileDescriptor : childrenFiles) {
-            Permission perm = (user != null) ? loadPermission(user, childFileDescriptor) : loadPermission(role, childFileDescriptor);
-            if (perm == null) {
-                continue;
-            }
-            if (Boolean.FALSE.equals(perm.getInheritEnabled())) {
-                continue;
-            }
-            int currentMask = perm.getPermissionMask() == null ? 0 : perm.getPermissionMask();
-            int newMask = computeNewMask(parentMask, currentMask);
-
-            perm.setPermissionMask(newMask);
-            perm.setInherited(true);
-            perm.setInheritEnabled(true);
-            perm.setInheritedFrom(inheritedFromValue);
-            perm.setAppliesTo(AppliesTo.THIS_FOLDER_ONLY);
-            dataManager.save(perm);
+        if (parentFolder == null) {
+            return;
         }
-
-        // folders - update only if exists
-        for (Folder child : childrenFolders) {
-            Permission perm = (user != null) ? loadPermission(user, child) : loadPermission(role, child);
-
-            if (perm == null) {
-                continue;
-            }
-            if (Boolean.FALSE.equals(perm.getInheritEnabled())) {
-                continue;
-            }
-            int currentMask = perm.getPermissionMask() == null ? 0 : perm.getPermissionMask();
-            int newMask = computeNewMask(parentMask, currentMask);
-            perm.setPermissionMask(newMask);
-            perm.setInherited(true);
-            perm.setInheritEnabled(true);
-            perm.setInheritedFrom(inheritedFromValue);
-            perm.setAppliesTo(AppliesTo.THIS_FOLDER_SUBFOLDERS_FILES);
-            dataManager.save(perm);
-            // recursion
-            propagateToChildren(user, role, child, parentMask);
+        UUID userId = user != null ? user.getId() : null;
+        String roleCode = role != null ? role.getCode() : null;
+        if (userId == null && (roleCode == null || roleCode.isBlank())) {
+            return;
         }
+        jdbcTemplate.update(
+                "EXEC dbo.usp_PermissionPropagateFromFolder @FolderId = ?, @ParentMask = ?, @UserId = ?, @RoleCode = ?",
+                parentFolder.getId(),
+                parentMask,
+                userId,
+                roleCode);
     }
-
-    private int computeNewMask(int parentMask, int currentMask) {
-        int newMask = currentMask;
-        if ((parentMask & PermissionType.FULL.getValue()) == PermissionType.FULL.getValue()) {
-            newMask = PermissionType.FULL.getValue();
-        } else {
-            for (PermissionType pt : PermissionType.values()) {
-                if (pt == PermissionType.FULL) continue;
-                int bit = pt.getValue();
-                if ((parentMask & bit) == bit) newMask |= bit;
-                else newMask &= ~bit;
-            }
-        }
-        return newMask;
-    }
-
 
     // Disable / Enable inheritance
     @Transactional
@@ -414,7 +385,7 @@ public class PermissionService {
         }
     }
 
-    //Enable inheritance
+    // Enable inheritance
     @Transactional
     public void enableInheritance(User user, Folder folder) {
         List<Permission> perms = dataManager.load(Permission.class)
@@ -531,10 +502,11 @@ public class PermissionService {
         }
     }
 
-    //Enable remove inheritance
+    // Enable remove inheritance
     @Transactional
     public void enableRemoveInheritance(Folder targetFolder) {
-        if (targetFolder == null) return;
+        if (targetFolder == null)
+            return;
         Folder current = targetFolder.getParent();
         while (current != null) {
             List<Permission> ancestorPerms = dataManager.load(Permission.class)
@@ -558,8 +530,10 @@ public class PermissionService {
                         dataManager.save(existing);
                     } else {
                         Permission inher = dataManager.create(Permission.class);
-                        if (anc.getUser() != null) inher.setUser(anc.getUser());
-                        else inher.setRoleCode(anc.getRoleCode());
+                        if (anc.getUser() != null)
+                            inher.setUser(anc.getUser());
+                        else
+                            inher.setRoleCode(anc.getRoleCode());
                         inher.setFolder(targetFolder);
                         inher.setPermissionMask(anc.getPermissionMask());
                         inher.setInherited(true);
@@ -585,9 +559,11 @@ public class PermissionService {
 
     @Transactional
     public void enableRemoveInheritance(FileDescriptor targetFileDescriptor) {
-        if (targetFileDescriptor == null) return;
+        if (targetFileDescriptor == null)
+            return;
         Folder parent = targetFileDescriptor.getFolder();
-        if (parent == null) return;
+        if (parent == null)
+            return;
         Folder current = parent;
         while (current != null) {
             List<Permission> ancestorPerms = dataManager.load(Permission.class)
@@ -611,8 +587,10 @@ public class PermissionService {
                         dataManager.save(existing);
                     } else {
                         Permission inher = dataManager.create(Permission.class);
-                        if (anc.getUser() != null) inher.setUser(anc.getUser());
-                        else inher.setRoleCode(anc.getRoleCode());
+                        if (anc.getUser() != null)
+                            inher.setUser(anc.getUser());
+                        else
+                            inher.setRoleCode(anc.getRoleCode());
                         inher.setFile(targetFileDescriptor);
                         inher.setPermissionMask(anc.getPermissionMask());
                         inher.setInherited(true);
@@ -628,125 +606,38 @@ public class PermissionService {
         }
     }
 
-    //replaceChildPermissions (User / Role)
+    // replaceChildPermissions (User / Role)
     public void replaceChildPermissions(User user, Folder parent, int parentMask) {
-        if (parent == null) return;
-
-        List<Folder> childrenFolders = dataManager.load(Folder.class)
-                .query("select f from Folder f where f.parent = :parent")
-                .parameter("parent", parent)
-                .list();
-
-        List<FileDescriptor> childrenFiles = dataManager.load(FileDescriptor.class)
-                .query("select o from FileDescriptor o where o.folder = :folder")
-                .parameter("folder", parent)
-                .list();
-
-
-        // FileDescriptors
-        for (FileDescriptor childFileDescriptor : childrenFiles) {
-            List<Permission> existingPerms = dataManager.load(Permission.class)
-                    .query("select p from Permission p where p.user = :user and p.file = :FileDescriptor")
-                    .parameter("user", user)
-                    .parameter("FileDescriptor", childFileDescriptor)
-                    .list();
-
-            for (Permission e : existingPerms) dataManager.remove(e);
-
-            Permission childPerm = dataManager.create(Permission.class);
-            childPerm.setUser(user);
-            childPerm.setFile(childFileDescriptor);
-            childPerm.setPermissionMask(parentMask);
-            childPerm.setInherited(true);
-            childPerm.setInheritEnabled(true);
-            childPerm.setInheritedFrom(getFullPath(parent)); // full path of parent
-            childPerm.setAppliesTo(AppliesTo.THIS_FOLDER_ONLY);
-            dataManager.save(childPerm);
+        if (parent == null || user == null) {
+            return;
         }
-
-        // folders
-        for (Folder childFolder : childrenFolders) {
-            List<Permission> existingPerms = dataManager.load(Permission.class)
-                    .query("select p from Permission p where p.user = :user and p.folder = :folder")
-                    .parameter("user", user)
-                    .parameter("folder", childFolder)
-                    .list();
-            for (Permission e : existingPerms) dataManager.remove(e);
-
-            Permission childPerm = dataManager.create(Permission.class);
-            childPerm.setUser(user);
-            childPerm.setFolder(childFolder);
-            childPerm.setPermissionMask(parentMask);
-            childPerm.setInherited(true);
-            childPerm.setInheritEnabled(true);
-            childPerm.setInheritedFrom(getFullPath(parent)); // full path of parent
-            childPerm.setAppliesTo(AppliesTo.THIS_FOLDER_SUBFOLDERS_FILES);
-            dataManager.save(childPerm);
-            // recurse
-            replaceChildPermissions(user, childFolder, parentMask);
-        }
+        jdbcTemplate.update(
+                "EXEC dbo.usp_PermissionReplaceChildren @FolderId = ?, @ParentMask = ?, @UserId = ?, @RoleCode = ?",
+                parent.getId(),
+                parentMask,
+                user.getId(),
+                null);
     }
 
     public void replaceChildPermissions(ResourceRoleEntity role, Folder parent, int parentMask) {
-        if (parent == null) return;
-        List<Folder> childrenFolders = dataManager.load(Folder.class)
-                .query("select f from Folder f where f.parent = :parent")
-                .parameter("parent", parent)
-                .list();
-
-        List<FileDescriptor> childrenFiles = dataManager.load(FileDescriptor.class)
-                .query("select o from FileDescriptor o where o.folder = :folder")
-                .parameter("folder", parent)
-                .list();
-
-
-        for (FileDescriptor childFileDescriptor : childrenFiles) {
-            List<Permission> existingPerms = dataManager.load(Permission.class)
-                    .query("select p from Permission p where p.roleCode = :roleCode and p.file = :FileDescriptor")
-                    .parameter("roleCode", role.getCode())
-                    .parameter("FileDescriptor", childFileDescriptor)
-                    .list();
-            for (Permission e : existingPerms) dataManager.remove(e);
-
-            Permission childPerm = dataManager.create(Permission.class);
-            childPerm.setRoleCode(role.getCode());
-            childPerm.setFile(childFileDescriptor);
-            childPerm.setPermissionMask(parentMask);
-            childPerm.setInherited(true);
-            childPerm.setInheritEnabled(true);
-            childPerm.setInheritedFrom(getFullPath(parent)); // full path of parent
-            childPerm.setAppliesTo(AppliesTo.THIS_FOLDER_ONLY);
-            dataManager.save(childPerm);
+        if (parent == null || role == null) {
+            return;
         }
-
-        for (Folder childFolder : childrenFolders) {
-            List<Permission> existingPerms = dataManager.load(Permission.class)
-                    .query("select p from Permission p where p.roleCode = :roleCode and p.folder = :folder")
-                    .parameter("roleCode", role.getCode())
-                    .parameter("folder", childFolder)
-                    .list();
-            for (Permission e : existingPerms) dataManager.remove(e);
-
-            Permission childPerm = dataManager.create(Permission.class);
-            childPerm.setRoleCode(role.getCode());
-            childPerm.setFolder(childFolder);
-            childPerm.setPermissionMask(parentMask);
-            childPerm.setInherited(true);
-            childPerm.setInheritEnabled(true);
-            childPerm.setInheritedFrom(getFullPath(parent)); // full path of parent
-            childPerm.setAppliesTo(AppliesTo.THIS_FOLDER_SUBFOLDERS_FILES);
-            dataManager.save(childPerm);
-
-            replaceChildPermissions(role, childFolder, parentMask);
-        }
+        jdbcTemplate.update(
+                "EXEC dbo.usp_PermissionReplaceChildren @FolderId = ?, @ParentMask = ?, @UserId = ?, @RoleCode = ?",
+                parent.getId(),
+                parentMask,
+                null,
+                role.getCode());
     }
 
-    //Helpers
+    // Helpers
     private Permission findNearestAncestorPermission(User user, Folder start) {
         Folder cur = start;
         while (cur != null) {
             Permission p = loadPermission(user, cur);
-            if (p != null) return p;
+            if (p != null)
+                return p;
             cur = cur.getParent();
         }
         return null;
@@ -756,14 +647,16 @@ public class PermissionService {
         Folder cur = start;
         while (cur != null) {
             Permission p = loadPermission(role, cur);
-            if (p != null) return p;
+            if (p != null)
+                return p;
             cur = cur.getParent();
         }
         return null;
     }
 
     public ResourceRoleEntity loadRoleByCode(String roleCode) {
-        if (roleCode == null) return null;
+        if (roleCode == null)
+            return null;
         return dataManager.load(ResourceRoleEntity.class)
                 .query("select r from sec_ResourceRoleEntity r where r.code = :code")
                 .parameter("code", roleCode)
@@ -772,7 +665,8 @@ public class PermissionService {
     }
 
     public List<Folder> getAccessibleFolders(User user, SourceStorage sourceStorage) {
-        if (user == null || sourceStorage == null) return Collections.emptyList();
+        if (user == null || sourceStorage == null)
+            return Collections.emptyList();
 
         // Nếu là admin thì trả hết folder của storage này
         if ("admin".equalsIgnoreCase(user.getUsername())) {
@@ -785,13 +679,13 @@ public class PermissionService {
         // User thường: chỉ trả folder có quyền READ+ trong storage này
         return dataManager.load(Folder.class)
                 .query("""
-                select distinct f from Folder f   
-                join Permission p on p.folder = f
-                where p.user = :user
-                and f.sourceStorage = :storage
-                and f.inTrash = false
-                and p.permissionMask >= :minMask
-            """)
+                            select distinct f from Folder f
+                            join Permission p on p.folder = f
+                            where p.user = :user
+                            and f.sourceStorage = :storage
+                            and f.inTrash = false
+                            and p.permissionMask >= :minMask
+                        """)
                 .parameter("user", user)
                 .parameter("storage", sourceStorage)
                 .parameter("minMask", PermissionType.READ.getValue())
@@ -799,7 +693,8 @@ public class PermissionService {
     }
 
     public List<FileDescriptor> getAccessibleFiles(User user, SourceStorage sourceStorage, Folder folder) {
-        if (user == null || sourceStorage == null) return Collections.emptyList();
+        if (user == null || sourceStorage == null)
+            return Collections.emptyList();
 
         // Nếu là admin thì trả hết
         if ("admin".equalsIgnoreCase(user.getUsername())) {
@@ -821,14 +716,14 @@ public class PermissionService {
             // Files ở root (không có folder)
             return dataManager.load(FileDescriptor.class)
                     .query("""
-                    select distinct o from FileDescriptor o
-                    join Permission p on p.file = o
-                    where p.user = :user
-                    and o.sourceStorage = :storage
-                    and o.folder is null
-                    and o.inTrash = false
-                    and p.permissionMask >= :minMask
-                """)
+                                select distinct o from FileDescriptor o
+                                join Permission p on p.file = o
+                                where p.user = :user
+                                and o.sourceStorage = :storage
+                                and o.folder is null
+                                and o.inTrash = false
+                                and p.permissionMask >= :minMask
+                            """)
                     .parameter("user", user)
                     .parameter("storage", sourceStorage)
                     .parameter("minMask", PermissionType.READ.getValue())
@@ -837,13 +732,13 @@ public class PermissionService {
             // Files trong folder cụ thể
             return dataManager.load(FileDescriptor.class)
                     .query("""
-                    select distinct o from FileDescriptor o
-                    join Permission p on p.file = o
-                    where p.user = :user
-                    and o.folder = :folder
-                    and o.inTrash = false
-                    and p.permissionMask >= :minMask
-                """)
+                                select distinct o from FileDescriptor o
+                                join Permission p on p.file = o
+                                where p.user = :user
+                                and o.folder = :folder
+                                and o.inTrash = false
+                                and p.permissionMask >= :minMask
+                            """)
                     .parameter("user", user)
                     .parameter("folder", folder)
                     .parameter("minMask", PermissionType.READ.getValue())
@@ -885,7 +780,8 @@ public class PermissionService {
 
     @Transactional
     public void initializeFolderPermission(User user, Folder folder) {
-        if (user == null || folder == null) return;
+        if (user == null || folder == null)
+            return;
         Folder parentFolder = folder.getParent();
         Permission ancestorPerm = findNearestAncestorPermission(user, parentFolder);
         int inheritedMask;

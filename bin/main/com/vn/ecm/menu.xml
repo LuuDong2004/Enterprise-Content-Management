@@ -5,6 +5,7 @@
     </menu>
     <menu id="storage" title="msg://com.vn.ecm.view.ecm/ecmView.title" icon="vaadin:database">
         <item view="SourceStorage.list" title="Kho dữ liệu" icon="vaadin:storage"/>
+        <item view="ShareContentView" title="Chia sẻ dữ liệu" icon="vaadin:share"/>
     </menu>
 
     <menu id="security" title="Bảo mật" icon="vaadin:shield">

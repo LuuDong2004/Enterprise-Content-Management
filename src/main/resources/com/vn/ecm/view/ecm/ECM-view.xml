@@ -14,13 +14,13 @@
                 <property name="createdDate"/>
 
             </fetchPlan>
-            <loader id="foldersDl">
-                <query><![CDATA[
-                select f from Folder f
-                where f.sourceStorage = :storage
-                and f.inTrash = false
-            ]]></query>
-            </loader>
+            <!--            <loader id="foldersDl">-->
+            <!--                <query><![CDATA[-->
+            <!--                select f from Folder f-->
+            <!--                where f.sourceStorage = :storage-->
+            <!--                and f.inTrash = false-->
+            <!--            ]]></query>-->
+            <!--            </loader>-->
         </collection>
         <collection id="filesDc" class="com.vn.ecm.entity.FileDescriptor">
             <fetchPlan>
@@ -63,8 +63,8 @@
     <layout>
         <hbox id="ecmBtnAct">
             <button id="newFolderBtn" text="Tạo mới" action="foldersTree.createFolder" icon="PLUS_CIRCLE_O"/>
-<!--            <button id="phanquyenbtn" text="Phân quyền" action="foldersTree.assignPermission" icon="LOCK"/>-->
-<!--            <button id="renameFolderBtn" text="Đổi tên" action="foldersTree.renameFolder" icon="lumo:edit"/>-->
+            <!--            <button id="phanquyenbtn" text="Phân quyền" action="foldersTree.assignPermission" icon="LOCK"/>-->
+            <!--            <button id="renameFolderBtn" text="Đổi tên" action="foldersTree.renameFolder" icon="lumo:edit"/>-->
             <button id="deleteFolderBtn" text="Xóa thư mục" action="foldersTree.delete" icon="TRASH"/>
             <fileStorageUploadField id="fileRefField"
                                     property="fileRef"
@@ -82,9 +82,9 @@
                        placeholder="Tìm nội dung (OCR)"
                        clearButtonVisible="true"
                        width="250px"/>
-            <checkbox id="exactSearchCheckbox" 
+            <checkbox id="exactSearchCheckbox"
                       label="Tìm đích danh"/>
-            <checkbox id="ignoreDiacriticsCheckbox" 
+            <checkbox id="ignoreDiacriticsCheckbox"
                       label="Không dấu"/>
             <button id="ocrSearchBtn" text="Tìm nội dung" icon="SEARCH"/>
             <fragment id="viewModeFragment" class="com.vn.ecm.view.viewmode.ViewModeFragment"/>
@@ -92,6 +92,17 @@
         </hbox>
         <split width="100%" height="100%" splitterPosition="28">
             <vbox>
+<!--                <treeDataGrid id="folderTreeGird" metaClass="Folder" hierarchyProperty="parent">-->
+<!--                    <columns>-->
+<!--                        <column property="name"/>-->
+<!--                    </columns>-->
+<!--                    <actions>-->
+<!--                        <action id="createFolder" text="Tạo thư mục"/>-->
+<!--                        <action id="delete" text="Xóa" type="folderActionSelected"/>-->
+<!--                        <action id="renameFolder" text="Đổi tên" type="folderActionSelected"/>-->
+<!--                        <action id="assignPermission" text="Phân quyền" type="assignPermission"/>-->
+<!--                    </actions>-->
+<!--                </treeDataGrid>-->
                 <treeDataGrid id="foldersTree"
                               dataContainer="foldersDc"
                               hierarchyProperty="parent"
@@ -116,6 +127,7 @@
                               width="100%"
                               height="100%"
                               dataContainer="filesDc"
+                              pageSize="50"
                               themeNames="compact, no-row-borders">
                         <actions>
                             <action id="deleteFile" type="fileActionSelected" text="Xóa" icon="CLOSE_CIRCLE_O"/>
@@ -133,7 +145,7 @@
                         </columns>
                         <emptyStateComponent>
                             <vbox width="100%" height="100%" justifyContent="CENTER" alignItems="CENTER">
-                                <span id="emptyStateText" text="Chưa chọn thư mục" />
+                                <span id="emptyStateText" text="Chưa chọn thư mục"/>
                             </vbox>
                         </emptyStateComponent>
                     </dataGrid>
@@ -171,7 +183,8 @@
                             <span id="metadataContentType" dataContainer="metadataFileDc"/>
                         </hbox>
                     </vbox>
-                    <vbox id="metadataEmptyState" width="100%" height="100%" justifyContent="CENTER" alignItems="CENTER" visible="false">
+                    <vbox id="metadataEmptyState" width="100%" height="100%" justifyContent="CENTER" alignItems="CENTER"
+                          visible="false">
                         <span id="metadataEmptyText" text="Vui lòng chọn tệp để xem trước"/>
                     </vbox>
                 </vbox>

@@ -1,6 +1,5 @@
 package com.vn.ecm.view.advancedpermission;
 
-
 import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.Route;
@@ -8,7 +7,9 @@ import com.vn.ecm.entity.*;
 
 import com.vn.ecm.service.ecm.PermissionService;
 import com.vn.ecm.view.blockinheritance.BlockInheritance;
+import com.vn.ecm.view.blockinheritance.BlockInheritanceAction;
 import com.vn.ecm.view.confirmreplacedialog.ConfirmReplaceDialog;
+import com.vn.ecm.view.confirmremovedialog.ConfirmRemoveInheritanceDialog;
 import com.vn.ecm.view.main.MainView;
 import io.jmix.core.DataManager;
 import io.jmix.flowui.DialogWindows;
@@ -21,6 +22,7 @@ import io.jmix.flowui.view.*;
 import io.jmix.securitydata.entity.ResourceRoleEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Route(value = "advanced-permission-view", layout = MainView.class)
@@ -53,6 +55,14 @@ public class AdvancedPermissionView extends StandardView {
     private Folder targetFolder;
     private FileDescriptor targetFile;
 
+    // Lưu action được chọn từ BlockInheritance dialog
+    private BlockInheritanceAction pendingAction;
+    private User pendingUser;
+    private ResourceRoleEntity pendingRole;
+
+    // Lưu snapshot của permissions trước khi xóa tạm thời (để rollback)
+    private List<Permission> permissionsSnapshot;
+
     public void setTargetFolder(Folder folder) {
         this.targetFolder = folder;
         this.targetFile = null;
@@ -70,6 +80,7 @@ public class AdvancedPermissionView extends StandardView {
     }
 
     private EcmObject target;
+
     public void setTarget(EcmObject target) {
         this.target = target;
     }
@@ -97,11 +108,10 @@ public class AdvancedPermissionView extends StandardView {
     private void updateInheritanceButtonLabel(Permission permission) {
         if (permission == null && permissionDataGrid.getItems() != null) {
             if (permissionDataGrid.getItems() instanceof ContainerDataUnit) {
-                ContainerDataUnit<Permission> dataUnit =
-                        (ContainerDataUnit<Permission>) permissionDataGrid.getItems();
+                ContainerDataUnit<Permission> dataUnit = (ContainerDataUnit<Permission>) permissionDataGrid.getItems();
                 if (dataUnit.getContainer() instanceof CollectionContainer) {
-                    CollectionContainer<Permission> container =
-                            (CollectionContainer<Permission>) dataUnit.getContainer();
+                    CollectionContainer<Permission> container = (CollectionContainer<Permission>) dataUnit
+                            .getContainer();
                     if (!container.getItems().isEmpty()) {
                         permission = container.getItems().get(0);
                     }
@@ -132,11 +142,11 @@ public class AdvancedPermissionView extends StandardView {
         }).setHeader("Đối tượng");
 
         permissionDataGrid.addColumn(
-                permission -> "Cho phép"
-        ).setHeader("Trạng thái");
+                permission -> "Cho phép").setHeader("Trạng thái");
 
         permissionDataGrid.addColumn(permission -> {
-            if (permission.getPermissionMask() == null) return "";
+            if (permission.getPermissionMask() == null)
+                return "";
 
             int mask = permission.getPermissionMask();
 
@@ -160,25 +170,31 @@ public class AdvancedPermissionView extends StandardView {
 
         permissionDataGrid.addColumn(
                 permission -> {
-                    if (permission.getInheritedFrom() == null) return "";
+                    if (permission.getInheritedFrom() == null)
+                        return "";
                     return permission.getInheritedFrom();
-                }
-        ).setHeader("Kế thừa từ");
+                }).setHeader("Kế thừa từ");
 
         permissionDataGrid.addColumn(
                 permission -> {
                     AppliesTo applies = permission.getAppliesTo();
-                    if (applies == null) return "";
+                    if (applies == null)
+                        return "";
                     switch (applies) {
-                        case THIS_FOLDER_ONLY: return "Chỉ thư mục";
-                        case THIS_FOLDER_SUBFOLDERS_FILES: return "Thư mục, các thư mục con, tệp";
-                        case THIS_FOLDER_SUBFOLDERS: return "Thư mục, các thư mục con";
-                        case THIS_FOLDER_FILES: return "Thư mục và tệp";
-                        case SUBFOLDERS_FILES_ONLY: return "Chỉ các thư mục con và tệp";
-                        default: return "";
+                        case THIS_FOLDER_ONLY:
+                            return "Chỉ thư mục";
+                        case THIS_FOLDER_SUBFOLDERS_FILES:
+                            return "Thư mục, các thư mục con, tệp";
+                        case THIS_FOLDER_SUBFOLDERS:
+                            return "Thư mục, các thư mục con";
+                        case THIS_FOLDER_FILES:
+                            return "Thư mục và tệp";
+                        case SUBFOLDERS_FILES_ONLY:
+                            return "Chỉ các thư mục con và tệp";
+                        default:
+                            return "";
                     }
-                }
-        ).setHeader("Áp dụng cho");
+                }).setHeader("Áp dụng cho");
 
         permissionDataGrid.addSelectionListener(selectionEvent -> {
             Permission selected = permissionDataGrid.getSingleSelectedItem();
@@ -201,11 +217,9 @@ public class AdvancedPermissionView extends StandardView {
 
         // Tự động chọn permission đầu tiên
         if (permissionDataGrid.getItems() instanceof ContainerDataUnit) {
-            ContainerDataUnit<Permission> dataUnit =
-                    (ContainerDataUnit<Permission>) permissionDataGrid.getItems();
+            ContainerDataUnit<Permission> dataUnit = (ContainerDataUnit<Permission>) permissionDataGrid.getItems();
             if (dataUnit.getContainer() instanceof CollectionContainer) {
-                CollectionContainer<Permission> container =
-                        (CollectionContainer<Permission>) dataUnit.getContainer();
+                CollectionContainer<Permission> container = (CollectionContainer<Permission>) dataUnit.getContainer();
                 if (!container.getItems().isEmpty()) {
                     permissionDataGrid.select(container.getItems().get(0));
                 }
@@ -275,7 +289,37 @@ public class AdvancedPermissionView extends StandardView {
             }
 
             window.addAfterCloseListener(e -> {
-                reloadPermissions();
+                BlockInheritanceAction action = window.getView().getSelectedAction();
+                if (e.closedWith(StandardOutcome.SAVE) && action != BlockInheritanceAction.CANCEL) {
+                    // Lưu action và thông tin target
+                    pendingAction = action;
+                    pendingUser = window.getView().getTargetUser();
+                    pendingRole = window.getView().getTargetRole();
+
+                    // Lưu snapshot permissions hiện tại để rollback nếu cần
+                    CollectionContainer<Permission> container = getViewData().getContainer("permissionsDc");
+                    permissionsSnapshot = new ArrayList<>(container.getItems());
+
+                    // Nếu là REMOVE, xóa tạm thời permissions được kế thừa (chỉ trong UI, chưa
+                    // commit DB)
+                    if (action == BlockInheritanceAction.REMOVE) {
+                        removeInheritedPermissionsTemporarily();
+                        // Không reload từ DB, giữ UI state
+                    } else if (action == BlockInheritanceAction.CONVERT) {
+                        // Convert: thực hiện ngay
+                        executeConvertAction();
+                        // Reload từ DB sau khi convert
+                        reloadPermissions();
+                    }
+                } else {
+                    // Cancel hoặc đóng dialog → reset
+                    pendingAction = null;
+                    pendingUser = null;
+                    pendingRole = null;
+                    permissionsSnapshot = null;
+                    // Reload từ DB để đảm bảo hiển thị đúng
+                    reloadPermissions();
+                }
                 updateInheritanceButtonLabel(permissionDataGrid.getSingleSelectedItem());
             });
             window.open();
@@ -357,6 +401,19 @@ public class AdvancedPermissionView extends StandardView {
 
     @Subscribe(id = "cancelBtn", subject = "clickListener")
     public void onCancelBtnClick(final ClickEvent<JmixButton> event) {
+        // Nếu có pending action (đặc biệt là REMOVE), rollback
+        if (pendingAction == BlockInheritanceAction.REMOVE && permissionsSnapshot != null) {
+            // Rollback: khôi phục permissions từ snapshot
+            CollectionContainer<Permission> container = getViewData().getContainer("permissionsDc");
+            container.setItems(new ArrayList<>(permissionsSnapshot));
+        }
+
+        // Reset pending state
+        pendingAction = null;
+        pendingUser = null;
+        pendingRole = null;
+        permissionsSnapshot = null;
+
         close(StandardOutcome.CLOSE);
     }
 
@@ -366,5 +423,90 @@ public class AdvancedPermissionView extends StandardView {
         } else if (targetFile != null) {
             loadPermissionsForFile(targetFile);
         }
+    }
+
+    @Subscribe(id = "okBtn", subject = "clickListener")
+    public void onOkBtnClick(final ClickEvent<JmixButton> event) {
+        // Nếu có pending action
+        if (pendingAction == BlockInheritanceAction.REMOVE) {
+            // Hiển thị dialog xác nhận xóa hoàn toàn
+            DialogWindow<ConfirmRemoveInheritanceDialog> window = dialogWindows
+                    .view(this, ConfirmRemoveInheritanceDialog.class).build();
+
+            if (pendingUser != null) {
+                window.getView().setTargetUser(pendingUser);
+                if (targetFolder != null) {
+                    window.getView().setTargetFolder(targetFolder);
+                } else if (targetFile != null) {
+                    window.getView().setTargetFile(targetFile);
+                }
+            } else if (pendingRole != null) {
+                window.getView().setTargetRole(pendingRole);
+                if (targetFolder != null) {
+                    window.getView().setTargetFolder(targetFolder);
+                } else if (targetFile != null) {
+                    window.getView().setTargetFile(targetFile);
+                }
+            }
+
+            window.addAfterCloseListener(e -> {
+                if (e.closedWith(StandardOutcome.SAVE)) {
+                    // Xóa hoàn toàn đã được xác nhận
+                    reloadPermissions();
+                    updateInheritanceButtonLabel(permissionDataGrid.getSingleSelectedItem());
+                }
+                // Reset pending state
+                pendingAction = null;
+                pendingUser = null;
+                pendingRole = null;
+                permissionsSnapshot = null;
+            });
+
+            window.open();
+        } else {
+            // Không có pending action hoặc đã xử lý → đóng view
+            close(StandardOutcome.SAVE);
+        }
+    }
+
+    /**
+     * Xóa tạm thời các permissions được kế thừa (chỉ trong UI, chưa commit DB)
+     */
+    private void removeInheritedPermissionsTemporarily() {
+        CollectionContainer<Permission> container = getViewData().getContainer("permissionsDc");
+        List<Permission> toRemove = new ArrayList<>();
+
+        for (Permission perm : container.getItems()) {
+            // Xóa các permission được kế thừa
+            if (Boolean.TRUE.equals(perm.getInherited())) {
+                toRemove.add(perm);
+            }
+        }
+
+        container.getMutableItems().removeAll(toRemove);
+    }
+
+    /**
+     * Thực hiện convert action ngay lập tức
+     */
+    private void executeConvertAction() {
+        if (pendingUser != null) {
+            if (targetFolder != null) {
+                permissionService.disableInheritance(pendingUser, targetFolder, true);
+            } else if (targetFile != null) {
+                permissionService.disableInheritance(pendingUser, targetFile, true);
+            }
+        } else if (pendingRole != null) {
+            if (targetFolder != null) {
+                permissionService.disableInheritance(pendingRole, targetFolder, true);
+            } else if (targetFile != null) {
+                permissionService.disableInheritance(pendingRole, targetFile, true);
+            }
+        }
+        // Reset pending state
+        pendingAction = null;
+        pendingUser = null;
+        pendingRole = null;
+        permissionsSnapshot = null;
     }
 }

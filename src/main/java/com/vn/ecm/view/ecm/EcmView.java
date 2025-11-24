@@ -1,9 +1,11 @@
 package com.vn.ecm.view.ecm;
 
+import com.helger.css.ECSSUnit;
 import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 
+import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -11,33 +13,31 @@ import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.data.selection.SelectionEvent;
-import com.vaadin.flow.router.AfterNavigationEvent;
-import com.vaadin.flow.router.BeforeEnterEvent;
-import com.vaadin.flow.router.Route;
+import com.vaadin.flow.router.*;
 import com.vn.ecm.entity.*;
-import com.vn.ecm.ocr.log.OcrFileTextSearchService;
-import com.vn.ecm.ocr.log.SearchMode;
 import com.vn.ecm.service.ecm.PermissionService;
 import com.vn.ecm.service.ecm.folderandfile.IFileDescriptorService;
 import com.vn.ecm.service.ecm.folderandfile.IFolderService;
-import com.vn.ecm.view.component.filepreview.TextPreview;
+import com.vn.ecm.view.component.filepreview.*;
 import com.vn.ecm.view.file.EditFileNameDialogView;
 import com.vn.ecm.view.folder.CreateFolderDialogView;
 import com.vn.ecm.view.folder.EditNameFolderDialogView;
+import com.vn.ecm.view.folder.FolderLazyTreeItems;
 import com.vn.ecm.view.main.MainView;
 import com.vn.ecm.view.sourcestorage.SourceStorageListView;
 import com.vn.ecm.view.viewmode.ViewModeFragment;
 import io.jmix.core.DataManager;
 import io.jmix.core.FileRef;
+import io.jmix.core.Metadata;
 import io.jmix.core.security.CurrentAuthentication;
 import io.jmix.flowui.DialogWindows;
+import io.jmix.flowui.Dialogs;
 import io.jmix.flowui.Notifications;
 import io.jmix.flowui.UiComponents;
-import io.jmix.flowui.component.checkbox.JmixCheckbox;
 import io.jmix.flowui.component.grid.DataGrid;
 import io.jmix.flowui.component.grid.TreeDataGrid;
-import io.jmix.flowui.component.textfield.TypedTextField;
 import io.jmix.flowui.component.upload.FileStorageUploadField;
+import io.jmix.flowui.Actions;
 import io.jmix.flowui.kit.action.ActionPerformedEvent;
 import io.jmix.flowui.kit.component.button.JmixButton;
 import io.jmix.flowui.kit.component.upload.event.FileUploadSucceededEvent;
@@ -45,15 +45,15 @@ import io.jmix.flowui.model.CollectionContainer;
 import io.jmix.flowui.model.InstanceContainer;
 import io.jmix.flowui.view.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.util.StringUtils;
+import com.vaadin.flow.router.BeforeEnterEvent;
+import com.vaadin.flow.router.BeforeEnterObserver;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Route(value = "source-storages/:id", layout = MainView.class)
 @ViewController("EcmView")
 @ViewDescriptor("ECM-view.xml")
-public class EcmView extends StandardView {
+public class EcmView extends StandardView implements BeforeEnterObserver, AfterNavigationObserver {
     @ViewComponent
     private CollectionContainer<Folder> foldersDc;
     @ViewComponent
@@ -75,12 +75,14 @@ public class EcmView extends StandardView {
     @Autowired
     private PermissionService permissionService;
     @Autowired
-    private OcrFileTextSearchService ocrFileTextSearchService;
+    private Dialogs dialogs;
 
     private SourceStorage currentStorage;
     private UUID id;
     @ViewComponent
     private MessageBundle messageBundle;
+    @Autowired
+    private Actions actions;
     @ViewComponent("uploadAction")
     private UploadAndDownloadFileAction uploadAction;
     @ViewComponent("downloadAction")
@@ -104,17 +106,21 @@ public class EcmView extends StandardView {
     @ViewComponent
     private JmixButton previewBtn;
     @ViewComponent
-    private TypedTextField<String> ocrSearchField;
-    @ViewComponent
-    private JmixCheckbox exactSearchCheckbox;
-    @ViewComponent
-    private JmixCheckbox ignoreDiacriticsCheckbox;
-    @ViewComponent
     private Span emptyStateText;
     @ViewComponent
     private VerticalLayout metadataContent;
     @ViewComponent
     private VerticalLayout metadataEmptyState;
+
+//    @ViewComponent
+//    private TreeDataGrid<Folder> folderTreeGird;
+
+    FolderLazyTreeItems dataProvider;
+
+    @Autowired
+    private Metadata metadata;
+
+    private String conditions = " and e.inTrash = false and e.sourceStorage = :storage";;
 
     @Subscribe
     public void onInit(InitEvent event) {
@@ -131,7 +137,7 @@ public class EcmView extends StandardView {
         uploadAction.setMode(UploadAndDownloadFileAction.Mode.UPLOAD);
         uploadAction.setFolderSupplier(() -> foldersTree.getSingleSelectedItem());
         uploadAction.setStorageSupplier(() -> currentStorage);
-        // download
+        //download
         downloadAction.setMode(UploadAndDownloadFileAction.Mode.DOWNLOAD);
         downloadAction.setTarget(fileDataGird);
         if (btnDownload.getAction() == null) {
@@ -144,25 +150,6 @@ public class EcmView extends StandardView {
         if (filesDc != null) {
             filesDc.addCollectionChangeListener(e -> updateEmptyStateText());
         }
-
-        ocrSearchField.addValueChangeListener(valueChangeEvent -> {
-            if (valueChangeEvent.isFromClient() && !StringUtils.hasText(valueChangeEvent.getValue())) {
-                User user = (User) currentAuthentication.getUser();
-                loadAccessibleFiles(user, foldersTree.getSingleSelectedItem());
-                fileDataGird.deselectAll();
-                clearMetadataPanel();
-            }
-        });
-
-        // Chỉ hiển thị checkbox "Không dấu" khi "Tìm đích danh" được chọn
-        exactSearchCheckbox.addValueChangeListener(e -> {
-            boolean isExact = Boolean.TRUE.equals(e.getValue());
-            ignoreDiacriticsCheckbox.setVisible(isExact);
-            if (!isExact) {
-                ignoreDiacriticsCheckbox.setValue(false);
-            }
-        });
-        ignoreDiacriticsCheckbox.setVisible(false);
     }
 
     @Subscribe(id = "previewBtn", subject = "clickListener")
@@ -172,6 +159,7 @@ public class EcmView extends StandardView {
         boolean nowVisible = metadataPanel.isVisible();
         previewBtn.setText(nowVisible ? "Ẩn chi tiết" : "Xem chi tiết");
     }
+
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
@@ -195,7 +183,7 @@ public class EcmView extends StandardView {
             return;
         }
         User currentUser = (User) currentAuthentication.getUser();
-        loadAccessibleFolders(currentUser);
+        loadLazyFolder();
         loadAccessibleFiles(currentUser, null);
     }
 
@@ -218,6 +206,7 @@ public class EcmView extends StandardView {
     public void onFileDataGirdSelectionChange(SelectionEvent<DataGrid<FileDescriptor>, FileDescriptor> event) {
         FileDescriptor selected = event.getFirstSelectedItem().orElse(null);
         boolean selection = selected != null;
+        User user = (User) currentAuthentication.getUser();
         if (selection) {
             metadataFileDc.setItem(selected);
             metadataContent.setVisible(true);
@@ -229,7 +218,7 @@ public class EcmView extends StandardView {
         }
     }
 
-    // upload file
+    //upload file
     @Subscribe("fileRefField")
     public void onFileRefFieldFileUploadSucceeded(final FileUploadSucceededEvent<FileStorageUploadField> event) {
         User user = (User) currentAuthentication.getUser();
@@ -260,12 +249,7 @@ public class EcmView extends StandardView {
         }
     }
 
-    @Subscribe(id = "ocrSearchBtn", subject = "clickListener")
-    public void onOcrSearchBtnClick(final ClickEvent<JmixButton> event) {
-        executeOcrSearch();
-    }
-
-    // new folder
+    //new folder
     @Subscribe("foldersTree.createFolder")
     public void onFoldersTreeCreateFolder(ActionPerformedEvent event) {
         User user = (User) currentAuthentication.getUser();
@@ -285,12 +269,13 @@ public class EcmView extends StandardView {
         var dw = dialogWindows.view(this, CreateFolderDialogView.class).build();
         dw.getView().setContext(parent, currentStorage);
         dw.addAfterCloseListener(e -> {
-            loadAccessibleFolders(user);
+            //loadAccessibleFolders(user);
+            loadLazyFolder();
         });
         dw.open();
     }
 
-    // rename folder
+    //rename folder
     @Subscribe("foldersTree.renameFolder")
     public void onFoldersTreeRenameFolder(final ActionPerformedEvent event) {
         Folder selected = foldersTree.getSingleSelectedItem();
@@ -311,12 +296,13 @@ public class EcmView extends StandardView {
         var dw = dialogWindows.view(this, EditNameFolderDialogView.class).build();
         dw.getView().setContext(selected, currentStorage);
         dw.addAfterCloseListener(e -> {
-            loadAccessibleFolders(userCurr);
+            //loadAccessibleFolders(userCurr);
+            loadLazyFolder();
         });
         dw.open();
     }
 
-    // xóa vào thùng rác
+    //xóa vào thùng rác
     @Subscribe("foldersTree.delete")
     public void onFoldersTreeDelete(final ActionPerformedEvent event) {
         Folder selected = foldersTree.getSingleSelectedItem();
@@ -339,7 +325,8 @@ public class EcmView extends StandardView {
             try {
                 String useName = userCurr.getUsername();
                 folderService.moveToTrash(selected, useName);
-                loadAccessibleFolders(userCurr);
+                //loadAccessibleFolders(userCurr);
+                loadLazyFolder();
                 notifications.show(messageBundle.getMessage("ecmDeleteFolderAlert"));
             } catch (Exception ex) {
                 notifications.show("Lỗi " + ex.getMessage());
@@ -348,7 +335,7 @@ public class EcmView extends StandardView {
         dlg.open();
     }
 
-    // remove file
+    //remove file
     @Subscribe("fileDataGird.deleteFile")
     public void onFileDataGirdDeleteFile(final ActionPerformedEvent event) {
         FileDescriptor selected = fileDataGird.getSingleSelectedItem();
@@ -379,13 +366,13 @@ public class EcmView extends StandardView {
         dlg.open();
     }
 
-    // action download file
+    //action download file
     @Subscribe("fileDataGird.downloadFile")
     public void onFileDataGirdDownloadFile(final ActionPerformedEvent event) {
         btnDownload.click();
     }
 
-    // action rename file
+    //action rename file
     @Subscribe("fileDataGird.renameFile")
     public void onFileDataGirdRenameFile(final ActionPerformedEvent event) {
         Folder selectedFolder = foldersTree.getSingleSelectedItem();
@@ -407,82 +394,32 @@ public class EcmView extends StandardView {
         });
         dw.open();
 
+
+    }
+    private void loadLazyFolder(){
+        dataProvider = new FolderLazyTreeItems(dataManager , metadata ,conditions ,currentStorage);
+        foldersTree.setDataProvider(dataProvider);
+        foldersDc.setItems(dataProvider.getItems());
     }
 
-    private void loadAccessibleFolders(User user) {
-        List<Folder> accessibleFolders = permissionService.getAccessibleFolders(user, currentStorage);
-        foldersDc.setItems(accessibleFolders);
-    }
+//    private void loadAccessibleFolders(User user) {
+//        List<Folder> accessibleFolders = permissionService.getAccessibleFolders(user, currentStorage);
+//        foldersDc.setItems(accessibleFolders);
+//    }
 
     private void loadAccessibleFiles(User user, Folder folder) {
         List<FileDescriptor> accessibleFiles = permissionService.getAccessibleFiles(user, currentStorage, folder);
         filesDc.setItems(accessibleFiles);
     }
 
-    private void executeOcrSearch() {
-        if (currentStorage == null) {
-            notifications.create("Vui lòng chọn kho lưu trữ trước khi tìm kiếm.")
-                    .withType(Notifications.Type.WARNING)
-                    .withDuration(2000)
-                    .show();
-            return;
-        }
-        String keyword = ocrSearchField.getValue();
-        if (!StringUtils.hasText(keyword)) {
-            notifications.create("Vui lòng nhập nội dung để tìm kiếm.")
-                    .withType(Notifications.Type.WARNING)
-                    .withDuration(2000)
-                    .show();
-            return;
-        }
-        User user = (User) currentAuthentication.getUser();
-        // Lấy folder đang được chọn
-        Folder selectedFolder = foldersTree.getSingleSelectedItem();
-        // Xác định chế độ tìm kiếm: đích danh nếu checkbox được chọn
-        SearchMode searchMode = Boolean.TRUE.equals(exactSearchCheckbox.getValue()) ? SearchMode.EXACT
-                : SearchMode.FUZZY;
-        // Kiểm tra checkbox "Không dấu" (chỉ có hiệu lực khi tìm đích danh)
-        boolean ignoreDiacritics = Boolean.TRUE.equals(exactSearchCheckbox.getValue())
-                && Boolean.TRUE.equals(ignoreDiacriticsCheckbox.getValue());
-        List<FileDescriptor> matches = ocrFileTextSearchService.searchFilesByText(keyword, currentStorage,
-                selectedFolder, searchMode,
-                ignoreDiacritics);
-        List<FileDescriptor> accessible = matches.stream()
-                .filter(file -> permissionService.hasPermission(user, PermissionType.READ, file))
-                .collect(Collectors.toList());
-
-        filesDc.setItems(accessible);
-        fileDataGird.deselectAll();
-        clearMetadataPanel();
-
-        if (accessible.isEmpty()) {
-            notifications.create("Không tìm thấy tệp chứa: \"" + keyword + "\"")
-                    .withType(Notifications.Type.DEFAULT)
-                    .withDuration(2000)
-                    .show();
-        } else {
-            notifications.create("Tìm thấy " + accessible.size() + " tệp phù hợp.")
-                    .withType(Notifications.Type.SUCCESS)
-                    .withDuration(2500)
-                    .show();
-        }
-    }
-
-    private void clearMetadataPanel() {
-        metadataFileDc.setItem(null);
-        metadataContent.setVisible(false);
-        metadataEmptyState.setVisible(true);
-    }
-
-    // css
+    //css
     private void initFolderGridColumn() {
-        // remove column by key
+        //remove column by key
         if (foldersTree.getColumnByKey("name") != null) {
             foldersTree.removeColumn(foldersTree.getColumnByKey("name"));
         }
-        // Add hierarchy column
-        TreeDataGrid.Column<Folder> nameColumn = foldersTree
-                .addComponentHierarchyColumn(item -> renderFolderItem(item));
+        //Add hierarchy column
+        TreeDataGrid.Column<Folder> nameColumn = foldersTree.addComponentHierarchyColumn(item -> renderFolderItem(item));
         nameColumn.setHeader("Thư mục");
         nameColumn.setFlexGrow(1);
         nameColumn.setResizable(true);
@@ -516,8 +453,7 @@ public class EcmView extends StandardView {
     }
 
     private void updateEmptyStateText() {
-        if (emptyStateText == null)
-            return;
+        if (emptyStateText == null) return;
 
         Folder selectedFolder = foldersTree.getSingleSelectedItem();
         boolean hasFolderSelected = selectedFolder != null;
@@ -532,17 +468,88 @@ public class EcmView extends StandardView {
         }
     }
 
-    @Subscribe("fileDataGird.preViewFile")
-    public void onFileDataGirdPreViewFile(final ActionPerformedEvent event) {
-        FileDescriptor file = fileDataGird.getSingleSelectedItem();
-        if (file == null) {
-            return;
-        }
+//    @Subscribe("fileDataGird.preViewFile")
+//    public void onFileDataGirdPreViewFile(final ActionPerformedEvent event) {
+//        FileDescriptor file = fileDataGird.getSingleSelectedItem();
+//        if (file == null) {
+//            return;
+//        }
+//        FileRef fileRef = file.getFileRef();
+//        String extension = file.getExtension();
+//        if (extension.startsWith("pdf")) {
+//            previewPdfFile(fileRef);
+//        }
+//        if (extension.startsWith("txt") || extension.startsWith("doc")) {
+//            previewTextFile(fileRef);
+//        }
+//        if (extension.startsWith("jpg")
+//                || extension.startsWith("png")
+//                || extension.startsWith("jpeg")
+//                || extension.startsWith("webp")
+//                || extension.startsWith("svg")
+//                || extension.startsWith("gif")) {
+//            previewImageFile(fileRef);
+//        }
+//        if (extension.startsWith("mp4")
+//                || extension.startsWith("mov")
+//                || extension.startsWith("webm")) {
+//            preViewVideoFile(fileRef);
+//        }
+//        if (extension.startsWith("html")
+//                || extension.startsWith("htm")
+//                || extension.startsWith("java")
+//                || extension.startsWith("js")
+//                || extension.startsWith("css")
+//                || extension.startsWith("md")
+//                || extension.startsWith("xml")
+//                || extension.startsWith("sql")) {
+//            preViewHtmlFile(fileRef);
+//        }
+//        if(extension.startsWith("xlsx")){
+//            previewExcelFile(fileRef);
+//        }
+//
+//    }
+//
+//    private void previewPdfFile(FileRef fileRelf) {
+//        DialogWindow<PdfPreview> window = dialogWindows.view(this, PdfPreview.class).build();
+//        window.getView().setInputFile(fileRelf);
+//        window.setResizable(true);
+//        window.open();
+//    }
+//
+//    private void previewTextFile(FileRef fileRelf) {
+//        DialogWindow<TextPreview> window = dialogWindows.view(this, TextPreview.class).build();
+//        window.getView().setInputFile(fileRelf);
+//        window.setResizable(true);
+//        window.open();
+//    }
 
-        FileRef fileRef = file.getFileRef();
-        DialogWindow<TextPreview> window = dialogWindows.view(this, TextPreview.class).build();
-        window.getView().setInputFile(fileRef);
-        window.setResizable(true);
-        window.open();
-    }
+//    private void previewImageFile(FileRef fileRelf) {
+//        DialogWindow<ImagePreview> window = dialogWindows.view(this, ImagePreview.class).build();
+//        window.getView().setInputFile(fileRelf);
+//        window.setResizable(true);
+//        window.open();
+//    }
+//
+//    private void preViewVideoFile(FileRef fileRelf) {
+//        DialogWindow<VideoPreview> window = dialogWindows.view(this, VideoPreview.class).build();
+//        window.getView().setInputFile(fileRelf);
+//        window.setResizable(true);
+//        window.open();
+//    }
+//
+//    private void preViewHtmlFile(FileRef fileRelf) {
+//        DialogWindow<CodePreview> window = dialogWindows.view(this, CodePreview.class).build();
+//        window.getView().setInputFile(fileRelf);
+//        window.setResizable(true);
+//        window.open();
+//    }
+//    private void previewExcelFile(FileRef fileRelf){
+//        DialogWindow<ExcelPreview> window = dialogWindows.view(this, ExcelPreview.class).build();
+//        window.getView().setInputFile(fileRelf);
+//        window.setResizable(true);
+//        window.open();
+//    }
+
 }

@@ -41,7 +41,7 @@ public class FolderServiceImpl implements IFolderService {
         f.setParent(folder.getParent());
         f.setSourceStorage(folder.getSourceStorage());
         f.setCreatedDate(LocalDateTime.now());
-        f.setFullPath(buildFolderPath(folder));
+        f.setFullPath(buildFolderPath(f));
         f.setInTrash(false);
         Folder f2 = dataManager.save(f);
         User user = (User) currentAuthentication.getUser();
@@ -161,6 +161,8 @@ public class FolderServiceImpl implements IFolderService {
             path.insert(0, parent.getName() + "/");
             parent = parent.getParent();
         }
+        // Cuối cùng thêm tên chính folder
+        path.append(folder.getName()).append("/");
         return path.toString();
     }
 

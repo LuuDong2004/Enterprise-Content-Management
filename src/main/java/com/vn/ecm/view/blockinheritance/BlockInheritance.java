@@ -1,7 +1,5 @@
 package com.vn.ecm.view.blockinheritance;
 
-
-
 import com.vaadin.flow.router.Route;
 import com.vn.ecm.service.ecm.PermissionService;
 import com.vn.ecm.view.main.MainView;
@@ -31,6 +29,9 @@ public class BlockInheritance extends StandardView {
     private ResourceRoleEntity targetRole;
     private Folder targetFolder;
     private FileDescriptor targetFile;
+
+    // Lưu action được chọn
+    private BlockInheritanceAction selectedAction = BlockInheritanceAction.CANCEL;
 
     public void setTargetUserFolder(User user, Folder folder) {
         this.targetUser = user;
@@ -62,46 +63,47 @@ public class BlockInheritance extends StandardView {
 
     @Subscribe(id = "convertBtn", subject = "clickListener")
     public void onConvertBtnClick(final ClickEvent<JmixButton> event) {
-        // Convert inherited permissions to explicit
-        if (targetUser != null) {
-            if (targetFolder != null) {
-                permissionService.disableInheritance(targetUser, targetFolder, true);
-            } else if (targetFile != null) {
-                permissionService.disableInheritance(targetUser, targetFile, true);
-            }
-        } else if (targetRole != null) {
-            if (targetFolder != null) {
-                permissionService.disableInheritance(targetRole, targetFolder, true);
-            } else if (targetFile != null) {
-                permissionService.disableInheritance(targetRole, targetFile, true);
-            }
-        }
-
+        // Chỉ đánh dấu action, không thực hiện ngay
+        selectedAction = BlockInheritanceAction.CONVERT;
         close(StandardOutcome.SAVE);
     }
 
     @Subscribe(id = "removeBtn", subject = "clickListener")
     public void onRemoveBtnClick(final ClickEvent<JmixButton> event) {
-        // Remove inherited permissions
-        if (targetUser != null) {
-            if (targetFolder != null) {
-                permissionService.disableInheritance(targetUser, targetFolder, false);
-            } else if (targetFile != null) {
-                permissionService.disableInheritance(targetUser, targetFile, false);
-            }
-        } else if (targetRole != null) {
-            if (targetFolder != null) {
-                permissionService.disableInheritance(targetRole, targetFolder, false);
-            } else if (targetFile != null) {
-                permissionService.disableInheritance(targetRole, targetFile, false);
-            }
-        }
-
+        // Chỉ đánh dấu action, không thực hiện ngay
+        selectedAction = BlockInheritanceAction.REMOVE;
         close(StandardOutcome.SAVE);
     }
 
     @Subscribe(id = "cancelBtn", subject = "clickListener")
     public void onCancelBtnClick(final ClickEvent<JmixButton> event) {
+        selectedAction = BlockInheritanceAction.CANCEL;
         close(StandardOutcome.CLOSE);
+    }
+
+    /**
+     * Lấy action được chọn
+     */
+    public BlockInheritanceAction getSelectedAction() {
+        return selectedAction;
+    }
+
+    /**
+     * Lấy thông tin target để thực hiện action sau
+     */
+    public User getTargetUser() {
+        return targetUser;
+    }
+
+    public ResourceRoleEntity getTargetRole() {
+        return targetRole;
+    }
+
+    public Folder getTargetFolder() {
+        return targetFolder;
+    }
+
+    public FileDescriptor getTargetFile() {
+        return targetFile;
     }
 }
