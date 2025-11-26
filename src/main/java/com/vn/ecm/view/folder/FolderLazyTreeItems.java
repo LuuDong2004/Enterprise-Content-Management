@@ -86,8 +86,13 @@ public class FolderLazyTreeItems extends AbstractDataProvider<Folder, Void>
     }
     @Override
     public Collection<Folder> getItems() {
+        // Trả về danh sách root folder (parent is null) cho TreeDataGrid.
+        // Các node con sẽ được load lazy qua fetchChildren(getItems(HierarchicalQuery...)).
+        String sql = "select e from Folder e where e.parent is null" + conditions + " order by e.id";
+
         return dataManager.load(Folder.class)
-                .all()
+                .query(sql)
+                .parameter("storage", storage)
                 .sort(sort)
                 .list();
     }

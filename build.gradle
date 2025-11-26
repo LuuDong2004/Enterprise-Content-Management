@@ -19,6 +19,13 @@ repositories {
     maven {
         url = 'https://global.repo.jmix.io/repository/public'
     }
+    maven {
+        url = 'https://global.repo.jmix.io/repository/premium'
+        credentials {
+            username = rootProject['premiumRepoUser']
+            password = rootProject['premiumRepoPass']
+        }
+    }
 }
 
 configurations.all {
@@ -26,6 +33,7 @@ configurations.all {
 }
 
 dependencies {
+
     implementation 'io.jmix.core:jmix-core-starter'
     implementation 'io.jmix.data:jmix-eclipselink-starter'
     implementation 'io.jmix.security:jmix-security-starter'
@@ -49,7 +57,7 @@ dependencies {
 
     // tesseract
     implementation 'net.sourceforge.tess4j:tess4j:5.5.0'
-    
+
     // Apache PDFBox for PDF text extraction
     implementation 'org.apache.pdfbox:pdfbox:3.0.1'
 

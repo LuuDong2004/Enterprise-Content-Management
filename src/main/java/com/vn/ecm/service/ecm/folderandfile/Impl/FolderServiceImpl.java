@@ -8,13 +8,14 @@ import com.vn.ecm.service.ecm.folderandfile.IFolderService;
 import io.jmix.core.DataManager;
 import io.jmix.core.Messages;
 import io.jmix.core.security.CurrentAuthentication;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -27,6 +28,8 @@ public class FolderServiceImpl implements IFolderService {
     private PermissionService permissionService;
     @Autowired
     private CurrentAuthentication currentAuthentication;
+    @PersistenceContext
+    private EntityManager entityManager;
 
     public FolderServiceImpl(Messages messages) {
         this.messages = messages;
@@ -147,19 +150,6 @@ public class FolderServiceImpl implements IFolderService {
         return saved;
     }
 
-    private boolean isDescendant(Folder ancestor, Folder candidate) {
-        if (ancestor == null || candidate == null)
-            return false;
-        Folder current = candidate;
-        while (current != null) {
-            if (Objects.equals(current.getId(), ancestor.getId())) {
-                return true;
-            }
-            current = current.getParent();
-        }
-        return false;
-    }
-
     // cập nhập full path đệ quy của các folder con
     private void updateChildFullPaths(Folder parentFolder) {
         List<Folder> children = dataManager.load(Folder.class)
@@ -208,5 +198,37 @@ public class FolderServiceImpl implements IFolderService {
         }
     }
 
+    @Override
+    @Transactional
+    public Folder moveFolder(Folder source, Folder target) {
+        if (source == null || target == null) {
+            return null;
+        }
+        if (source.getId() == null || target.getId() == null) {
+            return null;
+        }
+        // Không cho phép move vào chính nó
+        if (source.getId().equals(target.getId())) {
+            return source;
+        }
+        // Không cho phép move khác kho lưu trữ
+        if (source.getSourceStorage() != null && target.getSourceStorage() != null
+                && !source.getSourceStorage().getId().equals(target.getSourceStorage().getId())) {
+            return source;
+        }
+
+        // Gọi stored procedure trên SQL Server để cập nhật FULL_PATH + closure
+        entityManager
+                .createNativeQuery("EXEC dbo.usp_MoveFolderWithFullPath ?1, ?2")
+                .setParameter(1, source.getId())
+                .setParameter(2, target.getId())
+                .executeUpdate();
+
+        // Reload lại folder sau khi DB đã cập nhật
+        return dataManager.load(Folder.class)
+                .id(source.getId())
+                .optional()
+                .orElse(source);
+    }
 
 }

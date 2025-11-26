@@ -9,6 +9,7 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.treegrid.TreeGrid;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -112,8 +113,8 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     @ViewComponent
     private VerticalLayout metadataEmptyState;
 
-//    @ViewComponent
-//    private TreeDataGrid<Folder> folderTreeGird;
+    // @ViewComponent
+    // private TreeDataGrid<Folder> folderTreeGird;
 
     FolderLazyTreeItems dataProvider;
 
@@ -137,7 +138,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         uploadAction.setMode(UploadAndDownloadFileAction.Mode.UPLOAD);
         uploadAction.setFolderSupplier(() -> foldersTree.getSingleSelectedItem());
         uploadAction.setStorageSupplier(() -> currentStorage);
-        //download
+        // download
         downloadAction.setMode(UploadAndDownloadFileAction.Mode.DOWNLOAD);
         downloadAction.setTarget(fileDataGird);
         if (btnDownload.getAction() == null) {
@@ -159,7 +160,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         boolean nowVisible = metadataPanel.isVisible();
         previewBtn.setText(nowVisible ? "Ẩn chi tiết" : "Xem chi tiết");
     }
-
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
@@ -218,7 +218,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         }
     }
 
-    //upload file
+    // upload file
     @Subscribe("fileRefField")
     public void onFileRefFieldFileUploadSucceeded(final FileUploadSucceededEvent<FileStorageUploadField> event) {
         User user = (User) currentAuthentication.getUser();
@@ -249,7 +249,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         }
     }
 
-    //new folder
+    // new folder
     @Subscribe("foldersTree.createFolder")
     public void onFoldersTreeCreateFolder(ActionPerformedEvent event) {
         User user = (User) currentAuthentication.getUser();
@@ -269,13 +269,13 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         var dw = dialogWindows.view(this, CreateFolderDialogView.class).build();
         dw.getView().setContext(parent, currentStorage);
         dw.addAfterCloseListener(e -> {
-            //loadAccessibleFolders(user);
+            // loadAccessibleFolders(user);
             loadLazyFolder();
         });
         dw.open();
     }
 
-    //rename folder
+    // rename folder
     @Subscribe("foldersTree.renameFolder")
     public void onFoldersTreeRenameFolder(final ActionPerformedEvent event) {
         Folder selected = foldersTree.getSingleSelectedItem();
@@ -296,13 +296,41 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         var dw = dialogWindows.view(this, EditNameFolderDialogView.class).build();
         dw.getView().setContext(selected, currentStorage);
         dw.addAfterCloseListener(e -> {
-            //loadAccessibleFolders(userCurr);
+            // loadAccessibleFolders(userCurr);
             loadLazyFolder();
         });
         dw.open();
     }
 
-    //xóa vào thùng rác
+    // move folder
+    @Subscribe("foldersTree.moveFolder")
+    public void onFoldersTreeMoveFolder(final ActionPerformedEvent event) {
+        Folder source = foldersTree.getSingleSelectedItem();
+        if (source == null) {
+            notifications.show("Vui lòng chọn thư mục cần di chuyển");
+            return;
+        }
+        User currentUser = (User) currentAuthentication.getUser();
+        boolean per = permissionService.hasPermission(currentUser, PermissionType.MODIFY, source);
+        if (!per) {
+            notifications.create("Bạn không có quyền di chuyển thư mục này.")
+                    .withType(Notifications.Type.ERROR)
+                    .withDuration(2000)
+                    .withCloseable(false)
+                    .show();
+            return;
+        }
+
+        // Dialog chọn thư mục đích (sử dụng cùng datasource foldersDc)
+        DialogWindow<EcmMoveFolderDialog> dw = dialogWindows.view(this, EcmMoveFolderDialog.class).build();
+        dw.getView().setContext(source, currentStorage);
+        dw.addAfterCloseListener(e -> {
+            loadLazyFolder();
+        });
+        dw.open();
+    }
+
+    // xóa vào thùng rác
     @Subscribe("foldersTree.delete")
     public void onFoldersTreeDelete(final ActionPerformedEvent event) {
         Folder selected = foldersTree.getSingleSelectedItem();
@@ -325,7 +353,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
             try {
                 String useName = userCurr.getUsername();
                 folderService.moveToTrash(selected, useName);
-                //loadAccessibleFolders(userCurr);
+                // loadAccessibleFolders(userCurr);
                 loadLazyFolder();
                 notifications.show(messageBundle.getMessage("ecmDeleteFolderAlert"));
             } catch (Exception ex) {
@@ -335,7 +363,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         dlg.open();
     }
 
-    //remove file
+    // remove file
     @Subscribe("fileDataGird.deleteFile")
     public void onFileDataGirdDeleteFile(final ActionPerformedEvent event) {
         FileDescriptor selected = fileDataGird.getSingleSelectedItem();
@@ -366,13 +394,13 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         dlg.open();
     }
 
-    //action download file
+    // action download file
     @Subscribe("fileDataGird.downloadFile")
     public void onFileDataGirdDownloadFile(final ActionPerformedEvent event) {
         btnDownload.click();
     }
 
-    //action rename file
+    // action rename file
     @Subscribe("fileDataGird.renameFile")
     public void onFileDataGirdRenameFile(final ActionPerformedEvent event) {
         Folder selectedFolder = foldersTree.getSingleSelectedItem();
@@ -394,32 +422,34 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         });
         dw.open();
 
-
     }
-    private void loadLazyFolder(){
-        dataProvider = new FolderLazyTreeItems(dataManager , metadata ,conditions ,currentStorage);
+
+    private void loadLazyFolder() {
+        dataProvider = new FolderLazyTreeItems(dataManager, metadata, conditions, currentStorage);
         foldersTree.setDataProvider(dataProvider);
         foldersDc.setItems(dataProvider.getItems());
     }
 
-//    private void loadAccessibleFolders(User user) {
-//        List<Folder> accessibleFolders = permissionService.getAccessibleFolders(user, currentStorage);
-//        foldersDc.setItems(accessibleFolders);
-//    }
+    // private void loadAccessibleFolders(User user) {
+    // List<Folder> accessibleFolders = permissionService.getAccessibleFolders(user,
+    // currentStorage);
+    // foldersDc.setItems(accessibleFolders);
+    // }
 
     private void loadAccessibleFiles(User user, Folder folder) {
         List<FileDescriptor> accessibleFiles = permissionService.getAccessibleFiles(user, currentStorage, folder);
         filesDc.setItems(accessibleFiles);
     }
 
-    //css
+    // css
     private void initFolderGridColumn() {
-        //remove column by key
+        // remove column by key
         if (foldersTree.getColumnByKey("name") != null) {
             foldersTree.removeColumn(foldersTree.getColumnByKey("name"));
         }
-        //Add hierarchy column
-        TreeDataGrid.Column<Folder> nameColumn = foldersTree.addComponentHierarchyColumn(item -> renderFolderItem(item));
+        // Add hierarchy column
+        TreeDataGrid.Column<Folder> nameColumn = foldersTree
+                .addComponentHierarchyColumn(item -> renderFolderItem(item));
         nameColumn.setHeader("Thư mục");
         nameColumn.setFlexGrow(1);
         nameColumn.setResizable(true);
@@ -447,13 +477,13 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         hboxMain.add(icon, span);
         hboxMain.addClickListener(event -> {
             foldersTree.select(item);
-            foldersDc.setItem(item);
         });
         return hboxMain;
     }
 
     private void updateEmptyStateText() {
-        if (emptyStateText == null) return;
+        if (emptyStateText == null)
+            return;
 
         Folder selectedFolder = foldersTree.getSingleSelectedItem();
         boolean hasFolderSelected = selectedFolder != null;
@@ -468,88 +498,94 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         }
     }
 
-//    @Subscribe("fileDataGird.preViewFile")
-//    public void onFileDataGirdPreViewFile(final ActionPerformedEvent event) {
-//        FileDescriptor file = fileDataGird.getSingleSelectedItem();
-//        if (file == null) {
-//            return;
-//        }
-//        FileRef fileRef = file.getFileRef();
-//        String extension = file.getExtension();
-//        if (extension.startsWith("pdf")) {
-//            previewPdfFile(fileRef);
-//        }
-//        if (extension.startsWith("txt") || extension.startsWith("doc")) {
-//            previewTextFile(fileRef);
-//        }
-//        if (extension.startsWith("jpg")
-//                || extension.startsWith("png")
-//                || extension.startsWith("jpeg")
-//                || extension.startsWith("webp")
-//                || extension.startsWith("svg")
-//                || extension.startsWith("gif")) {
-//            previewImageFile(fileRef);
-//        }
-//        if (extension.startsWith("mp4")
-//                || extension.startsWith("mov")
-//                || extension.startsWith("webm")) {
-//            preViewVideoFile(fileRef);
-//        }
-//        if (extension.startsWith("html")
-//                || extension.startsWith("htm")
-//                || extension.startsWith("java")
-//                || extension.startsWith("js")
-//                || extension.startsWith("css")
-//                || extension.startsWith("md")
-//                || extension.startsWith("xml")
-//                || extension.startsWith("sql")) {
-//            preViewHtmlFile(fileRef);
-//        }
-//        if(extension.startsWith("xlsx")){
-//            previewExcelFile(fileRef);
-//        }
-//
-//    }
-//
-//    private void previewPdfFile(FileRef fileRelf) {
-//        DialogWindow<PdfPreview> window = dialogWindows.view(this, PdfPreview.class).build();
-//        window.getView().setInputFile(fileRelf);
-//        window.setResizable(true);
-//        window.open();
-//    }
-//
-//    private void previewTextFile(FileRef fileRelf) {
-//        DialogWindow<TextPreview> window = dialogWindows.view(this, TextPreview.class).build();
-//        window.getView().setInputFile(fileRelf);
-//        window.setResizable(true);
-//        window.open();
-//    }
+    // @Subscribe("fileDataGird.preViewFile")
+    // public void onFileDataGirdPreViewFile(final ActionPerformedEvent event) {
+    // FileDescriptor file = fileDataGird.getSingleSelectedItem();
+    // if (file == null) {
+    // return;
+    // }
+    // FileRef fileRef = file.getFileRef();
+    // String extension = file.getExtension();
+    // if (extension.startsWith("pdf")) {
+    // previewPdfFile(fileRef);
+    // }
+    // if (extension.startsWith("txt") || extension.startsWith("doc")) {
+    // previewTextFile(fileRef);
+    // }
+    // if (extension.startsWith("jpg")
+    // || extension.startsWith("png")
+    // || extension.startsWith("jpeg")
+    // || extension.startsWith("webp")
+    // || extension.startsWith("svg")
+    // || extension.startsWith("gif")) {
+    // previewImageFile(fileRef);
+    // }
+    // if (extension.startsWith("mp4")
+    // || extension.startsWith("mov")
+    // || extension.startsWith("webm")) {
+    // preViewVideoFile(fileRef);
+    // }
+    // if (extension.startsWith("html")
+    // || extension.startsWith("htm")
+    // || extension.startsWith("java")
+    // || extension.startsWith("js")
+    // || extension.startsWith("css")
+    // || extension.startsWith("md")
+    // || extension.startsWith("xml")
+    // || extension.startsWith("sql")) {
+    // preViewHtmlFile(fileRef);
+    // }
+    // if(extension.startsWith("xlsx")){
+    // previewExcelFile(fileRef);
+    // }
+    //
+    // }
+    //
+    // private void previewPdfFile(FileRef fileRelf) {
+    // DialogWindow<PdfPreview> window = dialogWindows.view(this,
+    // PdfPreview.class).build();
+    // window.getView().setInputFile(fileRelf);
+    // window.setResizable(true);
+    // window.open();
+    // }
+    //
+    // private void previewTextFile(FileRef fileRelf) {
+    // DialogWindow<TextPreview> window = dialogWindows.view(this,
+    // TextPreview.class).build();
+    // window.getView().setInputFile(fileRelf);
+    // window.setResizable(true);
+    // window.open();
+    // }
 
-//    private void previewImageFile(FileRef fileRelf) {
-//        DialogWindow<ImagePreview> window = dialogWindows.view(this, ImagePreview.class).build();
-//        window.getView().setInputFile(fileRelf);
-//        window.setResizable(true);
-//        window.open();
-//    }
-//
-//    private void preViewVideoFile(FileRef fileRelf) {
-//        DialogWindow<VideoPreview> window = dialogWindows.view(this, VideoPreview.class).build();
-//        window.getView().setInputFile(fileRelf);
-//        window.setResizable(true);
-//        window.open();
-//    }
-//
-//    private void preViewHtmlFile(FileRef fileRelf) {
-//        DialogWindow<CodePreview> window = dialogWindows.view(this, CodePreview.class).build();
-//        window.getView().setInputFile(fileRelf);
-//        window.setResizable(true);
-//        window.open();
-//    }
-//    private void previewExcelFile(FileRef fileRelf){
-//        DialogWindow<ExcelPreview> window = dialogWindows.view(this, ExcelPreview.class).build();
-//        window.getView().setInputFile(fileRelf);
-//        window.setResizable(true);
-//        window.open();
-//    }
+    // private void previewImageFile(FileRef fileRelf) {
+    // DialogWindow<ImagePreview> window = dialogWindows.view(this,
+    // ImagePreview.class).build();
+    // window.getView().setInputFile(fileRelf);
+    // window.setResizable(true);
+    // window.open();
+    // }
+    //
+    // private void preViewVideoFile(FileRef fileRelf) {
+    // DialogWindow<VideoPreview> window = dialogWindows.view(this,
+    // VideoPreview.class).build();
+    // window.getView().setInputFile(fileRelf);
+    // window.setResizable(true);
+    // window.open();
+    // }
+    //
+    // private void preViewHtmlFile(FileRef fileRelf) {
+    // DialogWindow<CodePreview> window = dialogWindows.view(this,
+    // CodePreview.class).build();
+    // window.getView().setInputFile(fileRelf);
+    // window.setResizable(true);
+    // window.open();
+    // }
+    // private void previewExcelFile(FileRef fileRelf){
+    // DialogWindow<ExcelPreview> window = dialogWindows.view(this,
+    // ExcelPreview.class).build();
+    // window.getView().setInputFile(fileRelf);
+    // window.setResizable(true);
+    // window.open();
+    // }
 
 }

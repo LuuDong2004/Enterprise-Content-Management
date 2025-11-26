@@ -299,7 +299,7 @@ public class PermissionService {
                 roleCode);
     }
 
-    // Disable / Enable inheritance
+    // Fixed disableInheritance methods for User + Folder
     @Transactional
     public void disableInheritance(User user, Folder folder, boolean convertToExplicit) {
         List<Permission> permissions = dataManager.load(Permission.class)
@@ -312,8 +312,15 @@ public class PermissionService {
             perm.setInheritEnabled(false);
             if (Boolean.TRUE.equals(perm.getInherited())) {
                 if (convertToExplicit) {
+                    // Convert to explicit permission
                     perm.setInherited(false);
+                    perm.setInheritedFrom(null);
                     dataManager.save(perm);
+
+                    // CRITICAL FIX: Propagate this explicit permission to children
+                    // so they inherit from THIS node, not from ancestor
+                    int explicitMask = Optional.ofNullable(perm.getPermissionMask()).orElse(0);
+                    propagateToChildren(user, null, folder, explicitMask);
                 } else {
                     dataManager.remove(perm);
                 }
@@ -323,20 +330,24 @@ public class PermissionService {
         }
     }
 
+    // Fixed disableInheritance for User + FileDescriptor
     @Transactional
-    public void disableInheritance(User user, FileDescriptor FileDescriptor, boolean convertToExplicit) {
+    public void disableInheritance(User user, FileDescriptor fileDescriptor, boolean convertToExplicit) {
         List<Permission> permissions = dataManager.load(Permission.class)
                 .query("select p from Permission p where p.user = :user and p.file = :FileDescriptor")
                 .parameter("user", user)
-                .parameter("FileDescriptor", FileDescriptor)
+                .parameter("FileDescriptor", fileDescriptor)
                 .list();
 
         for (Permission perm : permissions) {
             perm.setInheritEnabled(false);
             if (Boolean.TRUE.equals(perm.getInherited())) {
                 if (convertToExplicit) {
+                    // Convert to explicit permission
                     perm.setInherited(false);
+                    perm.setInheritedFrom(null);
                     dataManager.save(perm);
+                    // Files don't have children, no propagation needed
                 } else {
                     dataManager.remove(perm);
                 }
@@ -346,6 +357,7 @@ public class PermissionService {
         }
     }
 
+    // Fixed disableInheritance for Role + Folder
     @Transactional
     public void disableInheritance(ResourceRoleEntity role, Folder folder, boolean convertToExplicit) {
         List<Permission> permissions = dataManager.load(Permission.class)
@@ -358,8 +370,14 @@ public class PermissionService {
             perm.setInheritEnabled(false);
             if (Boolean.TRUE.equals(perm.getInherited())) {
                 if (convertToExplicit) {
+                    // Convert to explicit permission
                     perm.setInherited(false);
+                    perm.setInheritedFrom(null);
                     dataManager.save(perm);
+
+                    // CRITICAL FIX: Propagate this explicit permission to children
+                    int explicitMask = Optional.ofNullable(perm.getPermissionMask()).orElse(0);
+                    propagateToChildren(null, role, folder, explicitMask);
                 } else {
                     dataManager.remove(perm);
                 }
@@ -369,20 +387,24 @@ public class PermissionService {
         }
     }
 
+    // Fixed disableInheritance for Role + FileDescriptor
     @Transactional
-    public void disableInheritance(ResourceRoleEntity role, FileDescriptor FileDescriptor, boolean convertToExplicit) {
+    public void disableInheritance(ResourceRoleEntity role, FileDescriptor fileDescriptor, boolean convertToExplicit) {
         List<Permission> permissions = dataManager.load(Permission.class)
                 .query("select p from Permission p where p.roleCode = :roleCode and p.file = :FileDescriptor")
                 .parameter("roleCode", role.getCode())
-                .parameter("FileDescriptor", FileDescriptor)
+                .parameter("FileDescriptor", fileDescriptor)
                 .list();
 
         for (Permission perm : permissions) {
             perm.setInheritEnabled(false);
             if (Boolean.TRUE.equals(perm.getInherited())) {
                 if (convertToExplicit) {
+                    // Convert to explicit permission
                     perm.setInherited(false);
+                    perm.setInheritedFrom(null);
                     dataManager.save(perm);
+                    // Files don't have children, no propagation needed
                 } else {
                     dataManager.remove(perm);
                 }

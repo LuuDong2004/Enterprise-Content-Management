@@ -81,16 +81,11 @@ public class BlockInheritance extends StandardView {
         close(StandardOutcome.CLOSE);
     }
 
-    /**
-     * Lấy action được chọn
-     */
+
     public BlockInheritanceAction getSelectedAction() {
         return selectedAction;
     }
 
-    /**
-     * Lấy thông tin target để thực hiện action sau
-     */
     public User getTargetUser() {
         return targetUser;
     }

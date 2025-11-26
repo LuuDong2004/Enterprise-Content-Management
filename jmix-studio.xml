@@ -22,4 +22,8 @@
       </entry>
     </moduleSettings>
   </component>
+  <component name="JmixLiquibaseChangesConfig">
+    <exclude-change idName="folder_closure" tagName="dropTable" />
+    <exclude-change idName="user_folder_access" tagName="dropTable" />
+  </component>
 </project>
