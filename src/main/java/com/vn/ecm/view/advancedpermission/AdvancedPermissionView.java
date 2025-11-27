@@ -19,11 +19,17 @@ import io.jmix.flowui.kit.component.button.JmixButton;
 import io.jmix.flowui.model.CollectionContainer;
 import io.jmix.flowui.model.CollectionLoader;
 import io.jmix.flowui.view.*;
+import io.jmix.flowui.backgroundtask.BackgroundTask;
+import io.jmix.flowui.backgroundtask.TaskLifeCycle;
+import io.jmix.flowui.Dialogs;
+import io.jmix.flowui.Notifications;
+import com.vaadin.flow.component.UI;
 import io.jmix.securitydata.entity.ResourceRoleEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Route(value = "advanced-permission-view", layout = MainView.class)
 @ViewController(id = "AdvancedPermissionView")
@@ -38,6 +44,12 @@ public class AdvancedPermissionView extends StandardView {
 
     @Autowired
     private DialogWindows dialogWindows;
+
+    @Autowired
+    private Dialogs dialogs;
+
+    @Autowired
+    private Notifications notifications;
 
     @ViewComponent
     private DataGrid<Permission> permissionDataGrid;
@@ -256,23 +268,18 @@ public class AdvancedPermissionView extends StandardView {
     @Subscribe(id = "disableInheritanceBtn", subject = "clickListener")
     public void onDisableInheritanceBtnClick(final ClickEvent<JmixButton> event) {
         Permission permission = permissionDataGrid.getSingleSelectedItem();
-
         if (permission == null) {
-            // Không có permission nào => enable inheritance (Remove case)
-            if (targetFolder != null) {
-                permissionService.enableRemoveInheritance(targetFolder);
-            } else if (targetFile != null) {
-                permissionService.enableRemoveInheritance(targetFile);
-            }
-            reloadPermissions();
-            updateInheritanceButtonLabel(permissionDataGrid.getSingleSelectedItem());
+            EnableRemoveInheritanceTask task = new EnableRemoveInheritanceTask();
+            dialogs.createBackgroundTaskDialog(task)
+                    .withHeader("Bật kế thừa quyền")
+                    .withText("Đang bật kế thừa quyền...")
+                    .withCancelAllowed(true)
+                    .open();
             return;
         }
-
         if (Boolean.TRUE.equals(permission.getInheritEnabled())) {
             // Đang kế thừa → disable → mở dialog Convert/Remove
             DialogWindow<BlockInheritance> window = dialogWindows.view(this, BlockInheritance.class).build();
-
             if (permission.getUser() != null) {
                 if (targetFolder != null) {
                     window.getView().setTargetUserFolder(permission.getUser(), targetFolder);
@@ -287,7 +294,6 @@ public class AdvancedPermissionView extends StandardView {
                     window.getView().setTargetRoleFile(role, targetFile);
                 }
             }
-
             window.addAfterCloseListener(e -> {
                 BlockInheritanceAction action = window.getView().getSelectedAction();
                 if (e.closedWith(StandardOutcome.SAVE) && action != BlockInheritanceAction.CANCEL) {
@@ -306,10 +312,13 @@ public class AdvancedPermissionView extends StandardView {
                         removeInheritedPermissionsTemporarily();
                         // Không reload từ DB, giữ UI state
                     } else if (action == BlockInheritanceAction.CONVERT) {
-                        // Convert: thực hiện ngay
-                        executeConvertAction();
-                        // Reload từ DB sau khi convert
-                        reloadPermissions();
+                        // Convert: sử dụng BackgroundTask vì có thể chạy lâu với subtree lớn
+                        ConvertInheritanceTask task = new ConvertInheritanceTask();
+                        dialogs.createBackgroundTaskDialog(task)
+                                .withHeader("Chuyển đổi quyền")
+                                .withText("Đang chuyển đổi quyền kế thừa thành quyền rõ ràng...")
+                                .withCancelAllowed(true)
+                                .open();
                     }
                 } else {
                     // Cancel hoặc đóng dialog → reset
@@ -325,23 +334,13 @@ public class AdvancedPermissionView extends StandardView {
             window.open();
         } else {
             // Đã disable → enable lại
-            if (permission.getUser() != null) {
-                if (targetFolder != null) {
-                    permissionService.enableInheritance(permission.getUser(), targetFolder);
-                } else if (targetFile != null) {
-                    permissionService.enableInheritance(permission.getUser(), targetFile);
-                }
-            } else if (permission.getRoleCode() != null) {
-                ResourceRoleEntity role = permissionService.loadRoleByCode(permission.getRoleCode());
-                if (targetFolder != null) {
-                    permissionService.enableInheritance(role, targetFolder);
-                } else if (targetFile != null) {
-                    permissionService.enableInheritance(role, targetFile);
-                }
-            }
-
-            reloadPermissions();
-            updateInheritanceButtonLabel(permissionDataGrid.getSingleSelectedItem());
+            // Sử dụng BackgroundTask vì enableInheritance có thể chạy lâu với subtree lớn
+            EnableInheritanceTask task = new EnableInheritanceTask(permission);
+            dialogs.createBackgroundTaskDialog(task)
+                    .withHeader("Bật kế thừa quyền")
+                    .withText("Đang bật kế thừa quyền...")
+                    .withCancelAllowed(true)
+                    .open();
         }
     }
 
@@ -451,27 +450,37 @@ public class AdvancedPermissionView extends StandardView {
 
             window.addAfterCloseListener(e -> {
                 if (e.closedWith(StandardOutcome.SAVE)) {
-                    // Xóa hoàn toàn đã được xác nhận
+                    // FIX: Reload ngay lập tức trong UI thread
                     reloadPermissions();
                     updateInheritanceButtonLabel(permissionDataGrid.getSingleSelectedItem());
+
+                    // Reset pending state
+                    pendingAction = null;
+                    pendingUser = null;
+                    pendingRole = null;
+                    permissionsSnapshot = null;
+
+                    // Đóng view sau khi đã reload
+                    close(StandardOutcome.SAVE);
+                } else {
+                    // Cancel - rollback nếu cần
+                    if (permissionsSnapshot != null) {
+                        CollectionContainer<Permission> container = getViewData().getContainer("permissionsDc");
+                        container.setItems(new ArrayList<>(permissionsSnapshot));
+                    }
+                    pendingAction = null;
+                    pendingUser = null;
+                    pendingRole = null;
+                    permissionsSnapshot = null;
                 }
-                // Reset pending state
-                pendingAction = null;
-                pendingUser = null;
-                pendingRole = null;
-                permissionsSnapshot = null;
             });
 
             window.open();
         } else {
-            // Không có pending action hoặc đã xử lý → đóng view
             close(StandardOutcome.SAVE);
         }
     }
 
-    /**
-     * Xóa tạm thời các permissions được kế thừa (chỉ trong UI, chưa commit DB)
-     */
     private void removeInheritedPermissionsTemporarily() {
         CollectionContainer<Permission> container = getViewData().getContainer("permissionsDc");
         List<Permission> toRemove = new ArrayList<>();
@@ -486,9 +495,6 @@ public class AdvancedPermissionView extends StandardView {
         container.getMutableItems().removeAll(toRemove);
     }
 
-    /**
-     * Thực hiện convert action ngay lập tức
-     */
     private void executeConvertAction() {
         if (pendingUser != null) {
             if (targetFolder != null) {
@@ -508,5 +514,131 @@ public class AdvancedPermissionView extends StandardView {
         pendingUser = null;
         pendingRole = null;
         permissionsSnapshot = null;
+    }
+
+    private class EnableRemoveInheritanceTask extends BackgroundTask<Integer, Void> {
+        private final UI ui;
+
+        public EnableRemoveInheritanceTask() {
+            super(30, TimeUnit.MINUTES, AdvancedPermissionView.this);
+            this.ui = UI.getCurrent();
+        }
+
+        @Override
+        public Void run(TaskLifeCycle<Integer> taskLifeCycle) throws Exception {
+            if (taskLifeCycle.isCancelled()) {
+                return null;
+            }
+
+            taskLifeCycle.publish(0);
+
+            if (targetFolder != null) {
+                permissionService.enableRemoveInheritance(targetFolder);
+            } else if (targetFile != null) {
+                permissionService.enableRemoveInheritance(targetFile);
+            }
+
+            if (taskLifeCycle.isCancelled()) {
+                return null;
+            }
+
+            taskLifeCycle.publish(100);
+
+            if (ui != null) {
+                ui.access(() -> {
+                    reloadPermissions();
+                    updateInheritanceButtonLabel(permissionDataGrid.getSingleSelectedItem());
+                });
+            }
+
+            return null;
+        }
+    }
+
+    private class EnableInheritanceTask extends BackgroundTask<Integer, Void> {
+        private final Permission permission;
+        private final UI ui;
+
+        public EnableInheritanceTask(Permission permission) {
+            super(30, TimeUnit.MINUTES, AdvancedPermissionView.this);
+            this.permission = permission;
+            this.ui = UI.getCurrent();
+        }
+
+        @Override
+        public Void run(TaskLifeCycle<Integer> taskLifeCycle) throws Exception {
+            if (taskLifeCycle.isCancelled()) {
+                return null;
+            }
+
+            taskLifeCycle.publish(0);
+
+            if (permission.getUser() != null) {
+                if (targetFolder != null) {
+                    permissionService.enableInheritance(permission.getUser(), targetFolder);
+                } else if (targetFile != null) {
+                    permissionService.enableInheritance(permission.getUser(), targetFile);
+                }
+            } else if (permission.getRoleCode() != null) {
+                ResourceRoleEntity role = permissionService.loadRoleByCode(permission.getRoleCode());
+                if (role != null) {
+                    if (targetFolder != null) {
+                        permissionService.enableInheritance(role, targetFolder);
+                    } else if (targetFile != null) {
+                        permissionService.enableInheritance(role, targetFile);
+                    }
+                }
+            }
+
+            if (taskLifeCycle.isCancelled()) {
+                return null;
+            }
+
+            taskLifeCycle.publish(100);
+
+            if (ui != null) {
+                ui.access(() -> {
+                    reloadPermissions();
+                    updateInheritanceButtonLabel(permissionDataGrid.getSingleSelectedItem());
+                });
+            }
+
+            return null;
+        }
+    }
+
+    private class ConvertInheritanceTask extends BackgroundTask<Integer, Void> {
+        private final UI ui;
+
+        public ConvertInheritanceTask() {
+            super(30, TimeUnit.MINUTES, AdvancedPermissionView.this);
+            this.ui = UI.getCurrent();
+        }
+
+        @Override
+        public Void run(TaskLifeCycle<Integer> taskLifeCycle) throws Exception {
+            if (taskLifeCycle.isCancelled()) {
+                return null;
+            }
+
+            taskLifeCycle.publish(0);
+
+            executeConvertAction();
+
+            if (taskLifeCycle.isCancelled()) {
+                return null;
+            }
+
+            taskLifeCycle.publish(100);
+
+            if (ui != null) {
+                ui.access(() -> {
+                    reloadPermissions();
+                    updateInheritanceButtonLabel(permissionDataGrid.getSingleSelectedItem());
+                });
+            }
+
+            return null;
+        }
     }
 }

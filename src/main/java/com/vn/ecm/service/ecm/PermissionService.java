@@ -4,6 +4,8 @@ import com.vn.ecm.entity.*;
 
 import io.jmix.core.DataManager;
 import io.jmix.securitydata.entity.ResourceRoleEntity;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,36 +19,12 @@ public class PermissionService {
 
     private final JdbcTemplate jdbcTemplate;
 
+    @PersistenceContext
+    private EntityManager entityManager;
+
     public PermissionService(DataManager dataManager, JdbcTemplate jdbcTemplate) {
         this.dataManager = dataManager;
         this.jdbcTemplate = jdbcTemplate;
-    }
-
-    public void recalcAccessForUser(UUID userId) {
-        jdbcTemplate.update("EXEC dbo.usp_RecalculateAccessForUser @UserId = ?", userId);
-    }
-
-    public Map<String, Object> getEffectiveForUserFolder(UUID userId, UUID folderId) {
-        return jdbcTemplate.queryForMap("EXEC dbo.usp_GetEffectivePermissionForUserFolder @UserId = ?, @FolderId = ?",
-                userId, folderId);
-    }
-
-    public int getEffectiveMask(UUID userId, UUID folderId) {
-        Integer mask = dataManager.loadValue(
-                "select calculate_effective_permission(:userId, :folderId)",
-                Integer.class)
-                .parameter("userId", userId)
-                .parameter("folderId", folderId)
-                .one();
-
-        return mask != null ? mask : 0;
-    }
-
-    public void updateFolderClosureForMove(UUID folderId) {
-        if (folderId == null) {
-            return;
-        }
-        jdbcTemplate.update("EXEC dbo.usp_UpdateFolderClosureForMove @FolderId = ?", folderId);
     }
 
     @Transactional
@@ -61,12 +39,10 @@ public class PermissionService {
             permission.setUser(user);
             permission.setFolder(folder);
         }
-
         permission.setAppliesTo(AppliesTo.THIS_FOLDER_SUBFOLDERS_FILES);
         permission.setPermissionMask(mask);
         permission.setInherited(false);
         dataManager.save(permission);
-
         // propagate to children if folder
         propagateToChildren(user, null, folder, mask);
     }
@@ -75,7 +51,6 @@ public class PermissionService {
     public void savePermission(Collection<Permission> permissions, User user, FileDescriptor FileDescriptor) {
         normalizePermissions(permissions);
         int mask = buildMask(permissions);
-
         Permission permission = loadPermission(user, FileDescriptor);
         if (permission == null) {
             permission = dataManager.create(Permission.class);
@@ -264,10 +239,6 @@ public class PermissionService {
         return folderPath + "/" + FileDescriptorName;
     }
 
-    /**
-     * Return a human-friendly identifier for an ancestor permission.
-     * Previously returned "FOLDER:<id>" — now returns full path string (no prefix).
-     */
     private String ancestorIdentifier(Permission anc) {
         if (anc == null)
             return null;
@@ -280,7 +251,6 @@ public class PermissionService {
         return null;
     }
 
-    // Propagate to children
     @Transactional
     protected void propagateToChildren(User user, ResourceRoleEntity role, Folder parentFolder, int parentMask) {
         if (parentFolder == null) {
@@ -291,12 +261,123 @@ public class PermissionService {
         if (userId == null && (roleCode == null || roleCode.isBlank())) {
             return;
         }
-        jdbcTemplate.update(
-                "EXEC dbo.usp_PermissionPropagateFromFolder @FolderId = ?, @ParentMask = ?, @UserId = ?, @RoleCode = ?",
-                parentFolder.getId(),
-                parentMask,
-                userId,
-                roleCode);
+        // Duyệt theo từng cấp với batch processing
+        Set<UUID> currentLevelIds = new HashSet<>();
+        currentLevelIds.add(parentFolder.getId());
+        while (!currentLevelIds.isEmpty()) {
+            if (currentLevelIds.isEmpty()) {
+                break;
+            }
+            // Build IN clause cho parent IDs
+            StringBuilder parentIdList = new StringBuilder();
+            int count = 0;
+            for (UUID id : currentLevelIds) {
+                if (count > 0)
+                    parentIdList.append(",");
+                parentIdList.append("'").append(id.toString()).append("'");
+                count++;
+            }
+            // Lấy tất cả folder con của current level cùng lúc
+            String childQuery = "SELECT F.ID, " +
+                    "  CASE WHEN EXISTS ( " +
+                    "    SELECT 1 FROM PERMISSION P " +
+                    "    WHERE P.FOLDER_ID = F.ID " +
+                    "    AND P." + (userId != null ? "USER_ID" : "ROLE_CODE") + " = ? " +
+                    "    AND P.INHERIT_ENABLED = 0 " +
+                    "  ) THEN 1 ELSE 0 END AS IS_BLOCKED " +
+                    "FROM FOLDER F " +
+                    "WHERE F.PARENT_ID IN (" + parentIdList + ")";
+            List<Object[]> children = entityManager.createNativeQuery(childQuery)
+                    .setParameter(1, userId != null ? userId : roleCode)
+                    .getResultList();
+
+            if (children.isEmpty()) {
+                break;
+            }
+            // Phân loại folder: valid vs blocked
+            List<UUID> validFolderIds = new ArrayList<>();
+            Set<UUID> nextLevelIds = new HashSet<>();
+            for (Object[] row : children) {
+                Object rawId = row[0];
+                UUID childId = rawId instanceof UUID ? (UUID) rawId : UUID.fromString(String.valueOf(rawId));
+                int isBlocked = ((Number) row[1]).intValue();
+                if (isBlocked == 0) {
+                    validFolderIds.add(childId);
+                    nextLevelIds.add(childId);
+                }
+            }
+            // Batch update và insert cho các folder hợp lệ
+            if (!validFolderIds.isEmpty()) {
+                StringBuilder validIdList = new StringBuilder();
+                count = 0;
+                for (UUID id : validFolderIds) {
+                    if (count > 0)
+                        validIdList.append(",");
+                    validIdList.append("'").append(id.toString()).append("'");
+                    count++;
+                }
+                if (userId != null) {
+                    // Batch UPDATE
+                    entityManager.createNativeQuery(
+                            "UPDATE PERMISSION " +
+                                    "SET PERMISSION_MASK = ?, INHERITED = 1, INHERITED_FROM = ? " +
+                                    "WHERE USER_ID = ? " +
+                                    "AND (INHERIT_ENABLED = 1 OR INHERIT_ENABLED IS NULL) " +
+                                    "AND FOLDER_ID IN (" + validIdList + ")")
+                            .setParameter(1, parentMask)
+                            .setParameter(2, getFullPath(parentFolder))
+                            .setParameter(3, userId)
+                            .executeUpdate();
+                    // Batch INSERT
+                    entityManager.createNativeQuery(
+                            "INSERT INTO PERMISSION (ID, USER_ID, FOLDER_ID, PERMISSION_MASK, INHERITED, INHERIT_ENABLED, INHERITED_FROM, APPLIES_TO) "
+                                    +
+                                    "SELECT NEWID(), ?, F.ID, ?, 1, 1, ?, 0 " +
+                                    "FROM FOLDER F " +
+                                    "WHERE F.ID IN (" + validIdList + ") " +
+                                    "AND NOT EXISTS ( " +
+                                    "  SELECT 1 FROM PERMISSION P " +
+                                    "  WHERE P.FOLDER_ID = F.ID AND P.USER_ID = ? " +
+                                    ")")
+                            .setParameter(1, userId)
+                            .setParameter(2, parentMask)
+                            .setParameter(3, getFullPath(parentFolder))
+                            .setParameter(4, userId)
+                            .executeUpdate();
+                } else {
+                    // Batch UPDATE cho Role
+                    entityManager.createNativeQuery(
+                            "UPDATE PERMISSION " +
+                                    "SET PERMISSION_MASK = ?, INHERITED = 1, INHERITED_FROM = ? " +
+                                    "WHERE ROLE_CODE = ? " +
+                                    "AND (INHERIT_ENABLED = 1 OR INHERIT_ENABLED IS NULL) " +
+                                    "AND FOLDER_ID IN (" + validIdList + ")")
+                            .setParameter(1, parentMask)
+                            .setParameter(2, getFullPath(parentFolder))
+                            .setParameter(3, roleCode)
+                            .executeUpdate();
+
+                    // Batch INSERT cho Role
+                    entityManager.createNativeQuery(
+                            "INSERT INTO PERMISSION (ID, ROLE_CODE, FOLDER_ID, PERMISSION_MASK, INHERITED, INHERIT_ENABLED, INHERITED_FROM, APPLIES_TO) "
+                                    +
+                                    "SELECT NEWID(), ?, F.ID, ?, 1, 1, ?, 0 " +
+                                    "FROM FOLDER F " +
+                                    "WHERE F.ID IN (" + validIdList + ") " +
+                                    "AND NOT EXISTS ( " +
+                                    "  SELECT 1 FROM PERMISSION P " +
+                                    "  WHERE P.FOLDER_ID = F.ID AND P.ROLE_CODE = ? " +
+                                    ")")
+                            .setParameter(1, roleCode)
+                            .setParameter(2, parentMask)
+                            .setParameter(3, getFullPath(parentFolder))
+                            .setParameter(4, roleCode)
+                            .executeUpdate();
+                }
+            }
+            // Chuyển sang level tiếp theo
+            currentLevelIds = nextLevelIds;
+        }
     }
 
     // Fixed disableInheritance methods for User + Folder
@@ -315,11 +396,10 @@ public class PermissionService {
                     // Convert to explicit permission
                     perm.setInherited(false);
                     perm.setInheritedFrom(null);
+                    perm.setInheritEnabled(false);
                     dataManager.save(perm);
-
-                    // CRITICAL FIX: Propagate this explicit permission to children
-                    // so they inherit from THIS node, not from ancestor
                     int explicitMask = Optional.ofNullable(perm.getPermissionMask()).orElse(0);
+                    // Push the explicit mask down so children stop inheriting from higher ancestors
                     propagateToChildren(user, null, folder, explicitMask);
                 } else {
                     dataManager.remove(perm);
@@ -338,7 +418,6 @@ public class PermissionService {
                 .parameter("user", user)
                 .parameter("FileDescriptor", fileDescriptor)
                 .list();
-
         for (Permission perm : permissions) {
             perm.setInheritEnabled(false);
             if (Boolean.TRUE.equals(perm.getInherited())) {
@@ -365,7 +444,6 @@ public class PermissionService {
                 .parameter("roleCode", role.getCode())
                 .parameter("folder", folder)
                 .list();
-
         for (Permission perm : permissions) {
             perm.setInheritEnabled(false);
             if (Boolean.TRUE.equals(perm.getInherited())) {
@@ -373,10 +451,10 @@ public class PermissionService {
                     // Convert to explicit permission
                     perm.setInherited(false);
                     perm.setInheritedFrom(null);
+                    perm.setInheritEnabled(false);
                     dataManager.save(perm);
-
-                    // CRITICAL FIX: Propagate this explicit permission to children
                     int explicitMask = Optional.ofNullable(perm.getPermissionMask()).orElse(0);
+                    // Push the explicit mask down so children stop inheriting from higher ancestors
                     propagateToChildren(null, role, folder, explicitMask);
                 } else {
                     dataManager.remove(perm);
@@ -635,29 +713,136 @@ public class PermissionService {
         }
     }
 
-    // replaceChildPermissions (User / Role)
+    @Transactional
     public void replaceChildPermissions(User user, Folder parent, int parentMask) {
         if (parent == null || user == null) {
             return;
         }
-        jdbcTemplate.update(
-                "EXEC dbo.usp_PermissionReplaceChildren @FolderId = ?, @ParentMask = ?, @UserId = ?, @RoleCode = ?",
-                parent.getId(),
-                parentMask,
-                user.getId(),
-                null);
+        // Lấy FULL_PATH của parent folder
+        String parentPath = parent.getFullPath();
+        if (parentPath == null || parentPath.isEmpty()) {
+            return;
+        }
+        String pathPrefix = parentPath.endsWith("/") ? parentPath : parentPath + "/";
+        entityManager.createNativeQuery(
+                "DELETE FROM PERMISSION " +
+                        "WHERE FOLDER_ID IN (" +
+                        "    SELECT ID FROM FOLDER " +
+                        "    WHERE FULL_PATH LIKE ?1 ESCAPE '\\' " +
+                        "    AND ID != ?2" +
+                        ") " +
+                        "AND USER_ID = ?3 " +
+                        "AND FOLDER_ID IS NOT NULL " +
+                        "AND INHERITED = 0")
+                .setParameter(1, pathPrefix + "%")
+                .setParameter(2, parent.getId())
+                .setParameter(3, user.getId())
+                .executeUpdate();
+        // Cập nhật inherited permissions cho children đã có permission
+        entityManager.createNativeQuery(
+                "UPDATE PERMISSION " +
+                        "SET PERMISSION_MASK = ?1, " +
+                        "    INHERITED = 1, " +
+                        "    INHERITED_FROM = ?2, " +
+                        "    INHERIT_ENABLED = 1 " +
+                        "WHERE FOLDER_ID IN (" +
+                        "    SELECT ID FROM FOLDER " +
+                        "    WHERE FULL_PATH LIKE ?3 ESCAPE '\\' " +
+                        "    AND ID != ?4" +
+                        ") " +
+                        "AND USER_ID = ?5 " +
+                        "AND FOLDER_ID IS NOT NULL")
+                .setParameter(1, parentMask)
+                .setParameter(2, parentPath)
+                .setParameter(3, pathPrefix + "%")
+                .setParameter(4, parent.getId())
+                .setParameter(5, user.getId())
+                .executeUpdate();
+        // Tạo inherited permissions mới cho children chưa có permission
+        entityManager.createNativeQuery(
+                "INSERT INTO PERMISSION (ID, USER_ID, FOLDER_ID, PERMISSION_MASK, INHERITED, INHERIT_ENABLED, INHERITED_FROM, APPLIES_TO) "
+                        +
+                        "SELECT NEWID(), ?1, F.ID, ?2, 1, 1, ?3, 0 " +
+                        "FROM FOLDER F " +
+                        "WHERE F.FULL_PATH LIKE ?4 ESCAPE '\\' " +
+                        "AND F.ID != ?5 " +
+                        "AND NOT EXISTS (" +
+                        "    SELECT 1 FROM PERMISSION P " +
+                        "    WHERE P.FOLDER_ID = F.ID AND P.USER_ID = ?1" +
+                        ")")
+                .setParameter(1, user.getId())
+                .setParameter(2, parentMask)
+                .setParameter(3, parentPath)
+                .setParameter(4, pathPrefix + "%")
+                .setParameter(5, parent.getId())
+                .executeUpdate();
     }
 
+    @Transactional
     public void replaceChildPermissions(ResourceRoleEntity role, Folder parent, int parentMask) {
         if (parent == null || role == null) {
             return;
         }
-        jdbcTemplate.update(
-                "EXEC dbo.usp_PermissionReplaceChildren @FolderId = ?, @ParentMask = ?, @UserId = ?, @RoleCode = ?",
-                parent.getId(),
-                parentMask,
-                null,
-                role.getCode());
+        // Lấy FULL_PATH của parent folder
+        String parentPath = parent.getFullPath();
+        if (parentPath == null || parentPath.isEmpty()) {
+            return;
+        }
+        String pathPrefix = parentPath.endsWith("/") ? parentPath : parentPath + "/";
+        // Xóa tất cả explicit permissions (không inherited) của children
+        entityManager.createNativeQuery(
+                "DELETE FROM PERMISSION " +
+                        "WHERE FOLDER_ID IN (" +
+                        "    SELECT ID FROM FOLDER " +
+                        "    WHERE FULL_PATH LIKE ?1 ESCAPE '\\' " +
+                        "    AND ID != ?2" +
+                        ") " +
+                        "AND ROLE_CODE = ?3 " +
+                        "AND FOLDER_ID IS NOT NULL " +
+                        "AND INHERITED = 0")
+                .setParameter(1, pathPrefix + "%")
+                .setParameter(2, parent.getId())
+                .setParameter(3, role.getCode())
+                .executeUpdate();
+        // Cập nhật inherited permissions cho children đã có permission
+        entityManager.createNativeQuery(
+                "UPDATE PERMISSION " +
+                        "SET PERMISSION_MASK = ?1, " +
+                        "    INHERITED = 1, " +
+                        "    INHERITED_FROM = ?2, " +
+                        "    INHERIT_ENABLED = 1 " +
+                        "WHERE FOLDER_ID IN (" +
+                        "    SELECT ID FROM FOLDER " +
+                        "    WHERE FULL_PATH LIKE ?3 ESCAPE '\\' " +
+                        "    AND ID != ?4" +
+                        ") " +
+                        "AND ROLE_CODE = ?5 " +
+                        "AND FOLDER_ID IS NOT NULL")
+                .setParameter(1, parentMask)
+                .setParameter(2, parentPath)
+                .setParameter(3, pathPrefix + "%")
+                .setParameter(4, parent.getId())
+                .setParameter(5, role.getCode())
+                .executeUpdate();
+
+        // Tạo inherited permissions mới cho children chưa có permission
+        entityManager.createNativeQuery(
+                "INSERT INTO PERMISSION (ID, ROLE_CODE, FOLDER_ID, PERMISSION_MASK, INHERITED, INHERIT_ENABLED, INHERITED_FROM, APPLIES_TO) "
+                        +
+                        "SELECT NEWID(), ?1, F.ID, ?2, 1, 1, ?3, 0 " +
+                        "FROM FOLDER F " +
+                        "WHERE F.FULL_PATH LIKE ?4 ESCAPE '\\' " +
+                        "AND F.ID != ?5 " +
+                        "AND NOT EXISTS (" +
+                        "    SELECT 1 FROM PERMISSION P " +
+                        "    WHERE P.FOLDER_ID = F.ID AND P.ROLE_CODE = ?1" +
+                        ")")
+                .setParameter(1, role.getCode())
+                .setParameter(2, parentMask)
+                .setParameter(3, parentPath)
+                .setParameter(4, pathPrefix + "%")
+                .setParameter(5, parent.getId())
+                .executeUpdate();
     }
 
     // Helpers
@@ -693,18 +878,33 @@ public class PermissionService {
                 .orElse(null);
     }
 
+    private boolean hasFullAccessRole(User user) {
+        if (user == null || user.getUsername() == null) {
+            return false;
+        }
+        try {
+            Long count = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM SEC_ROLE_ASSIGNMENT " +
+                            "WHERE USERNAME = ? AND ROLE_CODE = ? AND ROLE_TYPE = 'resource'",
+                    Long.class,
+                    user.getUsername(),
+                    "system-full-access");
+            return count != null && count > 0;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     public List<Folder> getAccessibleFolders(User user, SourceStorage sourceStorage) {
         if (user == null || sourceStorage == null)
             return Collections.emptyList();
-
-        // Nếu là admin thì trả hết folder của storage này
-        if ("admin".equalsIgnoreCase(user.getUsername())) {
+        // Nếu user có role system-full-access thì trả hết folder của storage này
+        if (hasFullAccessRole(user)) {
             return dataManager.load(Folder.class)
                     .query("select f from Folder f where f.sourceStorage = :storage and f.inTrash = false")
                     .parameter("storage", sourceStorage)
                     .list();
         }
-
         // User thường: chỉ trả folder có quyền READ+ trong storage này
         return dataManager.load(Folder.class)
                 .query("""
@@ -724,9 +924,8 @@ public class PermissionService {
     public List<FileDescriptor> getAccessibleFiles(User user, SourceStorage sourceStorage, Folder folder) {
         if (user == null || sourceStorage == null)
             return Collections.emptyList();
-
-        // Nếu là admin thì trả hết
-        if ("admin".equalsIgnoreCase(user.getUsername())) {
+        // Nếu user có role system-full-access thì trả hết
+        if (hasFullAccessRole(user)) {
             if (folder == null) {
                 return dataManager.load(FileDescriptor.class)
                         .query("select o from FileDescriptor o where o.sourceStorage = :storage and o.inTrash = false and o.folder is null")
@@ -739,10 +938,9 @@ public class PermissionService {
                         .list();
             }
         }
-
         // User thường: chỉ trả file có quyền READ+
         if (folder == null) {
-            // Files ở root (không có folder)
+            // Files ở root
             return dataManager.load(FileDescriptor.class)
                     .query("""
                                 select distinct o from FileDescriptor o

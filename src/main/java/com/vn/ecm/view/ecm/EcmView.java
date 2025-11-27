@@ -264,7 +264,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
                 return;
             }
         }
-
         var dw = dialogWindows.view(this, CreateFolderDialogView.class).build();
         dw.getView().setContext(parent, currentStorage);
         dw.addAfterCloseListener(e -> {
@@ -338,10 +337,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         dw.open();
     }
 
-    /**
-     * BackgroundTask để di chuyển folder với khối lượng lớn.
-     * Chỉ cập nhật FULL_PATH + parent_ID, không rebuild closure ngay.
-     */
     private class MoveFolderTask extends BackgroundTask<Integer, Void> {
         private final Folder source;
         private final Folder target;
@@ -359,18 +354,13 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
             if (taskLifeCycle.isCancelled()) {
                 return null;
             }
-
             taskLifeCycle.publish(0);
-
             // Di chuyển chỉ FULL_PATH + parent_ID (nhanh, không rebuild closure)
             folderService.moveFolderPathOnly(source, target);
-
             if (taskLifeCycle.isCancelled()) {
                 return null;
             }
-
             taskLifeCycle.publish(50);
-
             // Reload lại tree trên UI thread
             if (ui != null) {
                 ui.access(() -> {
@@ -381,7 +371,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
                             .show();
                 });
             }
-
             taskLifeCycle.publish(100);
             return null;
         }
@@ -487,17 +476,10 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         foldersDc.setItems(dataProvider.getItems());
     }
 
-    // private void loadAccessibleFolders(User user) {
-    // List<Folder> accessibleFolders = permissionService.getAccessibleFolders(user,
-    // currentStorage);
-    // foldersDc.setItems(accessibleFolders);
-    // }
-
     private void loadAccessibleFiles(User user, Folder folder) {
         List<FileDescriptor> accessibleFiles = permissionService.getAccessibleFiles(user, currentStorage, folder);
         filesDc.setItems(accessibleFiles);
     }
-
     // css
     private void initFolderGridColumn() {
         // remove column by key

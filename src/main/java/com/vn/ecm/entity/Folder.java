@@ -1,6 +1,7 @@
 package com.vn.ecm.entity;
 
 //v1
+
 import io.jmix.core.entity.annotation.JmixGeneratedValue;
 import io.jmix.core.metamodel.annotation.JmixEntity;
 import jakarta.persistence.*;
@@ -24,11 +25,12 @@ public class Folder {
     @JoinColumn(name = "parent_ID")
     private Folder parent;
 
+    @Lob
     @Column(name = "FULL_PATH")
     private String fullPath;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "SOURCE_STORAGE_ID") // <-- dùng đúng 1 cột FK
+    @JoinColumn(name = "SOURCE_STORAGE_ID")
     private SourceStorage sourceStorage;
 
     @Column(name = "createdDate")

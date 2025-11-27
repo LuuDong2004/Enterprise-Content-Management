@@ -1,6 +1,5 @@
 package com.vn.ecm.view.confirmreplacedialog;
 
-
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.router.Route;
 import com.vn.ecm.service.ecm.PermissionService;
@@ -17,10 +16,16 @@ import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.html.Span;
 import io.jmix.flowui.kit.component.button.JmixButton;
 import io.jmix.flowui.view.*;
+import io.jmix.flowui.backgroundtask.BackgroundTask;
+import io.jmix.flowui.backgroundtask.TaskLifeCycle;
+import io.jmix.flowui.Dialogs;
+import io.jmix.flowui.Notifications;
+import com.vaadin.flow.component.UI;
 import io.jmix.securitydata.entity.ResourceRoleEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @Route(value = "confirm-replace-dialog", layout = MainView.class)
 @ViewController(id = "ConfirmReplaceDialog")
@@ -33,6 +38,10 @@ public class ConfirmReplaceDialog extends StandardView {
     private PermissionService permissionService;
     @Autowired
     private DataManager dataManager;
+    @Autowired
+    private Dialogs dialogs;
+    @Autowired
+    private Notifications notifications;
     @ViewComponent
     private Span messageSpan;
 
@@ -41,7 +50,7 @@ public class ConfirmReplaceDialog extends StandardView {
     private Folder targetFolder;
     private FileDescriptor targetFile;
 
-    private UUID userId;  // Thay đổi: lưu ID thay vì entity
+    private UUID userId; // Thay đổi: lưu ID thay vì entity
     private String roleCode;
     @ViewComponent
     private MessageBundle messageBundle;
@@ -77,8 +86,9 @@ public class ConfirmReplaceDialog extends StandardView {
     @Subscribe
     public void onBeforeShow(BeforeShowEvent event) {
         if (messageSpan != null && objectName != null) {
-            messageSpan.setText("Thao tác này sẽ thay thế tất cả các quyền được gán trực tiếp trên các đối tượng con bằng các quyền kế thừa từ đối tượng "
-                    + objectName + ".");
+            messageSpan.setText(
+                    "Thao tác này sẽ thay thế tất cả các quyền được gán trực tiếp trên các đối tượng con bằng các quyền kế thừa từ đối tượng "
+                            + objectName + ".");
         }
     }
 
@@ -90,18 +100,66 @@ public class ConfirmReplaceDialog extends StandardView {
         }
         // Chỉ replace nếu target là Folder
         if (targetFolder != null) {
-            if (userId != null) {
-                // Reload User từ DB
-                User user = dataManager.load(User.class).id(userId).one();
-                permissionService.replaceChildPermissions(user, targetFolder, permissionMask);
-            } else if (roleCode != null) {
-                // Reload Role từ DB
-                ResourceRoleEntity role = permissionService.loadRoleByCode(roleCode);
-                permissionService.replaceChildPermissions(role, targetFolder, permissionMask);
-            }
+            // Sử dụng BackgroundTask để replace permissions (có thể chạy lâu với subtree
+            // lớn)
+            ReplacePermissionsTask task = new ReplacePermissionsTask();
+            dialogs.createBackgroundTaskDialog(task)
+                    .withHeader("Thay thế quyền")
+                    .withText("Đang thay thế quyền cho các đối tượng con...")
+                    .withCancelAllowed(true)
+                    .open();
+        } else {
+            close(StandardOutcome.SAVE);
         }
-        notification.show(messageBundle.getMessage("confirm"));
-        close(StandardOutcome.SAVE);
+    }
+
+    /**
+     * BackgroundTask để thay thế quyền cho các đối tượng con.
+     */
+    private class ReplacePermissionsTask extends BackgroundTask<Integer, Void> {
+        private final UI ui;
+
+        public ReplacePermissionsTask() {
+            super(30, TimeUnit.MINUTES, ConfirmReplaceDialog.this);
+            this.ui = UI.getCurrent();
+        }
+
+        @Override
+        public Void run(TaskLifeCycle<Integer> taskLifeCycle) throws Exception {
+            if (taskLifeCycle.isCancelled()) {
+                return null;
+            }
+
+            taskLifeCycle.publish(0);
+
+            if (targetFolder != null) {
+                if (userId != null) {
+                    // Reload User từ DB
+                    User user = dataManager.load(User.class).id(userId).one();
+                    permissionService.replaceChildPermissions(user, targetFolder, permissionMask);
+                } else if (roleCode != null) {
+                    // Reload Role từ DB
+                    ResourceRoleEntity role = permissionService.loadRoleByCode(roleCode);
+                    permissionService.replaceChildPermissions(role, targetFolder, permissionMask);
+                }
+            }
+
+            if (taskLifeCycle.isCancelled()) {
+                return null;
+            }
+
+            taskLifeCycle.publish(100);
+
+            // Reload và đóng dialog trên UI thread
+            if (ui != null) {
+                ui.access(() -> {
+                    notification.show(messageBundle.getMessage("confirm"));
+                    close(StandardOutcome.SAVE);
+                });
+            }
+
+            return null;
+        }
     }
 
     @Subscribe(id = "noBtn", subject = "clickListener")

@@ -217,7 +217,6 @@ public class FolderServiceImpl implements IFolderService {
             return source;
         }
 
-        // Gọi stored procedure trên SQL Server để cập nhật FULL_PATH + closure
         entityManager
                 .createNativeQuery("EXEC dbo.usp_MoveFolderWithFullPath ?1, ?2")
                 .setParameter(1, source.getId())
@@ -257,13 +256,8 @@ public class FolderServiceImpl implements IFolderService {
         if (sourceLoaded.getFullPath() == null || targetLoaded.getFullPath() == null) {
             return source;
         }
-
         String oldPrefix = sourceLoaded.getFullPath();
         String newPrefix = targetLoaded.getFullPath() + sourceLoaded.getName() + "/";
-
-        // Cập nhật FULL_PATH cho toàn bộ subtree (dùng native query để tận dụng STUFF)
-        // Dùng positional parameter ?1, ?2, ?3 vì SQL Server không hỗ trợ named
-        // parameter trong native query
         entityManager
                 .createNativeQuery(
                         "UPDATE F " +
@@ -281,7 +275,6 @@ public class FolderServiceImpl implements IFolderService {
                 .setParameter(1, target.getId())
                 .setParameter(2, source.getId())
                 .executeUpdate();
-
         // Reload lại folder sau khi DB đã cập nhật
         return dataManager.load(Folder.class)
                 .id(source.getId())
