@@ -13,6 +13,8 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.data.selection.SelectionEvent;
 import com.vaadin.flow.router.*;
 import com.vn.ecm.entity.*;
+import com.vn.ecm.ocr.log.OcrFileTextSearchService;
+import com.vn.ecm.ocr.log.SearchMode;
 import com.vn.ecm.service.ecm.PermissionService;
 import com.vn.ecm.service.ecm.folderandfile.IFileDescriptorService;
 import com.vn.ecm.service.ecm.folderandfile.IFolderService;
@@ -30,8 +32,10 @@ import io.jmix.flowui.DialogWindows;
 import io.jmix.flowui.Dialogs;
 import io.jmix.flowui.Notifications;
 import io.jmix.flowui.UiComponents;
+import io.jmix.flowui.component.checkbox.JmixCheckbox;
 import io.jmix.flowui.component.grid.DataGrid;
 import io.jmix.flowui.component.grid.TreeDataGrid;
+import io.jmix.flowui.component.textfield.TypedTextField;
 import io.jmix.flowui.component.upload.FileStorageUploadField;
 import io.jmix.flowui.Actions;
 import io.jmix.flowui.kit.action.ActionPerformedEvent;
@@ -46,9 +50,11 @@ import com.vaadin.flow.component.UI;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
+import org.springframework.util.StringUtils;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Route(value = "source-storages/:id", layout = MainView.class)
 @ViewController("EcmView")
@@ -111,6 +117,14 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     private VerticalLayout metadataContent;
     @ViewComponent
     private VerticalLayout metadataEmptyState;
+    @Autowired
+    private OcrFileTextSearchService ocrFileTextSearchService;
+    @ViewComponent
+    private JmixCheckbox exactSearchCheckbox;
+    @ViewComponent
+    private JmixCheckbox ignoreDiacriticsCheckbox;
+    @ViewComponent
+    private TypedTextField<String> ocrSearchField;
 
     // @ViewComponent
     // private TreeDataGrid<Folder> folderTreeGird;
@@ -440,6 +454,11 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         dlg.open();
     }
 
+    @Subscribe(id = "ocrSearchBtn", subject = "clickListener")
+    public void onOcrSearchBtnClick(final ClickEvent<JmixButton> event) {
+        executeOcrSearch();
+    }
+
     // action download file
     @Subscribe("fileDataGird.downloadFile")
     public void onFileDataGirdDownloadFile(final ActionPerformedEvent event) {
@@ -535,6 +554,61 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         } else {
             emptyStateText.setText("Không có dữ liệu");
         }
+    }
+
+    private void executeOcrSearch() {
+        if (currentStorage == null) {
+            notifications.create("Vui lòng chọn kho lưu trữ trước khi tìm kiếm.")
+                    .withType(Notifications.Type.WARNING)
+                    .withDuration(2000)
+                    .show();
+            return;
+        }
+        String keyword = ocrSearchField.getValue();
+        if (!StringUtils.hasText(keyword)) {
+            notifications.create("Vui lòng nhập nội dung để tìm kiếm.")
+                    .withType(Notifications.Type.WARNING)
+                    .withDuration(2000)
+                    .show();
+            return;
+        }
+        User user = (User) currentAuthentication.getUser();
+        // Lấy folder đang được chọn
+        Folder selectedFolder = foldersTree.getSingleSelectedItem();
+        // Xác định chế độ tìm kiếm: đích danh nếu checkbox được chọn
+        SearchMode searchMode = Boolean.TRUE.equals(exactSearchCheckbox.getValue()) ? SearchMode.EXACT
+                : SearchMode.FUZZY;
+        // Kiểm tra checkbox "Không dấu" (chỉ có hiệu lực khi tìm đích danh)
+        boolean ignoreDiacritics = Boolean.TRUE.equals(exactSearchCheckbox.getValue())
+                && Boolean.TRUE.equals(ignoreDiacriticsCheckbox.getValue());
+        List<FileDescriptor> matches = ocrFileTextSearchService.searchFilesByText(keyword, currentStorage,
+                selectedFolder, searchMode,
+                ignoreDiacritics);
+        List<FileDescriptor> accessible = matches.stream()
+                .filter(file -> permissionService.hasPermission(user, PermissionType.READ, file))
+                .collect(Collectors.toList());
+
+        filesDc.setItems(accessible);
+        fileDataGird.deselectAll();
+        clearMetadataPanel();
+
+        if (accessible.isEmpty()) {
+            notifications.create("Không tìm thấy tệp chứa: \"" + keyword + "\"")
+                    .withType(Notifications.Type.DEFAULT)
+                    .withDuration(2000)
+                    .show();
+        } else {
+            notifications.create("Tìm thấy " + accessible.size() + " tệp phù hợp.")
+                    .withType(Notifications.Type.SUCCESS)
+                    .withDuration(2500)
+                    .show();
+        }
+    }
+
+    private void clearMetadataPanel() {
+        metadataFileDc.setItem(null);
+        metadataContent.setVisible(false);
+        metadataEmptyState.setVisible(true);
     }
 
     // @Subscribe("fileDataGird.preViewFile")
