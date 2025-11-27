@@ -254,9 +254,7 @@ public class AssignPermissionView extends StandardView {
 
     @Subscribe(id = "editBtn", subject = "clickListener")
     public void onEditBtnClick(final ClickEvent<JmixButton> event) {
-        if (objectDataGrid.getSingleSelectedItem() == null) {
-            return;
-        }
+        EcmObject seleted = objectDataGrid.getSingleSelectedItem();
         DialogWindow<EditPermissionView> window = dialogWindows.view(this, EditPermissionView.class).build();
         if (this.selectedFile != null) {
             window.getView().setTargetFile(this.selectedFile);
@@ -264,6 +262,7 @@ public class AssignPermissionView extends StandardView {
             window.getView().setTargetFolder(this.selectedFolder);
         }
         window.getView().setPath(path);
+        window.getView().setTarget(seleted);
         window.setWidth("60%");
         window.setHeight("70%");
         window.setResizable(true);
@@ -272,9 +271,7 @@ public class AssignPermissionView extends StandardView {
 
     @Subscribe(id = "advanceBtn", subject = "clickListener")
     public void onAdvanceBtnClick(final ClickEvent<JmixButton> event) {
-        if (objectDataGrid.getSingleSelectedItem() == null) {
-            return;
-        }
+        EcmObject seleted = objectDataGrid.getSingleSelectedItem();
         DialogWindow<AdvancedPermissionView> window = dialogWindows.view(this, AdvancedPermissionView.class).build();
         if (this.selectedFile != null) {
             window.getView().setTargetFile(this.selectedFile);
@@ -283,11 +280,20 @@ public class AssignPermissionView extends StandardView {
         }
         window.getView().setPath(path);
         window.open();
+
+        window.addAfterCloseListener(closeEvent -> {
+            if (closeEvent.closedWith(StandardOutcome.SAVE)) {
+                loadPrincipals();
+                objectDataGrid.deselectAll();
+                permissionsDc.getMutableItems().clear();
+                updatePermissionTitle(null);
+            }
+        });
     }
 
     private void updatePermissionTitle(EcmObject dto) {
         if (principalTitle == null)
-            return; // phòng lỗi NPE nếu XML chưa gắn id
+            return;
 
         if (dto == null) {
             principalTitle.setText("Quyền truy cập cho ");

@@ -39,11 +39,17 @@ public class EditPermissionView extends StandardView {
     private ResourceRoleEntity selectedRole;
     private User selectedUser;
     String path = "";
+    private EcmObject target;
+
     @ViewComponent
     private CollectionLoader<Permission> permissionsDl;
 
     public void setPath(String path) {
         this.path = path;
+    }
+
+    public void setTarget(EcmObject target) {
+        this.target = target;
     }
 
     private FileDescriptor selectedFile;

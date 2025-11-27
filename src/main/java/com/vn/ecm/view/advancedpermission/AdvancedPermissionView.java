@@ -280,8 +280,7 @@ public class AdvancedPermissionView extends StandardView {
                     CollectionContainer<Permission> container = getViewData().getContainer("permissionsDc");
                     permissionsSnapshot = new ArrayList<>(container.getItems());
 
-                    // Nếu là REMOVE, xóa tạm thời permissions được kế thừa (chỉ trong UI, chưa
-                    // commit DB)
+                    // Nếu là REMOVE, xóa tạm thời permissions được kế thừa (chỉ trong UI, chưa commit DB)
                     if (action == BlockInheritanceAction.REMOVE) {
                         removeInheritedPermissionsTemporarily();
                         // Không reload từ DB, giữ UI state
@@ -458,8 +457,16 @@ public class AdvancedPermissionView extends StandardView {
         List<Permission> toRemove = new ArrayList<>();
 
         for (Permission perm : container.getItems()) {
-            // Xóa các permission được kế thừa
-            if (Boolean.TRUE.equals(perm.getInherited())) {
+            if (!Boolean.TRUE.equals(perm.getInherited())) {
+                continue;
+            }
+
+            boolean matchesPendingUser = pendingUser != null && perm.getUser() != null
+                    && pendingUser.getId().equals(perm.getUser().getId());
+            boolean matchesPendingRole = pendingRole != null && perm.getRoleCode() != null
+                    && pendingRole.getCode().equals(perm.getRoleCode());
+
+            if (matchesPendingUser || matchesPendingRole) {
                 toRemove.add(perm);
             }
         }
