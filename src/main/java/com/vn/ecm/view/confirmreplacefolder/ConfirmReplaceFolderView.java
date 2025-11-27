@@ -1,11 +1,10 @@
 package com.vn.ecm.view.confirmreplacefolder;
+
 import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.router.Route;
 import com.vn.ecm.entity.Folder;
 import com.vn.ecm.view.main.MainView;
 import io.jmix.flowui.kit.component.button.JmixButton;
-
-
 import io.jmix.flowui.model.InstanceContainer;
 import io.jmix.flowui.view.*;
 

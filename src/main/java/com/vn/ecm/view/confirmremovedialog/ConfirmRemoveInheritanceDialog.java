@@ -8,7 +8,6 @@ import com.vn.ecm.entity.Folder;
 import com.vn.ecm.entity.User;
 import com.vn.ecm.service.ecm.PermissionService;
 import com.vn.ecm.view.main.MainView;
-import io.jmix.core.DataManager;
 import io.jmix.flowui.kit.component.button.JmixButton;
 import io.jmix.flowui.view.*;
 import io.jmix.securitydata.entity.ResourceRoleEntity;
@@ -21,9 +20,6 @@ public class ConfirmRemoveInheritanceDialog extends StandardView {
 
     @Autowired
     private PermissionService permissionService;
-
-    @Autowired
-    private DataManager dataManager;
 
     @ViewComponent
     private Span messageSpan;

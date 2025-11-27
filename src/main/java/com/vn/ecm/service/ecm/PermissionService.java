@@ -265,9 +265,6 @@ public class PermissionService {
         Set<UUID> currentLevelIds = new HashSet<>();
         currentLevelIds.add(parentFolder.getId());
         while (!currentLevelIds.isEmpty()) {
-            if (currentLevelIds.isEmpty()) {
-                break;
-            }
             // Build IN clause cho parent IDs
             StringBuilder parentIdList = new StringBuilder();
             int count = 0;
@@ -287,6 +284,7 @@ public class PermissionService {
                     "  ) THEN 1 ELSE 0 END AS IS_BLOCKED " +
                     "FROM FOLDER F " +
                     "WHERE F.PARENT_ID IN (" + parentIdList + ")";
+            @SuppressWarnings("unchecked")
             List<Object[]> children = entityManager.createNativeQuery(childQuery)
                     .setParameter(1, userId != null ? userId : roleCode)
                     .getResultList();

@@ -3,7 +3,6 @@ package com.vn.ecm.view.ecm;
 import com.vaadin.flow.component.button.Button;
 import com.vn.ecm.entity.Folder;
 import com.vn.ecm.entity.SourceStorage;
-import com.vn.ecm.service.ecm.folderandfile.IFolderService;
 import com.vn.ecm.view.folder.FolderLazyTreeItems;
 import io.jmix.core.DataManager;
 import io.jmix.core.Metadata;
@@ -31,9 +30,6 @@ public class EcmMoveFolderDialog extends StandardView {
 
     @Autowired
     private Metadata metadata;
-
-    @Autowired
-    private IFolderService folderService;
 
     @Autowired
     private Notifications notifications;

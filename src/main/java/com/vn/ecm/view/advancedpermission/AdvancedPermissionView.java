@@ -14,15 +14,12 @@ import com.vn.ecm.view.main.MainView;
 import io.jmix.core.DataManager;
 import io.jmix.flowui.DialogWindows;
 import io.jmix.flowui.component.grid.DataGrid;
-import io.jmix.flowui.data.ContainerDataUnit;
 import io.jmix.flowui.kit.component.button.JmixButton;
 import io.jmix.flowui.model.CollectionContainer;
-import io.jmix.flowui.model.CollectionLoader;
 import io.jmix.flowui.view.*;
 import io.jmix.flowui.backgroundtask.BackgroundTask;
 import io.jmix.flowui.backgroundtask.TaskLifeCycle;
 import io.jmix.flowui.Dialogs;
-import io.jmix.flowui.Notifications;
 import com.vaadin.flow.component.UI;
 import io.jmix.securitydata.entity.ResourceRoleEntity;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,9 +45,6 @@ public class AdvancedPermissionView extends StandardView {
     @Autowired
     private Dialogs dialogs;
 
-    @Autowired
-    private Notifications notifications;
-
     @ViewComponent
     private DataGrid<Permission> permissionDataGrid;
 
@@ -59,9 +53,6 @@ public class AdvancedPermissionView extends StandardView {
 
     @ViewComponent
     private TextField pathArea;
-
-    @ViewComponent
-    private CollectionLoader<Permission> permissionsDl;
 
     // Target có thể là Folder hoặc File
     private Folder targetFolder;
@@ -91,12 +82,6 @@ public class AdvancedPermissionView extends StandardView {
         this.path = path;
     }
 
-    private EcmObject target;
-
-    public void setTarget(EcmObject target) {
-        this.target = target;
-    }
-
     private void loadPermissionsForFolder(Folder folder) {
         List<Permission> permissions = dataManager.load(Permission.class)
                 .query("select p from Permission p where p.folder = :folder")
@@ -118,16 +103,10 @@ public class AdvancedPermissionView extends StandardView {
     }
 
     private void updateInheritanceButtonLabel(Permission permission) {
-        if (permission == null && permissionDataGrid.getItems() != null) {
-            if (permissionDataGrid.getItems() instanceof ContainerDataUnit) {
-                ContainerDataUnit<Permission> dataUnit = (ContainerDataUnit<Permission>) permissionDataGrid.getItems();
-                if (dataUnit.getContainer() instanceof CollectionContainer) {
-                    CollectionContainer<Permission> container = (CollectionContainer<Permission>) dataUnit
-                            .getContainer();
-                    if (!container.getItems().isEmpty()) {
-                        permission = container.getItems().get(0);
-                    }
-                }
+        if (permission == null) {
+            CollectionContainer<Permission> container = getViewData().getContainer("permissionsDc");
+            if (!container.getItems().isEmpty()) {
+                permission = container.getItems().get(0);
             }
         }
         if (permission == null) {
@@ -228,14 +207,9 @@ public class AdvancedPermissionView extends StandardView {
         }
 
         // Tự động chọn permission đầu tiên
-        if (permissionDataGrid.getItems() instanceof ContainerDataUnit) {
-            ContainerDataUnit<Permission> dataUnit = (ContainerDataUnit<Permission>) permissionDataGrid.getItems();
-            if (dataUnit.getContainer() instanceof CollectionContainer) {
-                CollectionContainer<Permission> container = (CollectionContainer<Permission>) dataUnit.getContainer();
-                if (!container.getItems().isEmpty()) {
-                    permissionDataGrid.select(container.getItems().get(0));
-                }
-            }
+        CollectionContainer<Permission> container = getViewData().getContainer("permissionsDc");
+        if (!container.getItems().isEmpty()) {
+            permissionDataGrid.select(container.getItems().get(0));
         }
 
         // RELOAD PERMISSION TỪ DB TRƯỚC KHI UPDATE LABEL
@@ -386,8 +360,6 @@ public class AdvancedPermissionView extends StandardView {
             window.getView().setUser(reloadedUser);
         } else if (reloadedRole != null) {
             window.getView().setRole(reloadedRole);
-        } else {
-            System.out.println("DEBUG: WARNING - Both reloadedUser and reloadedRole are NULL!");
         }
         window.addAfterCloseListener(e -> {
             if (e.closedWith(StandardOutcome.SAVE)) {

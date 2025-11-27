@@ -1,7 +1,6 @@
 package com.vn.ecm.view.blockinheritance;
 
 import com.vaadin.flow.router.Route;
-import com.vn.ecm.service.ecm.PermissionService;
 import com.vn.ecm.view.main.MainView;
 import io.jmix.flowui.view.StandardView;
 import io.jmix.flowui.view.ViewController;
@@ -15,15 +14,11 @@ import com.vaadin.flow.component.ClickEvent;
 import io.jmix.flowui.kit.component.button.JmixButton;
 import io.jmix.flowui.view.*;
 import io.jmix.securitydata.entity.ResourceRoleEntity;
-import org.springframework.beans.factory.annotation.Autowired;
 
 @Route(value = "block-inheritance", layout = MainView.class)
 @ViewController(id = "BlockInheritance")
 @ViewDescriptor(path = "block-inheritance.xml")
 public class BlockInheritance extends StandardView {
-
-    @Autowired
-    private PermissionService permissionService;
 
     private User targetUser;
     private ResourceRoleEntity targetRole;
@@ -80,7 +75,6 @@ public class BlockInheritance extends StandardView {
         selectedAction = BlockInheritanceAction.CANCEL;
         close(StandardOutcome.CLOSE);
     }
-
 
     public BlockInheritanceAction getSelectedAction() {
         return selectedAction;

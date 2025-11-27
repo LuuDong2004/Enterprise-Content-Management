@@ -1,4 +1,3 @@
-
 package com.vn.ecm.view.assignpermission;
 
 import com.vaadin.flow.component.ClickEvent;
@@ -59,15 +58,6 @@ public class AssignPermissionView extends StandardView {
     private DataManager dataManager;
     @Autowired
     private PermissionService permissionService;
-    @ViewComponent
-    private Icon principalIcon;
-
-    List<User> username = new ArrayList<>();
-
-    public void setUserName(List<User> username) {
-        this.username = username;
-    }
-
     String path = "";
 
     public void setPath(String path) {
@@ -93,7 +83,7 @@ public class AssignPermissionView extends StandardView {
             pathArea.setValue("Đường dẫn: " + path);
         }
         updatePermissionTitle(null);
-        loadPrincipals(); //nạp danh sách chung người dùng + phòng ban
+        loadPrincipals(); // nạp danh sách chung người dùng + phòng ban
     }
 
     // NEW: nạp Users + Roles rồi gộp thành một list EcmObject
@@ -201,8 +191,10 @@ public class AssignPermissionView extends StandardView {
                 for (PermissionType type : PermissionType.values()) {
                     Permission p = dataManager.create(Permission.class);
                     p.setUser(user);
-                    if (selectedFile != null) p.setFile(selectedFile);
-                    if (selectedFolder != null) p.setFolder(selectedFolder);
+                    if (selectedFile != null)
+                        p.setFile(selectedFile);
+                    if (selectedFolder != null)
+                        p.setFolder(selectedFolder);
                     p.setPermissionType(type);
                     p.setAllow(PermissionType.hasPermission(mask, type));
                     list.add(p);
@@ -223,8 +215,10 @@ public class AssignPermissionView extends StandardView {
                 for (PermissionType type : PermissionType.values()) {
                     Permission p = dataManager.create(Permission.class);
                     p.setRoleCode(role.getCode());
-                    if (selectedFile != null) p.setFile(selectedFile);
-                    if (selectedFolder != null) p.setFolder(selectedFolder);
+                    if (selectedFile != null)
+                        p.setFile(selectedFile);
+                    if (selectedFolder != null)
+                        p.setFolder(selectedFolder);
                     p.setPermissionType(type);
                     p.setAllow(PermissionType.hasPermission(mask, type));
                     list.add(p);
@@ -260,7 +254,9 @@ public class AssignPermissionView extends StandardView {
 
     @Subscribe(id = "editBtn", subject = "clickListener")
     public void onEditBtnClick(final ClickEvent<JmixButton> event) {
-        EcmObject seleted = objectDataGrid.getSingleSelectedItem();
+        if (objectDataGrid.getSingleSelectedItem() == null) {
+            return;
+        }
         DialogWindow<EditPermissionView> window = dialogWindows.view(this, EditPermissionView.class).build();
         if (this.selectedFile != null) {
             window.getView().setTargetFile(this.selectedFile);
@@ -268,7 +264,6 @@ public class AssignPermissionView extends StandardView {
             window.getView().setTargetFolder(this.selectedFolder);
         }
         window.getView().setPath(path);
-        window.getView().setTarget(seleted);
         window.setWidth("60%");
         window.setHeight("70%");
         window.setResizable(true);
@@ -277,7 +272,9 @@ public class AssignPermissionView extends StandardView {
 
     @Subscribe(id = "advanceBtn", subject = "clickListener")
     public void onAdvanceBtnClick(final ClickEvent<JmixButton> event) {
-        EcmObject seleted = objectDataGrid.getSingleSelectedItem();
+        if (objectDataGrid.getSingleSelectedItem() == null) {
+            return;
+        }
         DialogWindow<AdvancedPermissionView> window = dialogWindows.view(this, AdvancedPermissionView.class).build();
         if (this.selectedFile != null) {
             window.getView().setTargetFile(this.selectedFile);
@@ -285,18 +282,17 @@ public class AssignPermissionView extends StandardView {
             window.getView().setTargetFolder(this.selectedFolder);
         }
         window.getView().setPath(path);
-        window.getView().setTarget(seleted);
         window.open();
     }
 
     private void updatePermissionTitle(EcmObject dto) {
-        if (principalTitle == null) return; // phòng lỗi NPE nếu XML chưa gắn id
+        if (principalTitle == null)
+            return; // phòng lỗi NPE nếu XML chưa gắn id
 
         if (dto == null) {
             principalTitle.setText("Quyền truy cập cho ");
             return;
         }
-        String typeLabel = (dto.getType() == ObjectType.USER) ? "Người dùng" : "Phòng ban";
         String name = dto.getName() != null ? dto.getName() : "";
         principalTitle.setText("Quyền truy cập cho " + name + ":");
     }
