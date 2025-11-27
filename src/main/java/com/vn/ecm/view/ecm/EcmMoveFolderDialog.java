@@ -39,12 +39,17 @@ public class EcmMoveFolderDialog extends StandardView {
     private Notifications notifications;
 
     private Folder sourceFolder;
+    private Folder selectedTarget;
 
     public void setContext(Folder sourceFolder, SourceStorage storage) {
         this.sourceFolder = sourceFolder;
         String conditions = " and e.inTrash = false and e.sourceStorage = :storage";
         FolderLazyTreeItems dataProvider = new FolderLazyTreeItems(dataManager, metadata, conditions, storage);
         targetFoldersTree.setDataProvider(dataProvider);
+    }
+
+    public Folder getSelectedTarget() {
+        return selectedTarget;
     }
 
     @Subscribe("confirmMoveBtn")
@@ -58,8 +63,7 @@ public class EcmMoveFolderDialog extends StandardView {
             closeWithDefaultAction();
             return;
         }
-        folderService.moveFolder(sourceFolder, target);
-        notifications.show("Đã di chuyển thư mục");
+        selectedTarget = target;
         closeWithDefaultAction();
     }
 }

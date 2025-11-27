@@ -26,4 +26,11 @@ public interface IFolderService {
      */
     Folder moveFolder(Folder source, Folder target);
 
+    /**
+     * Di chuyển thư mục source vào trong thư mục target (chỉ cập nhật FULL_PATH +
+     * parent_ID).
+     * KHÔNG rebuild closure table - dùng cho move lớn, closure sẽ rebuild sau.
+     */
+    Folder moveFolderPathOnly(Folder source, Folder target);
+
 }

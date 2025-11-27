@@ -231,4 +231,62 @@ public class FolderServiceImpl implements IFolderService {
                 .orElse(source);
     }
 
+    @Override
+    @Transactional
+    public Folder moveFolderPathOnly(Folder source, Folder target) {
+        if (source == null || target == null) {
+            return null;
+        }
+        if (source.getId() == null || target.getId() == null) {
+            return null;
+        }
+        // Không cho phép move vào chính nó
+        if (source.getId().equals(target.getId())) {
+            return source;
+        }
+        // Không cho phép move khác kho lưu trữ
+        if (source.getSourceStorage() != null && target.getSourceStorage() != null
+                && !source.getSourceStorage().getId().equals(target.getSourceStorage().getId())) {
+            return source;
+        }
+
+        // Lấy FULL_PATH của source và target
+        Folder sourceLoaded = dataManager.load(Folder.class).id(source.getId()).one();
+        Folder targetLoaded = dataManager.load(Folder.class).id(target.getId()).one();
+
+        if (sourceLoaded.getFullPath() == null || targetLoaded.getFullPath() == null) {
+            return source;
+        }
+
+        String oldPrefix = sourceLoaded.getFullPath();
+        String newPrefix = targetLoaded.getFullPath() + sourceLoaded.getName() + "/";
+
+        // Cập nhật FULL_PATH cho toàn bộ subtree (dùng native query để tận dụng STUFF)
+        // Dùng positional parameter ?1, ?2, ?3 vì SQL Server không hỗ trợ named
+        // parameter trong native query
+        entityManager
+                .createNativeQuery(
+                        "UPDATE F " +
+                                "SET FULL_PATH = STUFF(F.FULL_PATH, 1, LEN(?1), ?2) " +
+                                "FROM FOLDER F " +
+                                "WHERE F.FULL_PATH LIKE ?3")
+                .setParameter(1, oldPrefix)
+                .setParameter(2, newPrefix)
+                .setParameter(3, oldPrefix + "%")
+                .executeUpdate();
+
+        // Cập nhật parent_ID của source
+        entityManager
+                .createNativeQuery("UPDATE FOLDER SET parent_ID = ?1 WHERE ID = ?2")
+                .setParameter(1, target.getId())
+                .setParameter(2, source.getId())
+                .executeUpdate();
+
+        // Reload lại folder sau khi DB đã cập nhật
+        return dataManager.load(Folder.class)
+                .id(source.getId())
+                .optional()
+                .orElse(source);
+    }
+
 }

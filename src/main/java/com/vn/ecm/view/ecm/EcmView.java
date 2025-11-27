@@ -1,15 +1,12 @@
 package com.vn.ecm.view.ecm;
 
-import com.helger.css.ECSSUnit;
 import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 
-import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.treegrid.TreeGrid;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -19,7 +16,6 @@ import com.vn.ecm.entity.*;
 import com.vn.ecm.service.ecm.PermissionService;
 import com.vn.ecm.service.ecm.folderandfile.IFileDescriptorService;
 import com.vn.ecm.service.ecm.folderandfile.IFolderService;
-import com.vn.ecm.view.component.filepreview.*;
 import com.vn.ecm.view.file.EditFileNameDialogView;
 import com.vn.ecm.view.folder.CreateFolderDialogView;
 import com.vn.ecm.view.folder.EditNameFolderDialogView;
@@ -28,7 +24,6 @@ import com.vn.ecm.view.main.MainView;
 import com.vn.ecm.view.sourcestorage.SourceStorageListView;
 import com.vn.ecm.view.viewmode.ViewModeFragment;
 import io.jmix.core.DataManager;
-import io.jmix.core.FileRef;
 import io.jmix.core.Metadata;
 import io.jmix.core.security.CurrentAuthentication;
 import io.jmix.flowui.DialogWindows;
@@ -45,11 +40,15 @@ import io.jmix.flowui.kit.component.upload.event.FileUploadSucceededEvent;
 import io.jmix.flowui.model.CollectionContainer;
 import io.jmix.flowui.model.InstanceContainer;
 import io.jmix.flowui.view.*;
+import io.jmix.flowui.backgroundtask.BackgroundTask;
+import io.jmix.flowui.backgroundtask.TaskLifeCycle;
+import com.vaadin.flow.component.UI;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 @Route(value = "source-storages/:id", layout = MainView.class)
 @ViewController("EcmView")
@@ -321,13 +320,71 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
             return;
         }
 
-        // Dialog chọn thư mục đích (sử dụng cùng datasource foldersDc)
+        // Dialog chọn thư mục đích
         DialogWindow<EcmMoveFolderDialog> dw = dialogWindows.view(this, EcmMoveFolderDialog.class).build();
         dw.getView().setContext(source, currentStorage);
         dw.addAfterCloseListener(e -> {
-            loadLazyFolder();
+            Folder target = dw.getView().getSelectedTarget();
+            if (target != null) {
+                // Sử dụng BackgroundTask để di chuyển folder (hỗ trợ move lớn)
+                MoveFolderTask task = new MoveFolderTask(source, target);
+                dialogs.createBackgroundTaskDialog(task)
+                        .withHeader("Di chuyển thư mục")
+                        .withText("Đang di chuyển thư mục '" + source.getName() + "' vào '" + target.getName() + "'...")
+                        .withCancelAllowed(true)
+                        .open();
+            }
         });
         dw.open();
+    }
+
+    /**
+     * BackgroundTask để di chuyển folder với khối lượng lớn.
+     * Chỉ cập nhật FULL_PATH + parent_ID, không rebuild closure ngay.
+     */
+    private class MoveFolderTask extends BackgroundTask<Integer, Void> {
+        private final Folder source;
+        private final Folder target;
+        private final UI ui;
+
+        public MoveFolderTask(Folder source, Folder target) {
+            super(30, TimeUnit.MINUTES, EcmView.this);
+            this.source = source;
+            this.target = target;
+            this.ui = UI.getCurrent();
+        }
+
+        @Override
+        public Void run(TaskLifeCycle<Integer> taskLifeCycle) throws Exception {
+            if (taskLifeCycle.isCancelled()) {
+                return null;
+            }
+
+            taskLifeCycle.publish(0);
+
+            // Di chuyển chỉ FULL_PATH + parent_ID (nhanh, không rebuild closure)
+            folderService.moveFolderPathOnly(source, target);
+
+            if (taskLifeCycle.isCancelled()) {
+                return null;
+            }
+
+            taskLifeCycle.publish(50);
+
+            // Reload lại tree trên UI thread
+            if (ui != null) {
+                ui.access(() -> {
+                    loadLazyFolder();
+                    notifications.create("Đã di chuyển thư mục thành công")
+                            .withType(Notifications.Type.SUCCESS)
+                            .withDuration(3000)
+                            .show();
+                });
+            }
+
+            taskLifeCycle.publish(100);
+            return null;
+        }
     }
 
     // xóa vào thùng rác
