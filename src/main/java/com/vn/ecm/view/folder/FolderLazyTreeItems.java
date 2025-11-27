@@ -18,6 +18,7 @@ import jakarta.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -61,23 +62,37 @@ public class FolderLazyTreeItems extends AbstractDataProvider<Folder, Void>
     }
 
     protected Collection<Folder> getItems(HierarchicalQuery<Folder, Void> query) {
-        String sql = "select e from Folder e where e.parent = :parent " + conditions +
+        boolean root = (query.getParent() == null);
+
+        String baseConditions = root
+                ? "e.parent is null"
+                : "e.parent = :parent";
+
+        String sql = "select e from Folder e where " + baseConditions + conditions +
                 " order by e.id" ;
+
+        var loader = dataManager.load(Folder.class)
+                .query(sql)
+                .sort(sort)
+                .firstResult(query.getOffset())
+                .maxResults(query.getLimit());
+
+        if (!root) {
+            loader.parameter("parent", query.getParent());
+        }
+        loader.parameter("storage", storage);
+
+        return loader.list();
+    }
+    @Override
+    public Collection<Folder> getItems() {
+        // Trả về danh sách root folder (parent is null) cho TreeDataGrid.
+        // Các node con sẽ được load lazy qua fetchChildren(getItems(HierarchicalQuery...)).
+        String sql = "select e from Folder e where e.parent is null" + conditions + " order by e.id";
 
         return dataManager.load(Folder.class)
                 .query(sql)
-                .parameter("parent", query.getParent() != null ? query.getParent() : null)
                 .parameter("storage", storage)
-                .sort(sort)
-                .firstResult(query.getOffset())
-                .maxResults(query.getLimit())
-                .list();
-    }
-
-    @Override
-    public Collection<Folder> getItems() {
-        return dataManager.load(Folder.class)
-                .all()
                 .sort(sort)
                 .list();
     }

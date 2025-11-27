@@ -6,10 +6,8 @@
               padding="false" spacing="false"
               alignItems="STRETCH"
               expand="pdfFrame">
-
             <!-- IFrame hiển thị PDF -->
-            <iframe id="pdfFrame"
-                    width="100%" height="100%"/>
+            <iframe id="pdfFrame" width="100%" height="100%"/>
         </vbox>
     </layout>
 </view>

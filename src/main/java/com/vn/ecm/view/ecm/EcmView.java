@@ -1,11 +1,10 @@
 package com.vn.ecm.view.ecm;
 
-import com.helger.css.ECSSUnit;
+
 import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 
-import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -120,7 +119,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
      @Autowired
      private Metadata metadata;
 
-     private String conditions = " and e.inTrash = false and e.sourceStorage = :storage";;
+     private String conditions = " and e.inTrash = false and e.sourceStorage = :storage";
 
     @Subscribe
     public void onInit(InitEvent event) {
@@ -174,6 +173,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
             event.rerouteTo(SourceStorageListView.class);
         }
     }
+
 
     @Override
     public void afterNavigation(AfterNavigationEvent event) {
@@ -299,6 +299,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
             //loadAccessibleFolders(userCurr);
             loadLazyFolder();
         });
+
         dw.open();
     }
 
@@ -402,10 +403,10 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         foldersDc.setItems(dataProvider.getItems());
     }
 
-    private void loadAccessibleFolders(User user) {
-        List<Folder> accessibleFolders = permissionService.getAccessibleFolders(user, currentStorage);
-        foldersDc.setItems(accessibleFolders);
-    }
+//    private void loadAccessibleFolders(User user) {
+//        List<Folder> accessibleFolders = permissionService.getAccessibleFolders(user, currentStorage);
+//        foldersDc.setItems(accessibleFolders);
+//    }
 
     private void loadAccessibleFiles(User user, Folder folder) {
         List<FileDescriptor> accessibleFiles = permissionService.getAccessibleFiles(user, currentStorage, folder);

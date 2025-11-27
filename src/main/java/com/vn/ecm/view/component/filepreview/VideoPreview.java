@@ -2,6 +2,7 @@ package com.vn.ecm.view.component.filepreview;
 
 
 import com.vaadin.flow.component.html.IFrame;
+import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.server.streams.DownloadHandler;
 import com.vaadin.flow.server.streams.DownloadResponse;
 import com.vn.ecm.ecm.storage.DynamicStorageManager;
@@ -23,6 +24,9 @@ public class VideoPreview extends StandardView {
     @Autowired
     private DynamicStorageManager dynamicStorageManager;
     private FileRef inputFile;
+    @ViewComponent
+
+    private VerticalLayout loadingOverlay;
 
     public void setInputFile(FileRef inputFile) {
         this.inputFile = inputFile;
@@ -30,9 +34,12 @@ public class VideoPreview extends StandardView {
 
     @Subscribe
     public void onReady(ReadyEvent event) {
+        loadingOverlay.setVisible(true);
         if (inputFile == null) {
             return;
         }
+
+
         String storageName = inputFile.getStorageName();
         FileStorage storage = dynamicStorageManager.getFileStorageByName(storageName);
 
@@ -48,6 +55,11 @@ public class VideoPreview extends StandardView {
                     -1
             );
         }).inline();
+
+        videoPreView.getElement().addEventListener("load", e -> {
+            loadingOverlay.setVisible(false);
+        });
+
         videoPreView.setSrc(handler);
     }
 

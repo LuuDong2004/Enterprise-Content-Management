@@ -120,3 +120,41 @@ vaadin-big-decimal-field input[type="text"] {
     position: absolute;
     bottom: 0px;
 }
+
+/* css for loading preview  */
+/* ----- Preview overlay dùng chung cho Excel / Video / Doc... ----- */
+
+.preview-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.preview-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.75);
+    z-index: 10;
+    font-size: var(--lumo-font-size-m);
+    color: var(--lumo-body-text-color);
+}
+
+.preview-spinner {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 4px solid var(--lumo-contrast-10pct);
+    border-top-color: var(--lumo-primary-color);
+    animation: preview-spin 1s linear infinite;
+    margin-bottom: 8px;
+}
+
+@keyframes preview-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}

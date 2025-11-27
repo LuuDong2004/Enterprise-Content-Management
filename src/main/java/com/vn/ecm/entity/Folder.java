@@ -26,7 +26,7 @@ public class Folder {
     private String fullPath;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "SOURCE_STORAGE_ID")   // <-- dùng đúng 1 cột FK
+    @JoinColumn(name = "SOURCE_STORAGE_ID")
     private SourceStorage sourceStorage;
 
     @Column(name = "createdDate")
