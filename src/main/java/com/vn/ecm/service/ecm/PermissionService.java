@@ -275,6 +275,7 @@ public class PermissionService {
 
             if (userId != null) {
                 // UPDATE: Tối ưu cho 1M+ folders - dùng FROM/JOIN thay vì IN + EXISTS
+                // Fix: Check xem có ancestor nào trong path bị block inheritance không
                 String pathPattern = parentPathEscaped + "%";
                 entityManager.createNativeQuery(
                         "UPDATE P " +
@@ -288,17 +289,30 @@ public class PermissionService {
                                 "AND F.FULL_PATH LIKE ? ESCAPE '\\' " +
                                 "AND F.ID != ? " +
                                 "AND F.IN_TRASH = 0 " +
-                                "AND P_BLOCKED.FOLDER_ID IS NULL")
+                                "AND P_BLOCKED.FOLDER_ID IS NULL " +
+                                "AND NOT EXISTS ( " +
+                                "  SELECT 1 FROM FOLDER F_ANC " +
+                                "  INNER JOIN PERMISSION P_ANC ON P_ANC.FOLDER_ID = F_ANC.ID " +
+                                "  WHERE F_ANC.FULL_PATH LIKE ? ESCAPE '\\' " +
+                                "  AND F.FULL_PATH LIKE F_ANC.FULL_PATH + '%' ESCAPE '\\' " +
+                                "  AND F_ANC.ID != ? " +
+                                "  AND P_ANC.USER_ID = ? " +
+                                "  AND P_ANC.INHERIT_ENABLED = 0 " +
+                                ")")
                         .setParameter(1, parentMask)
                         .setParameter(2, parentPathForInherited)
                         .setParameter(3, userId)
                         .setParameter(4, userId)
                         .setParameter(5, pathPattern)
                         .setParameter(6, parentFolder.getId())
+                        .setParameter(7, pathPattern)
+                        .setParameter(8, parentFolder.getId())
+                        .setParameter(9, userId)
                         .executeUpdate();
 
                 // INSERT: Tối ưu - dùng LEFT JOIN thay vì EXISTS (nhanh hơn 10-100x với 1M+
                 // rows)
+                // Fix: Check xem có ancestor nào trong path bị block inheritance không
                 entityManager.createNativeQuery(
                         "INSERT INTO PERMISSION (ID, USER_ID, FOLDER_ID, PERMISSION_MASK, INHERITED, INHERIT_ENABLED, INHERITED_FROM, APPLIES_TO) "
                                 +
@@ -311,7 +325,16 @@ public class PermissionService {
                                 "AND F.ID != ? " +
                                 "AND F.IN_TRASH = 0 " +
                                 "AND P.FOLDER_ID IS NULL " +
-                                "AND P_BLOCKED.FOLDER_ID IS NULL")
+                                "AND P_BLOCKED.FOLDER_ID IS NULL " +
+                                "AND NOT EXISTS ( " +
+                                "  SELECT 1 FROM FOLDER F_ANC " +
+                                "  INNER JOIN PERMISSION P_ANC ON P_ANC.FOLDER_ID = F_ANC.ID " +
+                                "  WHERE F_ANC.FULL_PATH LIKE ? ESCAPE '\\' " +
+                                "  AND F.FULL_PATH LIKE F_ANC.FULL_PATH + '%' ESCAPE '\\' " +
+                                "  AND F_ANC.ID != ? " +
+                                "  AND P_ANC.USER_ID = ? " +
+                                "  AND P_ANC.INHERIT_ENABLED = 0 " +
+                                ")")
                         .setParameter(1, userId)
                         .setParameter(2, parentMask)
                         .setParameter(3, parentPathForInherited)
@@ -319,9 +342,13 @@ public class PermissionService {
                         .setParameter(5, userId)
                         .setParameter(6, pathPattern)
                         .setParameter(7, parentFolder.getId())
+                        .setParameter(8, pathPattern)
+                        .setParameter(9, parentFolder.getId())
+                        .setParameter(10, userId)
                         .executeUpdate();
             } else {
                 // Tương tự cho Role - tối ưu với LEFT JOIN
+                // Fix: Check xem có ancestor nào trong path bị block inheritance không
                 String pathPattern = parentPathEscaped + "%";
                 entityManager.createNativeQuery(
                         "UPDATE P " +
@@ -335,13 +362,25 @@ public class PermissionService {
                                 "AND F.FULL_PATH LIKE ? ESCAPE '\\' " +
                                 "AND F.ID != ? " +
                                 "AND F.IN_TRASH = 0 " +
-                                "AND P_BLOCKED.FOLDER_ID IS NULL")
+                                "AND P_BLOCKED.FOLDER_ID IS NULL " +
+                                "AND NOT EXISTS ( " +
+                                "  SELECT 1 FROM FOLDER F_ANC " +
+                                "  INNER JOIN PERMISSION P_ANC ON P_ANC.FOLDER_ID = F_ANC.ID " +
+                                "  WHERE F_ANC.FULL_PATH LIKE ? ESCAPE '\\' " +
+                                "  AND F.FULL_PATH LIKE F_ANC.FULL_PATH + '%' ESCAPE '\\' " +
+                                "  AND F_ANC.ID != ? " +
+                                "  AND P_ANC.ROLE_CODE = ? " +
+                                "  AND P_ANC.INHERIT_ENABLED = 0 " +
+                                ")")
                         .setParameter(1, parentMask)
                         .setParameter(2, parentPathForInherited)
                         .setParameter(3, roleCode)
                         .setParameter(4, roleCode)
                         .setParameter(5, pathPattern)
                         .setParameter(6, parentFolder.getId())
+                        .setParameter(7, pathPattern)
+                        .setParameter(8, parentFolder.getId())
+                        .setParameter(9, roleCode)
                         .executeUpdate();
 
                 entityManager.createNativeQuery(
@@ -356,7 +395,16 @@ public class PermissionService {
                                 "AND F.ID != ? " +
                                 "AND F.IN_TRASH = 0 " +
                                 "AND P.FOLDER_ID IS NULL " +
-                                "AND P_BLOCKED.FOLDER_ID IS NULL")
+                                "AND P_BLOCKED.FOLDER_ID IS NULL " +
+                                "AND NOT EXISTS ( " +
+                                "  SELECT 1 FROM FOLDER F_ANC " +
+                                "  INNER JOIN PERMISSION P_ANC ON P_ANC.FOLDER_ID = F_ANC.ID " +
+                                "  WHERE F_ANC.FULL_PATH LIKE ? ESCAPE '\\' " +
+                                "  AND F.FULL_PATH LIKE F_ANC.FULL_PATH + '%' ESCAPE '\\' " +
+                                "  AND F_ANC.ID != ? " +
+                                "  AND P_ANC.ROLE_CODE = ? " +
+                                "  AND P_ANC.INHERIT_ENABLED = 0 " +
+                                ")")
                         .setParameter(1, roleCode)
                         .setParameter(2, parentMask)
                         .setParameter(3, parentPathForInherited)
@@ -364,6 +412,9 @@ public class PermissionService {
                         .setParameter(5, roleCode)
                         .setParameter(6, pathPattern)
                         .setParameter(7, parentFolder.getId())
+                        .setParameter(8, pathPattern)
+                        .setParameter(9, parentFolder.getId())
+                        .setParameter(10, roleCode)
                         .executeUpdate();
             }
             return; // Xong, không cần fallback
@@ -386,10 +437,16 @@ public class PermissionService {
                 if (count >= MAX_BATCH)
                     break;
             }
+            // Fix: Chỉ lấy children mà parent của chúng không bị block inheritance
             String childQuery = "SELECT F.ID " +
                     "FROM FOLDER F " +
+                    "INNER JOIN FOLDER F_PARENT ON F.PARENT_ID = F_PARENT.ID " +
+                    "LEFT JOIN PERMISSION P_PARENT ON P_PARENT.FOLDER_ID = F_PARENT.ID " +
+                    "  AND P_PARENT." + (userId != null ? "USER_ID" : "ROLE_CODE") + " = ? " +
+                    "  AND P_PARENT.INHERIT_ENABLED = 0 " +
                     "WHERE F.PARENT_ID IN (" + parentIdList + ") " +
                     "AND F.IN_TRASH = 0 " +
+                    "AND P_PARENT.FOLDER_ID IS NULL " +
                     "AND NOT EXISTS ( " +
                     "  SELECT 1 FROM PERMISSION P " +
                     "  WHERE P.FOLDER_ID = F.ID " +
@@ -399,6 +456,7 @@ public class PermissionService {
             @SuppressWarnings("unchecked")
             List<Object[]> children = entityManager.createNativeQuery(childQuery)
                     .setParameter(1, userId != null ? userId : roleCode)
+                    .setParameter(2, userId != null ? userId : roleCode)
                     .getResultList();
             if (children.isEmpty()) {
                 break;
@@ -992,16 +1050,20 @@ public class PermissionService {
                     .list();
         }
         // User thường: chỉ trả folder có quyền READ+ trong storage này
-
+        // Tối ưu: Dùng EXISTS thay vì JOIN + DISTINCT để tận dụng index và tránh
+        // duplicate
         return dataManager.load(Folder.class)
                 .query("""
-                select distinct f from Folder f
-                join Permission p on p.folder = f
-                where p.user = :user
-                and f.sourceStorage = :storage
-                and f.inTrash = false
-                and p.permissionMask >= :minMask
-            """)
+                            select f from Folder f
+                            where f.sourceStorage = :storage
+                            and f.inTrash = false
+                            and exists (
+                                select 1 from Permission p
+                                where p.folder = f
+                                and p.user = :user
+                                and p.permissionMask >= :minMask
+                            )
+                        """)
                 .parameter("user", user)
                 .parameter("storage", sourceStorage)
                 .parameter("minMask", PermissionType.READ.getValue())
@@ -1026,17 +1088,21 @@ public class PermissionService {
             }
         }
         // User thường: chỉ trả file có quyền READ+
+        // Tối ưu: Dùng EXISTS thay vì JOIN + DISTINCT để tận dụng index
         if (folder == null) {
             // Files ở root
             return dataManager.load(FileDescriptor.class)
                     .query("""
-                                select distinct o from FileDescriptor o
-                                join Permission p on p.file = o
-                                where p.user = :user
-                                and o.sourceStorage = :storage
+                                select o from FileDescriptor o
+                                where o.sourceStorage = :storage
                                 and o.folder is null
                                 and o.inTrash = false
-                                and p.permissionMask >= :minMask
+                                and exists (
+                                    select 1 from Permission p
+                                    where p.file = o
+                                    and p.user = :user
+                                    and p.permissionMask >= :minMask
+                                )
                             """)
                     .parameter("user", user)
                     .parameter("storage", sourceStorage)
@@ -1046,12 +1112,15 @@ public class PermissionService {
             // Files trong folder cụ thể
             return dataManager.load(FileDescriptor.class)
                     .query("""
-                                select distinct o from FileDescriptor o
-                                join Permission p on p.file = o
-                                where p.user = :user
-                                and o.folder = :folder
+                                select o from FileDescriptor o
+                                where o.folder = :folder
                                 and o.inTrash = false
-                                and p.permissionMask >= :minMask
+                                and exists (
+                                    select 1 from Permission p
+                                    where p.file = o
+                                    and p.user = :user
+                                    and p.permissionMask >= :minMask
+                                )
                             """)
                     .parameter("user", user)
                     .parameter("folder", folder)

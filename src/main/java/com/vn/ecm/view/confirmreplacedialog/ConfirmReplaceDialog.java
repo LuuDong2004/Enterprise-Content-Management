@@ -113,9 +113,6 @@ public class ConfirmReplaceDialog extends StandardView {
         }
     }
 
-    /**
-     * BackgroundTask để thay thế quyền cho các đối tượng con.
-     */
     private class ReplacePermissionsTask extends BackgroundTask<Integer, Void> {
         private final UI ui;
 

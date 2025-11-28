@@ -1,6 +1,7 @@
 package com.vn.ecm.view.editpermission;
 
 import com.vaadin.flow.component.ClickEvent;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
@@ -17,7 +18,12 @@ import com.vn.ecm.service.ecm.PermissionService;
 import com.vn.ecm.view.main.MainView;
 import com.vn.ecm.view.userlist.UserListView;
 import io.jmix.core.DataManager;
+import io.jmix.flowui.Dialogs;
 import io.jmix.flowui.DialogWindows;
+import io.jmix.flowui.Notifications;
+import io.jmix.flowui.UiComponents;
+import io.jmix.flowui.backgroundtask.BackgroundTask;
+import io.jmix.flowui.backgroundtask.TaskLifeCycle;
 import io.jmix.flowui.component.grid.DataGrid;
 import io.jmix.flowui.kit.component.button.JmixButton;
 import io.jmix.flowui.model.CollectionContainer;
@@ -27,9 +33,11 @@ import io.jmix.securitydata.entity.ResourceRoleEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @Route(value = "edit-permission-view", layout = MainView.class)
 @ViewController(id = "EditPermissionView")
@@ -66,6 +74,8 @@ public class EditPermissionView extends StandardView {
     }
 
     @ViewComponent
+    private Notifications notifications;
+    @ViewComponent
     private Span principalTitle;
     @ViewComponent
     private MessageBundle messageBundle;
@@ -89,6 +99,10 @@ public class EditPermissionView extends StandardView {
     private DialogWindows dialogWindows;
     @Autowired
     private PermissionService permissionService;
+    @Autowired
+    private UiComponents uiComponents;
+    @Autowired
+    private Dialogs dialogs;
 
     @Subscribe(id = "addBtn", subject = "clickListener")
     public void onAddBtnClick(final ClickEvent<JmixButton> event) {
@@ -326,37 +340,14 @@ public class EditPermissionView extends StandardView {
             Notification.show("Please select a folder or file");
             return;
         }
-        boolean saved = false;
-        if (selectedUser != null) {
-            if (selectedFolder != null) {
-                permissionService.savePermission(permissionDc.getItems(), selectedUser, selectedFolder);
-                saved = true;
-            }
-            if (selectedFile != null) {
-                permissionService.savePermission(permissionDc.getItems(), selectedUser, selectedFile);
-                saved = true;
-            }
-        } else if (selectedRole != null) {
-            if (selectedFolder != null) {
-                permissionService.savePermission(permissionDc.getItems(), selectedRole, selectedFolder);
-                saved = true;
-            }
-            if (selectedFile != null) {
-                permissionService.savePermission(permissionDc.getItems(), selectedRole, selectedFile);
-                saved = true;
-            }
-        }
-        if (saved) {
-            permissionsDl.setParameter("file", selectedFile);
-            permissionsDl.setParameter("folder", selectedFolder);
-            permissionsDl.setParameter("user", selectedUser);
-            permissionsDl.setParameter("roleCode", selectedRole != null ? selectedRole.getCode() : null);
-            permissionsDl.load();
-            Notification.show("Permission saved");
-            close(StandardOutcome.SAVE);
-        } else {
-            Notification.show("No target selected for saving permissions");
-        }
+
+        // Sử dụng BackgroundTask để lưu quyền (có thể chạy lâu với nhiều folders con)
+        SavePermissionTask task = new SavePermissionTask(permissionDc.getItems());
+        dialogs.createBackgroundTaskDialog(task)
+                .withHeader("Lưu quyền")
+                .withText("Đang lưu quyền...")
+                .withCancelAllowed(true)
+                .open();
     }
 
     private void updatePermissionTitle(EcmObject dto) {
@@ -405,6 +396,74 @@ public class EditPermissionView extends StandardView {
         // Nếu không có principal nào thì xóa bảng quyền bên dưới
         if (principals.isEmpty()) {
             permissionsDc.getMutableItems().clear();
+        }
+    }
+
+    private class SavePermissionTask extends BackgroundTask<Integer, Void> {
+        private final Collection<Permission> permissions;
+        private final UI ui;
+
+        public SavePermissionTask(Collection<Permission> permissions) {
+            super(30, TimeUnit.MINUTES, EditPermissionView.this);
+            this.permissions = new ArrayList<>(permissions);
+            this.ui = UI.getCurrent();
+        }
+
+        @Override
+        public Void run(TaskLifeCycle<Integer> taskLifeCycle) throws Exception {
+            if (taskLifeCycle.isCancelled()) {
+                return null;
+            }
+
+            taskLifeCycle.publish(0);
+
+            boolean saved = false;
+            if (selectedUser != null) {
+                if (selectedFolder != null) {
+                    permissionService.savePermission(permissions, selectedUser, selectedFolder);
+                    saved = true;
+                } else if (selectedFile != null) {
+                    permissionService.savePermission(permissions, selectedUser, selectedFile);
+                    saved = true;
+                }
+            } else if (selectedRole != null) {
+                if (selectedFolder != null) {
+                    permissionService.savePermission(permissions, selectedRole, selectedFolder);
+                    saved = true;
+                } else if (selectedFile != null) {
+                    permissionService.savePermission(permissions, selectedRole, selectedFile);
+                    saved = true;
+                }
+            }
+
+            if (taskLifeCycle.isCancelled()) {
+                return null;
+            }
+
+            taskLifeCycle.publish(100);
+
+            // Reload permissions và đóng view trên UI thread
+            if (ui != null && saved) {
+                ui.access(() -> {
+                    permissionsDl.setParameter("file", selectedFile);
+                    permissionsDl.setParameter("folder", selectedFolder);
+                    permissionsDl.setParameter("user", selectedUser);
+                    permissionsDl.setParameter("roleCode", selectedRole != null ? selectedRole.getCode() : null);
+                    permissionsDl.load();
+                    notifications.create("Lưu quyền thành công")
+                            .withType(Notifications.Type.SUCCESS)
+                            .withDuration(2000)
+                            .withCloseable(false)
+                            .show();
+                    close(StandardOutcome.SAVE);
+                });
+            } else if (ui != null) {
+                ui.access(() -> {
+                    Notification.show("No target selected for saving permissions");
+                });
+            }
+
+            return null;
         }
     }
 
