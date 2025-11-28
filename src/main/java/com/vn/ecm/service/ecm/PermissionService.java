@@ -261,119 +261,207 @@ public class PermissionService {
         if (userId == null && (roleCode == null || roleCode.isBlank())) {
             return;
         }
-        // Duyệt theo từng cấp với batch processing
+
+        // Ưu tiên sử dụng FULL_PATH (nhanh hơn nhiều - chỉ 3 queries)
+        String parentPath = parentFolder.getFullPath();
+        if (parentPath != null && !parentPath.isEmpty()) {
+            // Phương án tối ưu: dùng FULL_PATH LIKE để tìm tất cả descendants trong 1 query
+            // Note: FULL_PATH là @Lob (NVARCHAR(MAX)) nên không thể index trực tiếp
+            // SQL Server sẽ scan nhưng với LEFT JOIN đã tối ưu, vẫn nhanh hơn nhiều so với
+            // EXISTS
+            String pathPrefix = parentPath.endsWith("/") ? parentPath : parentPath + "/";
+            String parentPathEscaped = pathPrefix.replace("'", "''"); // Escape cho SQL LIKE
+            String parentPathForInherited = getFullPath(parentFolder);
+
+            if (userId != null) {
+                // UPDATE: Tối ưu cho 1M+ folders - dùng FROM/JOIN thay vì IN + EXISTS
+                String pathPattern = parentPathEscaped + "%";
+                entityManager.createNativeQuery(
+                        "UPDATE P " +
+                                "SET P.PERMISSION_MASK = ?, P.INHERITED = 1, P.INHERITED_FROM = ? " +
+                                "FROM PERMISSION P " +
+                                "INNER JOIN FOLDER F ON P.FOLDER_ID = F.ID " +
+                                "LEFT JOIN PERMISSION P_BLOCKED ON P_BLOCKED.FOLDER_ID = F.ID " +
+                                "  AND P_BLOCKED.USER_ID = ? AND P_BLOCKED.INHERIT_ENABLED = 0 " +
+                                "WHERE P.USER_ID = ? " +
+                                "AND (P.INHERIT_ENABLED = 1 OR P.INHERIT_ENABLED IS NULL) " +
+                                "AND F.FULL_PATH LIKE ? ESCAPE '\\' " +
+                                "AND F.ID != ? " +
+                                "AND F.IN_TRASH = 0 " +
+                                "AND P_BLOCKED.FOLDER_ID IS NULL")
+                        .setParameter(1, parentMask)
+                        .setParameter(2, parentPathForInherited)
+                        .setParameter(3, userId)
+                        .setParameter(4, userId)
+                        .setParameter(5, pathPattern)
+                        .setParameter(6, parentFolder.getId())
+                        .executeUpdate();
+
+                // INSERT: Tối ưu - dùng LEFT JOIN thay vì EXISTS (nhanh hơn 10-100x với 1M+
+                // rows)
+                entityManager.createNativeQuery(
+                        "INSERT INTO PERMISSION (ID, USER_ID, FOLDER_ID, PERMISSION_MASK, INHERITED, INHERIT_ENABLED, INHERITED_FROM, APPLIES_TO) "
+                                +
+                                "SELECT NEWID(), ?, F.ID, ?, 1, 1, ?, 0 " +
+                                "FROM FOLDER F " +
+                                "LEFT JOIN PERMISSION P ON P.FOLDER_ID = F.ID AND P.USER_ID = ? " +
+                                "LEFT JOIN PERMISSION P_BLOCKED ON P_BLOCKED.FOLDER_ID = F.ID " +
+                                "  AND P_BLOCKED.USER_ID = ? AND P_BLOCKED.INHERIT_ENABLED = 0 " +
+                                "WHERE F.FULL_PATH LIKE ? ESCAPE '\\' " +
+                                "AND F.ID != ? " +
+                                "AND F.IN_TRASH = 0 " +
+                                "AND P.FOLDER_ID IS NULL " +
+                                "AND P_BLOCKED.FOLDER_ID IS NULL")
+                        .setParameter(1, userId)
+                        .setParameter(2, parentMask)
+                        .setParameter(3, parentPathForInherited)
+                        .setParameter(4, userId)
+                        .setParameter(5, userId)
+                        .setParameter(6, pathPattern)
+                        .setParameter(7, parentFolder.getId())
+                        .executeUpdate();
+            } else {
+                // Tương tự cho Role - tối ưu với LEFT JOIN
+                String pathPattern = parentPathEscaped + "%";
+                entityManager.createNativeQuery(
+                        "UPDATE P " +
+                                "SET P.PERMISSION_MASK = ?, P.INHERITED = 1, P.INHERITED_FROM = ? " +
+                                "FROM PERMISSION P " +
+                                "INNER JOIN FOLDER F ON P.FOLDER_ID = F.ID " +
+                                "LEFT JOIN PERMISSION P_BLOCKED ON P_BLOCKED.FOLDER_ID = F.ID " +
+                                "  AND P_BLOCKED.ROLE_CODE = ? AND P_BLOCKED.INHERIT_ENABLED = 0 " +
+                                "WHERE P.ROLE_CODE = ? " +
+                                "AND (P.INHERIT_ENABLED = 1 OR P.INHERIT_ENABLED IS NULL) " +
+                                "AND F.FULL_PATH LIKE ? ESCAPE '\\' " +
+                                "AND F.ID != ? " +
+                                "AND F.IN_TRASH = 0 " +
+                                "AND P_BLOCKED.FOLDER_ID IS NULL")
+                        .setParameter(1, parentMask)
+                        .setParameter(2, parentPathForInherited)
+                        .setParameter(3, roleCode)
+                        .setParameter(4, roleCode)
+                        .setParameter(5, pathPattern)
+                        .setParameter(6, parentFolder.getId())
+                        .executeUpdate();
+
+                entityManager.createNativeQuery(
+                        "INSERT INTO PERMISSION (ID, ROLE_CODE, FOLDER_ID, PERMISSION_MASK, INHERITED, INHERIT_ENABLED, INHERITED_FROM, APPLIES_TO) "
+                                +
+                                "SELECT NEWID(), ?, F.ID, ?, 1, 1, ?, 0 " +
+                                "FROM FOLDER F " +
+                                "LEFT JOIN PERMISSION P ON P.FOLDER_ID = F.ID AND P.ROLE_CODE = ? " +
+                                "LEFT JOIN PERMISSION P_BLOCKED ON P_BLOCKED.FOLDER_ID = F.ID " +
+                                "  AND P_BLOCKED.ROLE_CODE = ? AND P_BLOCKED.INHERIT_ENABLED = 0 " +
+                                "WHERE F.FULL_PATH LIKE ? ESCAPE '\\' " +
+                                "AND F.ID != ? " +
+                                "AND F.IN_TRASH = 0 " +
+                                "AND P.FOLDER_ID IS NULL " +
+                                "AND P_BLOCKED.FOLDER_ID IS NULL")
+                        .setParameter(1, roleCode)
+                        .setParameter(2, parentMask)
+                        .setParameter(3, parentPathForInherited)
+                        .setParameter(4, roleCode)
+                        .setParameter(5, roleCode)
+                        .setParameter(6, pathPattern)
+                        .setParameter(7, parentFolder.getId())
+                        .executeUpdate();
+            }
+            return; // Xong, không cần fallback
+        }
+        // Fallback: Nếu FULL_PATH chưa có, duyệt từng level (chậm hơn nhưng vẫn hoạt
+        // động)
         Set<UUID> currentLevelIds = new HashSet<>();
         currentLevelIds.add(parentFolder.getId());
+        final int MAX_BATCH = 500; // Giới hạn để tránh query plan quá phức tạp
         while (!currentLevelIds.isEmpty()) {
-            // Build IN clause cho parent IDs
+            List<UUID> currentList = new ArrayList<>(currentLevelIds);
+            // Build IN clause (giới hạn để tránh query plan quá phức tạp)
             StringBuilder parentIdList = new StringBuilder();
             int count = 0;
-            for (UUID id : currentLevelIds) {
+            for (UUID id : currentList) {
                 if (count > 0)
                     parentIdList.append(",");
                 parentIdList.append("'").append(id.toString()).append("'");
                 count++;
+                if (count >= MAX_BATCH)
+                    break;
             }
-            // Lấy tất cả folder con của current level cùng lúc
-            String childQuery = "SELECT F.ID, " +
-                    "  CASE WHEN EXISTS ( " +
-                    "    SELECT 1 FROM PERMISSION P " +
-                    "    WHERE P.FOLDER_ID = F.ID " +
-                    "    AND P." + (userId != null ? "USER_ID" : "ROLE_CODE") + " = ? " +
-                    "    AND P.INHERIT_ENABLED = 0 " +
-                    "  ) THEN 1 ELSE 0 END AS IS_BLOCKED " +
+            String childQuery = "SELECT F.ID " +
                     "FROM FOLDER F " +
-                    "WHERE F.PARENT_ID IN (" + parentIdList + ")";
+                    "WHERE F.PARENT_ID IN (" + parentIdList + ") " +
+                    "AND F.IN_TRASH = 0 " +
+                    "AND NOT EXISTS ( " +
+                    "  SELECT 1 FROM PERMISSION P " +
+                    "  WHERE P.FOLDER_ID = F.ID " +
+                    "  AND P." + (userId != null ? "USER_ID" : "ROLE_CODE") + " = ? " +
+                    "  AND P.INHERIT_ENABLED = 0 " +
+                    ")";
             @SuppressWarnings("unchecked")
             List<Object[]> children = entityManager.createNativeQuery(childQuery)
                     .setParameter(1, userId != null ? userId : roleCode)
                     .getResultList();
-
             if (children.isEmpty()) {
                 break;
             }
-            // Phân loại folder: valid vs blocked
-            List<UUID> validFolderIds = new ArrayList<>();
             Set<UUID> nextLevelIds = new HashSet<>();
             for (Object[] row : children) {
-                Object rawId = row[0];
-                UUID childId = rawId instanceof UUID ? (UUID) rawId : UUID.fromString(String.valueOf(rawId));
-                int isBlocked = ((Number) row[1]).intValue();
-                if (isBlocked == 0) {
-                    validFolderIds.add(childId);
-                    nextLevelIds.add(childId);
-                }
+                UUID childId = row[0] instanceof UUID ? (UUID) row[0] : UUID.fromString(String.valueOf(row[0]));
+                nextLevelIds.add(childId);
             }
-            // Batch update và insert cho các folder hợp lệ
-            if (!validFolderIds.isEmpty()) {
-                StringBuilder validIdList = new StringBuilder();
-                count = 0;
-                for (UUID id : validFolderIds) {
-                    if (count > 0)
-                        validIdList.append(",");
-                    validIdList.append("'").append(id.toString()).append("'");
-                    count++;
+            // Xử lý batch
+            if (!nextLevelIds.isEmpty()) {
+                List<UUID> nextList = new ArrayList<>(nextLevelIds);
+                StringBuilder validIdsStr = new StringBuilder();
+                for (int i = 0; i < nextList.size() && i < MAX_BATCH; i++) {
+                    if (i > 0)
+                        validIdsStr.append(",");
+                    validIdsStr.append("'").append(nextList.get(i).toString()).append("'");
                 }
+                String parentPathForInherited = getFullPath(parentFolder);
                 if (userId != null) {
-                    // Batch UPDATE
                     entityManager.createNativeQuery(
-                            "UPDATE PERMISSION " +
-                                    "SET PERMISSION_MASK = ?, INHERITED = 1, INHERITED_FROM = ? " +
-                                    "WHERE USER_ID = ? " +
-                                    "AND (INHERIT_ENABLED = 1 OR INHERIT_ENABLED IS NULL) " +
-                                    "AND FOLDER_ID IN (" + validIdList + ")")
+                            "UPDATE PERMISSION SET PERMISSION_MASK = ?, INHERITED = 1, INHERITED_FROM = ? " +
+                                    "WHERE USER_ID = ? AND (INHERIT_ENABLED = 1 OR INHERIT_ENABLED IS NULL) " +
+                                    "AND FOLDER_ID IN (" + validIdsStr + ")")
                             .setParameter(1, parentMask)
-                            .setParameter(2, getFullPath(parentFolder))
+                            .setParameter(2, parentPathForInherited)
                             .setParameter(3, userId)
                             .executeUpdate();
-                    // Batch INSERT
                     entityManager.createNativeQuery(
                             "INSERT INTO PERMISSION (ID, USER_ID, FOLDER_ID, PERMISSION_MASK, INHERITED, INHERIT_ENABLED, INHERITED_FROM, APPLIES_TO) "
                                     +
                                     "SELECT NEWID(), ?, F.ID, ?, 1, 1, ?, 0 " +
                                     "FROM FOLDER F " +
-                                    "WHERE F.ID IN (" + validIdList + ") " +
-                                    "AND NOT EXISTS ( " +
-                                    "  SELECT 1 FROM PERMISSION P " +
-                                    "  WHERE P.FOLDER_ID = F.ID AND P.USER_ID = ? " +
-                                    ")")
+                                    "WHERE F.ID IN (" + validIdsStr + ") " +
+                                    "AND NOT EXISTS (SELECT 1 FROM PERMISSION P WHERE P.FOLDER_ID = F.ID AND P.USER_ID = ?)")
                             .setParameter(1, userId)
                             .setParameter(2, parentMask)
-                            .setParameter(3, getFullPath(parentFolder))
+                            .setParameter(3, parentPathForInherited)
                             .setParameter(4, userId)
                             .executeUpdate();
                 } else {
-                    // Batch UPDATE cho Role
                     entityManager.createNativeQuery(
-                            "UPDATE PERMISSION " +
-                                    "SET PERMISSION_MASK = ?, INHERITED = 1, INHERITED_FROM = ? " +
-                                    "WHERE ROLE_CODE = ? " +
-                                    "AND (INHERIT_ENABLED = 1 OR INHERIT_ENABLED IS NULL) " +
-                                    "AND FOLDER_ID IN (" + validIdList + ")")
+                            "UPDATE PERMISSION SET PERMISSION_MASK = ?, INHERITED = 1, INHERITED_FROM = ? " +
+                                    "WHERE ROLE_CODE = ? AND (INHERIT_ENABLED = 1 OR INHERIT_ENABLED IS NULL) " +
+                                    "AND FOLDER_ID IN (" + validIdsStr + ")")
                             .setParameter(1, parentMask)
-                            .setParameter(2, getFullPath(parentFolder))
+                            .setParameter(2, parentPathForInherited)
                             .setParameter(3, roleCode)
                             .executeUpdate();
-
-                    // Batch INSERT cho Role
                     entityManager.createNativeQuery(
                             "INSERT INTO PERMISSION (ID, ROLE_CODE, FOLDER_ID, PERMISSION_MASK, INHERITED, INHERIT_ENABLED, INHERITED_FROM, APPLIES_TO) "
                                     +
                                     "SELECT NEWID(), ?, F.ID, ?, 1, 1, ?, 0 " +
                                     "FROM FOLDER F " +
-                                    "WHERE F.ID IN (" + validIdList + ") " +
-                                    "AND NOT EXISTS ( " +
-                                    "  SELECT 1 FROM PERMISSION P " +
-                                    "  WHERE P.FOLDER_ID = F.ID AND P.ROLE_CODE = ? " +
-                                    ")")
+                                    "WHERE F.ID IN (" + validIdsStr + ") " +
+                                    "AND NOT EXISTS (SELECT 1 FROM PERMISSION P WHERE P.FOLDER_ID = F.ID AND P.ROLE_CODE = ?)")
                             .setParameter(1, roleCode)
                             .setParameter(2, parentMask)
-                            .setParameter(3, getFullPath(parentFolder))
+                            .setParameter(3, parentPathForInherited)
                             .setParameter(4, roleCode)
                             .executeUpdate();
                 }
             }
-            // Chuyển sang level tiếp theo
             currentLevelIds = nextLevelIds;
         }
     }

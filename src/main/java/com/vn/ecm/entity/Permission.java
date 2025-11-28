@@ -7,7 +7,10 @@ import jakarta.persistence.*;
 import java.util.UUID;
 
 @JmixEntity
-@Table(name = "PERMISSION")
+@Table(name = "PERMISSION", indexes = {
+        @Index(name = "IDX_PERMISSION", columnList = "FOLDER_ID, USER_ID, INHERIT_ENABLED"),
+        @Index(name = "IDX_PERMISSION_1", columnList = "FOLDER_ID, ROLE_CODE, INHERIT_ENABLED")
+})
 @Entity
 public class Permission {
     @JmixGeneratedValue
