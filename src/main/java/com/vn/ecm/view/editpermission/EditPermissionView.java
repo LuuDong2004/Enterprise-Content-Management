@@ -20,7 +20,6 @@ import com.vn.ecm.view.userlist.UserListView;
 import io.jmix.core.DataManager;
 import io.jmix.flowui.Dialogs;
 import io.jmix.flowui.DialogWindows;
-import io.jmix.flowui.Notifications;
 import io.jmix.flowui.UiComponents;
 import io.jmix.flowui.backgroundtask.BackgroundTask;
 import io.jmix.flowui.backgroundtask.TaskLifeCycle;
@@ -73,8 +72,6 @@ public class EditPermissionView extends StandardView {
         this.selectedFile = null;
     }
 
-    @ViewComponent
-    private Notifications notifications;
     @ViewComponent
     private Span principalTitle;
     @ViewComponent
@@ -450,11 +447,7 @@ public class EditPermissionView extends StandardView {
                     permissionsDl.setParameter("user", selectedUser);
                     permissionsDl.setParameter("roleCode", selectedRole != null ? selectedRole.getCode() : null);
                     permissionsDl.load();
-                    notifications.create("Lưu quyền thành công")
-                            .withType(Notifications.Type.SUCCESS)
-                            .withDuration(2000)
-                            .withCloseable(false)
-                            .show();
+                    Notification.show("Lưu quyền thành công");
                     close(StandardOutcome.SAVE);
                 });
             } else if (ui != null) {
