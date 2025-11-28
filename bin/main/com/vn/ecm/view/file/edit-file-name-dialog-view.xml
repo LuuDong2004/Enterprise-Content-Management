@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<view xmlns="http://jmix.io/schema/flowui/view"
+      title="Chỉnh sửa tên tệp">
+    <layout>
+        <vbox width="500px" padding="false" spacing="true">
+            <formLayout id="form" width="100%">
+                <textField id="nameField" label="Tên tệp" required="true"/>
+            </formLayout>
+            <hbox width="100%"
+                  spacing="true"
+                  alignItems="CENTER"
+                  justifyContent="END"
+                  padding="true">
+                <button id="okBtn"
+                        text="Đồng ý"
+                        themeNames="primary"/>
+                <button id="cancelBtn"
+                        text="Hủy"
+                        themeNames="tertiary"/>
+            </hbox>
+        </vbox>
+    </layout>
+</view>

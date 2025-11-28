@@ -44,12 +44,12 @@ public class EditPermissionView extends StandardView {
     @ViewComponent
     private CollectionLoader<Permission> permissionsDl;
 
-    public void setTarget(EcmObject target) {
-        this.target = target;
-    }
-
     public void setPath(String path) {
         this.path = path;
+    }
+
+    public void setTarget(EcmObject target) {
+        this.target = target;
     }
 
     private FileDescriptor selectedFile;
@@ -360,13 +360,13 @@ public class EditPermissionView extends StandardView {
     }
 
     private void updatePermissionTitle(EcmObject dto) {
-        if (principalTitle == null) return; // phòng lỗi NPE nếu XML chưa gắn id
+        if (principalTitle == null)
+            return; // phòng lỗi NPE nếu XML chưa gắn id
 
         if (dto == null) {
             principalTitle.setText("Quyền truy cập cho ");
             return;
         }
-        String typeLabel = (dto.getType() == ObjectType.USER) ? "Người dùng" : "Phòng ban";
         String name = dto.getName() != null ? dto.getName() : "";
         principalTitle.setText("Quyền truy cập cho " + name + ":");
     }

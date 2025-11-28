@@ -1,11 +1,14 @@
 package com.vn.ecm.entity;
+
 //v1
+
 import io.jmix.core.entity.annotation.JmixGeneratedValue;
 import io.jmix.core.metamodel.annotation.JmixEntity;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
+
 @JmixEntity
 @Table(name = "FOLDER")
 @Entity
@@ -22,6 +25,7 @@ public class Folder {
     @JoinColumn(name = "parent_ID")
     private Folder parent;
 
+    @Lob
     @Column(name = "FULL_PATH")
     private String fullPath;
 
@@ -81,7 +85,6 @@ public class Folder {
         this.fullPath = fullPath;
     }
 
-
     public UUID getId() {
         return id;
     }
@@ -101,9 +104,11 @@ public class Folder {
     public Folder getParent() {
         return parent;
     }
+
     public void setParent(Folder parent) {
         this.parent = parent;
     }
+
     public LocalDateTime getCreatedDate() {
         return createdDate;
     }

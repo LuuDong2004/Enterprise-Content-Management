@@ -8,9 +8,8 @@ import java.util.UUID;
 
 @JmixEntity
 @Table(name = "PERMISSION", indexes = {
-        @Index(name = "IDX_PERMISSION_USER", columnList = "USER_ID"),
-        @Index(name = "IDX_PERMISSION_FOLDER", columnList = "FOLDER_ID"),
-        @Index(name = "IDX_PERMISSION_FILE", columnList = "FILE_ID")
+        @Index(name = "IDX_PERMISSION", columnList = "FOLDER_ID, USER_ID, INHERIT_ENABLED"),
+        @Index(name = "IDX_PERMISSION_1", columnList = "FOLDER_ID, ROLE_CODE, INHERIT_ENABLED")
 })
 @Entity
 public class Permission {

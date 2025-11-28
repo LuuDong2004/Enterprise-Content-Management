@@ -1,11 +1,6 @@
 package com.vn.ecm.service.ecm.folderandfile;
 
-
-
 import com.vn.ecm.entity.Folder;
-
-import java.util.UUID;
-
 
 public interface IFolderService {
 
@@ -24,4 +19,9 @@ public interface IFolderService {
     String buildFolderPath(Folder folder);
 
     Folder findExistingFolder(Folder parent, Object sourceStorage, String name);
+
+    Folder moveFolder(Folder source, Folder target);
+
+    Folder moveFolderPathOnly(Folder source, Folder target);
+
 }

@@ -95,7 +95,8 @@ public class FileDescriptor {
     public FileDescriptor() {
     }
 
-    public FileDescriptor(UUID id, String name, String extension, Long size, LocalDateTime lastModified, Folder folder, FileRef fileRef) {
+    public FileDescriptor(UUID id, String name, String extension, Long size, LocalDateTime lastModified, Folder folder,
+            FileRef fileRef) {
         this.id = id;
         this.name = name;
         this.extension = extension;
@@ -152,9 +153,11 @@ public class FileDescriptor {
     public void setFolder(Folder folder) {
         this.folder = folder;
     }
+
     public FileRef getFileRef() {
         return fileRef;
     }
+
     public void setFileRef(FileRef fileRef) {
         this.fileRef = fileRef;
     }

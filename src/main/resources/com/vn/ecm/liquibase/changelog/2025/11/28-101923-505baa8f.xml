@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="1" author="ECM">
+        <createTable tableName="FTP_STORAGE">
+            <column name="ID" type="UUID">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="PK_FTP_STORAGE"/>
+            </column>
+        </createTable>
+    </changeSet>
+    <changeSet id="2" author="ECM">
+        <addColumn tableName="SOURCE_STORAGE">
+            <column name="DTYPE" type="VARCHAR(31)"/>
+        </addColumn>
+
+        <update tableName="SOURCE_STORAGE">
+            <column name="DTYPE" value="SourceStorage"/>
+            <where>DTYPE is null</where>
+        </update>
+    </changeSet>
+</databaseChangeLog>
