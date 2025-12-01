@@ -26,11 +26,11 @@ import io.jmix.flowui.action.list.EditAction;
 import io.jmix.flowui.action.list.RemoveAction;
 import io.jmix.flowui.component.grid.DataGrid;
 import io.jmix.flowui.kit.action.ActionPerformedEvent;
+import io.jmix.flowui.model.CollectionContainer;
 import io.jmix.flowui.model.CollectionLoader;
 import io.jmix.flowui.view.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.vaadin.flow.component.UI;
-
 
 
 @Route(value = "source-storages", layout = MainView.class)
@@ -51,6 +51,11 @@ public class SourceStorageListView extends StandardListView<SourceStorage> {
     @ViewComponent
     private DataGrid<SourceStorage> sourceStoragesDataGrid;
 
+    @ViewComponent
+    private CollectionLoader<FtpStorageEntity> ftpSourceStoragesDl;
+    @ViewComponent
+    private CollectionContainer<FtpStorageEntity> ftpSourceStoragesDc;
+
     @Supply(to = "sourceStoragesDataGrid.actions", subject = "renderer")
     private Renderer<SourceStorage> sourceStoragesDataGridActionsRenderer() {
         return new ComponentRenderer<>(sourcestorage -> {
@@ -58,15 +63,15 @@ public class SourceStorageListView extends StandardListView<SourceStorage> {
                     .id(sourcestorage.getId())
                     .one();
             Button viewStorageButton = uiComponents.create(Button.class);
-           viewStorageButton.setIcon(new Icon(VaadinIcon.FOLDER_OPEN));
-           // viewStorageButton.setIcon(new Icon(VaadinIcon.LOCK));
+            viewStorageButton.setIcon(new Icon(VaadinIcon.FOLDER_OPEN));
+            // viewStorageButton.setIcon(new Icon(VaadinIcon.LOCK));
             viewStorageButton.setText("Truy cập");
-            if(!Boolean.TRUE.equals(reloadedStorage.getActive())) {
+            if (!Boolean.TRUE.equals(reloadedStorage.getActive())) {
                 viewStorageButton.setEnabled(false);
             }
             viewStorageButton.addClickListener(e -> {
                 UI.getCurrent().navigate(EcmView.class,
-                        new RouteParameters("id",reloadedStorage.getId().toString()));
+                        new RouteParameters("id", reloadedStorage.getId().toString()));
             });
             return viewStorageButton;
         });
@@ -75,8 +80,8 @@ public class SourceStorageListView extends StandardListView<SourceStorage> {
     @Subscribe("sourceStoragesDataGrid.localCreateAction")
     public void onSourceStoragesDataGridLocalCreateAction(final ActionPerformedEvent event) {
         SourceStorage newSourceStorage = dataManager.create(SourceStorage.class);
-            newSourceStorage.setType(StorageType.WEBDIR);
-        DialogWindow<View<?>> window = dialogWindows.detail(this,SourceStorage.class )
+        newSourceStorage.setType(StorageType.WEBDIR);
+        DialogWindow<View<?>> window = dialogWindows.detail(this, SourceStorage.class)
                 .newEntity(newSourceStorage)
                 .build();
         window.addAfterCloseListener(afterCloseEvent -> {
@@ -92,7 +97,7 @@ public class SourceStorageListView extends StandardListView<SourceStorage> {
     public void onSourceStoragesDataGridS3CreateAction(final ActionPerformedEvent event) {
         SourceStorage newSourceStorage = dataManager.create(SourceStorage.class);
         newSourceStorage.setType(StorageType.S3);
-        DialogWindow<View<?>> window = dialogWindows.detail(this,SourceStorage.class )
+        DialogWindow<View<?>> window = dialogWindows.detail(this, SourceStorage.class)
                 .newEntity(newSourceStorage)
                 .build();
         window.addAfterCloseListener(afterCloseEvent -> {
@@ -107,7 +112,8 @@ public class SourceStorageListView extends StandardListView<SourceStorage> {
     @Subscribe("sourceStoragesDataGrid.ftpCreateAction")
     public void onSourceStoragesDataGridFtpCreateAction(final ActionPerformedEvent event) {
         FtpStorageEntity selected = dataManager.create(FtpStorageEntity.class);
-        DialogWindow<View<?>> window = dialogWindows.detail(this,FtpStorageEntity.class )
+        selected.setType(StorageType.FTP);
+        DialogWindow<View<?>> window = dialogWindows.detail(this, FtpStorageEntity.class)
                 .newEntity(selected)
                 .build();
         window.addAfterCloseListener(afterCloseEvent -> {
@@ -121,20 +127,37 @@ public class SourceStorageListView extends StandardListView<SourceStorage> {
 
     @Subscribe("sourceStoragesDataGrid.editAction")
     public void onSourceStoragesDataGridEditAction(final ActionPerformedEvent event) {
+
         SourceStorage selected = sourceStoragesDataGrid.getSingleSelectedItem();
-        if(selected == null) {
+        if (selected == null) {
             return;
         }
-        DialogWindow<View<?>> window = dialogWindows.detail(this,SourceStorage.class )
-                .newEntity(selected)
-                .build();
-        window.addAfterCloseListener(afterCloseEvent -> {
-            sourceStoragesDl.load();
-        });
-        window.setWidth("40%");
-        window.setHeight("auto");
-        window.setResizable(true);
-        window.open();
+        if (selected.getType() == StorageType.FTP) {
+            FtpStorageEntity ftpStorage = dataManager.load(FtpStorageEntity.class)
+                    .id(selected.getId())
+                    .one();
+            DialogWindow<View<?>> window = dialogWindows.detail(this, FtpStorageEntity.class)
+                    .newEntity(ftpStorage)
+                    .build();
+            window.addAfterCloseListener(afterCloseEvent -> {
+                sourceStoragesDl.load();
+            });
+            window.setWidth("40%");
+            window.setHeight("auto");
+            window.setResizable(true);
+            window.open();
+        }else {
+            DialogWindow<View<?>> window = dialogWindows.detail(this, SourceStorage.class)
+                    .newEntity(selected)
+                    .build();
+            window.addAfterCloseListener(afterCloseEvent -> {
+                sourceStoragesDl.load();
+            });
+            window.setWidth("40%");
+            window.setHeight("auto");
+            window.setResizable(true);
+            window.open();
+        }
     }
 
 
@@ -153,7 +176,5 @@ public class SourceStorageListView extends StandardListView<SourceStorage> {
         dlg.open();
     }
 
-
-    
 
 }

@@ -16,6 +16,7 @@
         <dataLoadCoordinator auto="true"/>
     </facets>
     <actions>
+        <action id="editDetailFtpStorage"/>
         <action id="saveCloseAction" type="detail_saveClose"/>
         <action id="closeAction" type="detail_close"/>
     </actions>
@@ -27,7 +28,6 @@
                 <responsiveStep minWidth="40em" columns="2"/>
             </responsiveSteps>
             <textField id="nameStorageField" property="name" required="true"/>
-
             <select id="type" property="type" readOnly="true"/>
             <textField id="hostField" property="host" required="true"/>
             <textField id="portField" property="port" required="true" />
