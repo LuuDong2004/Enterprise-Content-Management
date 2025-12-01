@@ -34,7 +34,9 @@
             <dropdownButton id="createGroup" text="Tạo mới kho">
                 <items>
                     <actionItem id="s3CreateActionItem"  ref="sourceStoragesDataGrid.s3CreateAction"/>
+                    <actionItem id="localCreateActionItem" ref="sourceStoragesDataGrid.localCreateAction"/>
                     <actionItem id="ftpCreateActionItem" ref="sourceStoragesDataGrid.ftpCreateAction"/>
+
                 </items>
             </dropdownButton>
             <button id="editButton" text="Chỉnh sửa" action="sourceStoragesDataGrid.editAction"/>
@@ -51,7 +53,8 @@
                 <action id="editAction" text="Chỉnh sửa" type="list_edit"/>
                 <action id="removeAction" text="Xóa" type="list_remove"/>
                 <action id="s3CreateAction" text="Kho lưu trữ S3"/>
-                <action id="ftpCreateAction" text="Kho lưu trữ FTP"/>
+                <action id="localCreateAction" text="Kho lưu trữ local"/>
+                <action id="ftpCreateAction" text="Kho luu trữ FTP"/>
             </actions>
             <columns resizable="true">
                 <column property="name"/>

@@ -43,6 +43,7 @@ public class SourceStorageDetailView extends StandardDetailView<SourceStorage> {
 
     @Subscribe
     public void onInit(final InitEvent event) {
+
         updateGroups(typeField.getValue());
     }
 

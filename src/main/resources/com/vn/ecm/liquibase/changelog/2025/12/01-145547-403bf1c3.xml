@@ -10,6 +10,12 @@
             <column name="ID" type="UUID">
                 <constraints nullable="false" primaryKey="true" primaryKeyName="PK_FTP_STORAGE"/>
             </column>
+            <column name="HOST" type="VARCHAR(255)"/>
+            <column name="PORT" type="VARCHAR(255)"/>
+            <column name="USERNAME" type="VARCHAR(255)"/>
+            <column name="PASSWORD" type="VARCHAR(255)"/>
+            <column name="FTP_PATH" type="VARCHAR(255)"/>
+            <column name="PASSIVE_MODE" type="BOOLEAN"/>
         </createTable>
     </changeSet>
     <changeSet id="2" author="ECM">
@@ -21,5 +27,15 @@
             <column name="DTYPE" value="SourceStorage"/>
             <where>DTYPE is null</where>
         </update>
+    </changeSet>
+    <changeSet id="3" author="ECM">
+        <addColumn tableName="SOURCE_STORAGE">
+            <column name="FTP_PATH" type="VARCHAR(255)"/>
+            <column name="HOST" type="VARCHAR(255)"/>
+            <column name="PASSIVE_MODE" type="BOOLEAN"/>
+            <column name="PASSWORD" type="VARCHAR(255)"/>
+            <column name="PORT" type="VARCHAR(255)"/>
+            <column name="USERNAME" type="VARCHAR(255)"/>
+        </addColumn>
     </changeSet>
 </databaseChangeLog>

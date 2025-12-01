@@ -19,4 +19,16 @@
             <column name="INHERIT_ENABLED"/>
         </createIndex>
     </changeSet>
+    <changeSet id="3" author="ECM">
+        <dropIndex indexName="IDX_PERMISSION_FILE" tableName="PERMISSION"/>
+    </changeSet>
+    <changeSet id="4" author="ECM">
+        <dropIndex indexName="IDX_PERMISSION_FOLDER" tableName="PERMISSION"/>
+    </changeSet>
+    <changeSet id="5" author="ECM">
+        <dropIndex indexName="IDX_PERMISSION_USER" tableName="PERMISSION"/>
+    </changeSet>
+    <changeSet id="6" author="ECM">
+        <modifyDataType columnName="FULL_PATH" newDataType="CLOB" tableName="FOLDER"/>
+    </changeSet>
 </databaseChangeLog>

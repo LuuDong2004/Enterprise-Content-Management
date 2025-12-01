@@ -1,11 +1,12 @@
 package com.vn.ecm.ecm.storage;
 
+import com.vn.ecm.ecm.storage.ftp.FtpStorage;
 import com.vn.ecm.ecm.storage.web_directory.WebDirectoryStorage;
+import com.vn.ecm.entity.FtpStorageEntity;
 import com.vn.ecm.entity.SourceStorage;
 import com.vn.ecm.entity.StorageType;
 import com.vn.ecm.ecm.storage.s3.S3ClientFactory;
 import com.vn.ecm.ecm.storage.s3.S3Storage;
-
 import io.jmix.core.DataManager;
 import io.jmix.core.FileStorage;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,11 +21,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * Quản lý các storage động (S3, WebDirectory) được tạo runtime
+ * Quản lý các storage động (S3, WebDirectory, FTP) được tạo runtime
  * Đăng ký storage vào Spring context để Jmix có thể sử dụng
  */
 @Component
 public class DynamicStorageManager {
+
     @Autowired
     private DataManager dataManager;
 
@@ -33,14 +35,25 @@ public class DynamicStorageManager {
     private final ConcurrentMap<String, String> storageIdToBeanNameMap = new ConcurrentHashMap<>();
 
     public DynamicStorageManager(ApplicationContext applicationContext) {
-        this.springBeanFactory = (DefaultListableBeanFactory) applicationContext.getAutowireCapableBeanFactory();
+        this.springBeanFactory =
+                (DefaultListableBeanFactory) applicationContext.getAutowireCapableBeanFactory();
     }
 
     /**
-     * Tạo tên storage cho FileRef (ví dụ: webdir-uuid, s3-uuid)
+     * Tạo tên storage cho FileRef (ví dụ: webdir-uuid, s3-uuid, ftp-uuid)
      */
     private String generateStorageName(SourceStorage sourceStorage) {
-        String storageTypePrefix = sourceStorage.getType() == StorageType.WEBDIR ? "webdir-" : "s3-";
+        String storageTypePrefix;
+        if (sourceStorage.getType() == StorageType.S3) {
+            storageTypePrefix = "s3-";
+        } else if (sourceStorage.getType() == StorageType.WEBDIR) {
+            storageTypePrefix = "webdir-";
+        } else if (sourceStorage.getType() == StorageType.FTP) {
+            storageTypePrefix = "ftp-";
+        } else {
+            throw new UnsupportedOperationException(
+                    "Loại storage không được hỗ trợ: " + sourceStorage.getType());
+        }
         return storageTypePrefix + Objects.requireNonNull(sourceStorage.getId());
     }
 
@@ -58,12 +71,22 @@ public class DynamicStorageManager {
         if (!Boolean.TRUE.equals(sourceStorage.getActive())) {
             return false;
         }
-        
+
         if (sourceStorage.getType() == StorageType.S3) {
             return sourceStorage.getBucket() != null && !sourceStorage.getBucket().isBlank();
+
         } else if (sourceStorage.getType() == StorageType.WEBDIR) {
             return sourceStorage.getWebRootPath() != null && !sourceStorage.getWebRootPath().isBlank();
+
+        } else if (sourceStorage.getType() == StorageType.FTP) {
+            if (!(sourceStorage instanceof FtpStorageEntity ftp)) {
+                return false;
+            }
+            return ftp.getHost() != null && !ftp.getHost().isBlank()
+                    && ftp.getUsername() != null && !ftp.getUsername().isBlank()
+                    && ftp.getPassword() != null && !ftp.getPassword().isBlank();
         }
+
         return false;
     }
 
@@ -73,12 +96,13 @@ public class DynamicStorageManager {
      */
     public FileStorage getOrCreateFileStorage(SourceStorage sourceStorage) {
 //        if (!isStorageValid(sourceStorage)) {
-//            throw new IllegalArgumentException("SourceStorage không hợp lệ hoặc không active: " + sourceStorage.getId());
+//            throw new IllegalArgumentException(
+//                    "SourceStorage không hợp lệ hoặc không active: " + sourceStorage.getId());
 //        }
-        
+
         String beanName = generateBeanName(sourceStorage);
         String storageName = generateStorageName(sourceStorage);
-        
+
         // Nếu đã tồn tại trong Spring context thì lấy ra
         if (springBeanFactory.containsBean(beanName)) {
             return springBeanFactory.getBean(beanName, FileStorage.class);
@@ -88,10 +112,10 @@ public class DynamicStorageManager {
         FileStorage fileStorageInstance = createFileStorageInstance(sourceStorage);
 
         // Đăng ký vào Spring context với cả hai tên để Jmix có thể tìm thấy
-        springBeanFactory.registerSingleton(beanName, fileStorageInstance);      // fs_webdir-xxx
-        springBeanFactory.registerSingleton(storageName, fileStorageInstance);   // webdir-xxx (cho Jmix FileStorageLocator)
+        springBeanFactory.registerSingleton(beanName, fileStorageInstance);      // fs_xxx
+        springBeanFactory.registerSingleton(storageName, fileStorageInstance);   // xxx (cho Jmix FileStorageLocator)
         storageIdToBeanNameMap.put(sourceStorage.getId().toString(), beanName);
-        
+
         return fileStorageInstance;
     }
 
@@ -102,17 +126,29 @@ public class DynamicStorageManager {
         if (sourceStorage.getType() == StorageType.S3) {
             S3Client s3Client = s3ClientFactory.create(sourceStorage);
             return new S3Storage(sourceStorage, s3Client);
+
         } else if (sourceStorage.getType() == StorageType.WEBDIR) {
             return new WebDirectoryStorage(sourceStorage);
+
+        } else if (sourceStorage.getType() == StorageType.FTP) {
+            if (!(sourceStorage instanceof FtpStorageEntity ftpConfig)) {
+                // Trong trường hợp JPA trả về base class,
+                // có thể load lại đúng subclass bằng DataManager nếu cần:
+                // ftpConfig = dataManager.load(FtpStorageEntity.class).id(sourceStorage.getId()).one();
+                throw new IllegalStateException(
+                        "SourceStorage type FTP nhưng không phải FtpStorageEntity: " + sourceStorage.getClass());
+            }
+            return new FtpStorage(ftpConfig);
+
         } else {
-            throw new UnsupportedOperationException("Loại storage không được hỗ trợ: " + sourceStorage.getType());
+            throw new UnsupportedOperationException(
+                    "Loại storage không được hỗ trợ: " + sourceStorage.getType());
         }
     }
 
     /**
      * Làm mới FileStorage instance (xóa cũ và tạo mới)
      */
-
     public FileStorage refreshFileStorage(SourceStorage sourceStorage) {
         removeFileStorageFromContext(sourceStorage);
         return getOrCreateFileStorage(sourceStorage);
@@ -134,8 +170,8 @@ public class DynamicStorageManager {
         if (springBeanFactory.containsSingleton(storageName)) {
             springBeanFactory.destroySingleton(storageName);
         }
-
     }
+
     /**
      * Đảm bảo storage được đăng ký trong Spring context
      * Được gọi khi Jmix cần tìm storage theo tên
@@ -146,11 +182,12 @@ public class DynamicStorageManager {
         }
 
         String beanName = "fs_" + storageName;
-        
+
         // Nếu đã tồn tại, đảm bảo cũng có tên không prefix cho Jmix
         if (springBeanFactory.containsBean(beanName)) {
             if (!springBeanFactory.containsBean(storageName)) {
-                FileStorage existingStorage = springBeanFactory.getBean(beanName, FileStorage.class);
+                FileStorage existingStorage =
+                        springBeanFactory.getBean(beanName, FileStorage.class);
                 springBeanFactory.registerSingleton(storageName, existingStorage);
             }
             return;
@@ -167,15 +204,17 @@ public class DynamicStorageManager {
                 .id(nameInfo.storageId)
                 .optional()
                 .orElse(null);
-                
+
         if (sourceStorage == null || !Boolean.TRUE.equals(sourceStorage.getActive())) {
             return;
         }
 
         // Kiểm tra loại storage có khớp không
-        boolean isTypeMatch = (StorageType.S3.equals(nameInfo.storageType) && sourceStorage.getType() == StorageType.S3)
-                || (StorageType.WEBDIR.equals(nameInfo.storageType) && sourceStorage.getType() == StorageType.WEBDIR);
-        
+        boolean isTypeMatch =
+                (StorageType.S3.equals(nameInfo.storageType) && sourceStorage.getType() == StorageType.S3)
+                        || (StorageType.WEBDIR.equals(nameInfo.storageType) && sourceStorage.getType() == StorageType.WEBDIR)
+                        || (StorageType.FTP.equals(nameInfo.storageType) && sourceStorage.getType() == StorageType.FTP);
+
         if (isTypeMatch) {
             getOrCreateFileStorage(sourceStorage);
         }
@@ -190,12 +229,25 @@ public class DynamicStorageManager {
             return null;
         }
 
-        String storageTypeString = storageName.substring(0, dashIndex);  // "s3" | "webdir"
+        String storageTypeString = storageName.substring(0, dashIndex);  // "s3" | "webdir" | "ftp"
         String storageIdString = storageName.substring(dashIndex + 1);
 
         try {
             UUID storageId = UUID.fromString(storageIdString);
-            StorageType storageType = "s3".equals(storageTypeString) ? StorageType.S3 : StorageType.WEBDIR;
+            StorageType storageType;
+            switch (storageTypeString) {
+                case "s3":
+                    storageType = StorageType.S3;
+                    break;
+                case "webdir":
+                    storageType = StorageType.WEBDIR;
+                    break;
+                case "ftp":
+                    storageType = StorageType.FTP;
+                    break;
+                default:
+                    return null;
+            }
             return new StorageNameInfo(storageId, storageType);
         } catch (Exception e) {
             return null;
@@ -225,9 +277,4 @@ public class DynamicStorageManager {
 
         throw new IllegalArgumentException("Dynamic FileStorage not found: " + storageName);
     }
-
-
-
-
 }
-

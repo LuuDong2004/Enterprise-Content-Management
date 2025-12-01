@@ -11,6 +11,7 @@ import com.vaadin.flow.router.RouteParameters;
 
 
 import com.vn.ecm.ecm.storage.DynamicStorageManager;
+import com.vn.ecm.entity.FtpStorageEntity;
 import com.vn.ecm.entity.SourceStorage;
 import com.vn.ecm.entity.StorageType;
 import com.vn.ecm.view.ecm.EcmView;
@@ -18,6 +19,7 @@ import com.vn.ecm.view.main.MainView;
 import groovy.transform.Final;
 import io.jmix.core.DataManager;
 import io.jmix.flowui.DialogWindows;
+import io.jmix.flowui.Notifications;
 import io.jmix.flowui.UiComponents;
 
 import io.jmix.flowui.action.list.EditAction;
@@ -70,8 +72,8 @@ public class SourceStorageListView extends StandardListView<SourceStorage> {
         });
     }
 
-    @Subscribe("sourceStoragesDataGrid.ftpCreateAction")
-    public void onSourceStoragesDataGridFtpCreateAction(final ActionPerformedEvent event) {
+    @Subscribe("sourceStoragesDataGrid.localCreateAction")
+    public void onSourceStoragesDataGridLocalCreateAction(final ActionPerformedEvent event) {
         SourceStorage newSourceStorage = dataManager.create(SourceStorage.class);
             newSourceStorage.setType(StorageType.WEBDIR);
         DialogWindow<View<?>> window = dialogWindows.detail(this,SourceStorage.class )
@@ -102,6 +104,21 @@ public class SourceStorageListView extends StandardListView<SourceStorage> {
         window.open();
     }
 
+    @Subscribe("sourceStoragesDataGrid.ftpCreateAction")
+    public void onSourceStoragesDataGridFtpCreateAction(final ActionPerformedEvent event) {
+        FtpStorageEntity selected = dataManager.create(FtpStorageEntity.class);
+        DialogWindow<View<?>> window = dialogWindows.detail(this,FtpStorageEntity.class )
+                .newEntity(selected)
+                .build();
+        window.addAfterCloseListener(afterCloseEvent -> {
+            sourceStoragesDl.load();
+        });
+        window.setWidth("40%");
+        window.setHeight("auto");
+        window.setResizable(true);
+        window.open();
+    }
+
     @Subscribe("sourceStoragesDataGrid.editAction")
     public void onSourceStoragesDataGridEditAction(final ActionPerformedEvent event) {
         SourceStorage selected = sourceStoragesDataGrid.getSingleSelectedItem();
@@ -120,6 +137,7 @@ public class SourceStorageListView extends StandardListView<SourceStorage> {
         window.open();
     }
 
+
     @Subscribe("sourceStoragesDataGrid.removeAction")
     public void onSourceStoragesDataGridRemoveAction(final ActionPerformedEvent event) {
         SourceStorage selected = sourceStoragesDataGrid.getSingleSelectedItem();
@@ -134,6 +152,8 @@ public class SourceStorageListView extends StandardListView<SourceStorage> {
         });
         dlg.open();
     }
+
+
     
 
 }

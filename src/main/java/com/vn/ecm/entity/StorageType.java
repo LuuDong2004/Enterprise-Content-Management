@@ -9,7 +9,8 @@ public enum StorageType implements EnumClass<String> {
 
     S3("S3"),
     WEBDIR("WEBDIR"),
-    API("API");
+    API("API"),
+    FTP("FTP");
 
     private final String id;
 
