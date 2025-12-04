@@ -255,9 +255,15 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
                     .withCloseable(false)
                     .show();
         } catch (Exception e) {
-            notifications.create("Lỗi tải lên : " + event.getFileName())
+//            notifications.create("Lỗi tải lên : " + event.getFileName())
+//                    .withType(Notifications.Type.ERROR)
+//                    .withDuration(4000)
+//                    .withCloseable(false)
+//                    .show();
+            e.printStackTrace();
+            notifications.create("Lỗi tải lên: " + e.getMessage())
                     .withType(Notifications.Type.ERROR)
-                    .withDuration(4000)
+                    .withDuration(2000)
                     .withCloseable(false)
                     .show();
         }
