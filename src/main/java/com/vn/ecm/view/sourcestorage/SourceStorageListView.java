@@ -160,7 +160,6 @@ public class SourceStorageListView extends StandardListView<SourceStorage> {
         }
     }
 
-
     @Subscribe("sourceStoragesDataGrid.removeAction")
     public void onSourceStoragesDataGridRemoveAction(final ActionPerformedEvent event) {
         SourceStorage selected = sourceStoragesDataGrid.getSingleSelectedItem();
@@ -175,6 +174,5 @@ public class SourceStorageListView extends StandardListView<SourceStorage> {
         });
         dlg.open();
     }
-
 
 }

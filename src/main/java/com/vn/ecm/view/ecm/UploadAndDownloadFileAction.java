@@ -130,27 +130,28 @@ public class UploadAndDownloadFileAction extends ItemTrackingAction<FileDescript
         File tmp = tempStorage.getFile(fileId);
         if (tmp == null)
             return;
-        FileDescriptor fileDescriptor = fileDescriptorService.uploadFile(
-                fileId,
-                uploadEvent.getFileName(),
-                uploadEvent.getContentLength() > 0 ? uploadEvent.getContentLength() : null,
-                folder,
-                storage,
-                user.getUsername(),
-                tmp);
-        if (fileDescriptor != null) {
-            permissionService.initializeFilePermission(user, fileDescriptor);
-            ocrFileTextSearchService.getExtractedText(fileDescriptor.getId())
-                    .filter(text -> !text.isBlank())
-                    .ifPresent(text -> {
-                        String preview = text.length() > 250 ? text.substring(0, 250) + "..." : text;
-                        notifications.create("OCR đã lưu")
-                                .withType(Notifications.Type.SUCCESS)
-                                .withDuration(2000)
-                                .withCloseable(false)
-                                .show();
-                    });
-        }
+            FileDescriptor fileDescriptor = fileDescriptorService.uploadFile(
+                    fileId,
+                    uploadEvent.getFileName(),
+                    uploadEvent.getContentLength() > 0 ? uploadEvent.getContentLength() : null,
+                    folder,
+                    storage,
+                    user.getUsername(),
+                    tmp);
+            if (fileDescriptor != null) {
+                permissionService.initializeFilePermission(user, fileDescriptor);
+                ocrFileTextSearchService.getExtractedText(fileDescriptor.getId())
+                        .filter(text -> !text.isBlank())
+                        .ifPresent(text -> {
+                            String preview = text.length() > 250 ? text.substring(0, 250) + "..." : text;
+                            notifications.create("OCR đã lưu")
+                                    .withType(Notifications.Type.SUCCESS)
+                                    .withDuration(2000)
+                                    .withCloseable(false)
+                                    .show();
+                        });
+            }
+
     }
 
     private void download() {

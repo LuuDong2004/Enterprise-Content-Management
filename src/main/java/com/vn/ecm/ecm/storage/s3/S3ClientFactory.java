@@ -86,7 +86,7 @@ public class S3ClientFactory {
                 return "Port vượt ngoài khoảng hợp lệ : " + port;
             }
         } catch (URISyntaxException e) {
-            return "Đường dẫn endpoint không hợp lệ: " + e.getMessage();
+            return "Đường dẫn không hợp lệ: " + e.getMessage();
         } catch (IllegalArgumentException e) {
             return "Endpoint không hợp lệ: " + e.getMessage();
         }

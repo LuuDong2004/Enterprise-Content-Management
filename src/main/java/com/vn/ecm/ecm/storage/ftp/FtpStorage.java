@@ -1,10 +1,12 @@
 package com.vn.ecm.ecm.storage.ftp;
 
-import com.vn.ecm.entity.FtpStorageEntity;
+import com.vn.ecm.ecm.storage.ftp.config.FtpStorageConfig;
 import io.jmix.core.FileRef;
 import io.jmix.core.FileStorage;
 import org.apache.commons.net.ftp.FTP;
-import org.apache.commons.net.ftp.FTPClient;
+import org.apache.commons.net.ftp.FTPSClient;
+import org.apache.commons.net.ftp.FTPReply;
+import org.apache.commons.net.util.TrustManagerUtils;
 
 import java.io.*;
 import java.time.LocalDate;
@@ -12,29 +14,28 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Runtime FileStorage triển khai FTP (FileZilla)
- * KHÁC với entity com.vn.ecm.entity.FtpStorageEntity
+ * Runtime FileStorage triển khai FTPs (FileZilla explicit TLS).
+ * Không phụ thuộc entity JPA, chỉ dùng FtpStorageConfig.
  */
 public class FtpStorage implements FileStorage {
 
     private final String storageName;
 
     private final String host;
-    private final Integer port;
+    private final int port;
     private final String username;
     private final String password;
     private final String ftpPath;
     private final boolean passiveMode;
 
-    public FtpStorage(FtpStorageEntity ftpStorage) {
-        this.storageName = "ftp-" + ftpStorage.getId();
-
-        this.host = ftpStorage.getHost();
-        this.port = Integer.valueOf(ftpStorage.getPort());
-        this.username = ftpStorage.getUsername();
-        this.password = ftpStorage.getPassword();
-        this.ftpPath = ftpStorage.getFtpPath() != null ? ftpStorage.getFtpPath() : "/";
-        this.passiveMode = Boolean.TRUE.equals(ftpStorage.getPassiveMode());
+    public FtpStorage(String storageName, FtpStorageConfig cfg) {
+        this.storageName = storageName;
+        this.host = cfg.getHost();
+        this.port = cfg.getPort();
+        this.username = cfg.getUsername();
+        this.password = cfg.getPassword();
+        this.ftpPath = cfg.getFtpPath();
+        this.passiveMode = cfg.isPassiveMode();
 
         if (host == null || host.isBlank()
                 || username == null || username.isBlank()
@@ -56,7 +57,9 @@ public class FtpStorage implements FileStorage {
     }
 
     @Override
-    public FileRef saveStream(String fileName, InputStream inputStream, Map<String, Object> parameters) {
+    public FileRef saveStream(String fileName,
+                              InputStream inputStream,
+                              Map<String, Object> parameters) {
         LocalDate today = LocalDate.now();
 
         String datePath = "%04d/%02d/%02d".formatted(
@@ -69,7 +72,7 @@ public class FtpStorage implements FileStorage {
         String relativePath = datePath + "/" + unique;
         String remotePath = normalizeRemotePath(ftpPath, relativePath);
 
-        FTPClient client = createAndLoginClient();
+        FTPSClient client = createAndLoginClient();
         try (InputStream is = inputStream) {
             client.setFileType(FTP.BINARY_FILE_TYPE);
 
@@ -77,7 +80,10 @@ public class FtpStorage implements FileStorage {
 
             boolean ok = client.storeFile(remotePath, is);
             if (!ok) {
-                throw new RuntimeException("Không thể upload file lên FTP: " + client.getReplyString());
+                int reply = client.getReplyCode();
+                String msg = client.getReplyString();
+                throw new RuntimeException("Không thể upload file lên FTP. ReplyCode=" +
+                        reply + ", Message=" + msg);
             }
 
         } catch (IOException e) {
@@ -98,7 +104,7 @@ public class FtpStorage implements FileStorage {
         }
 
         String remotePath = normalizeRemotePath(ftpPath, reference.getPath());
-        FTPClient client = createAndLoginClient();
+        FTPSClient client = createAndLoginClient();
 
         try {
             client.setFileType(FTP.BINARY_FILE_TYPE);
@@ -106,7 +112,10 @@ public class FtpStorage implements FileStorage {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             boolean ok = client.retrieveFile(remotePath, bos);
             if (!ok) {
-                throw new FileNotFoundException("Không tìm thấy file: " + remotePath);
+                int reply = client.getReplyCode();
+                String msg = client.getReplyString();
+                throw new FileNotFoundException("Không tìm thấy file: " + remotePath +
+                        ". ReplyCode=" + reply + ", Message=" + msg);
             }
 
             return new ByteArrayInputStream(bos.toByteArray());
@@ -127,10 +136,16 @@ public class FtpStorage implements FileStorage {
         }
 
         String remotePath = normalizeRemotePath(ftpPath, reference.getPath());
-        FTPClient client = createAndLoginClient();
+        FTPSClient client = createAndLoginClient();
 
         try {
-            client.deleteFile(remotePath);
+            boolean ok = client.deleteFile(remotePath);
+            if (!ok) {
+                int reply = client.getReplyCode();
+                String msg = client.getReplyString();
+                throw new RuntimeException("Không thể xóa file trên FTP. ReplyCode=" +
+                        reply + ", Message=" + msg);
+            }
         } catch (IOException e) {
             throw new RuntimeException("Không thể xóa file trên FTP: " + remotePath, e);
         } finally {
@@ -147,7 +162,7 @@ public class FtpStorage implements FileStorage {
         }
 
         String remotePath = normalizeRemotePath(ftpPath, reference.getPath());
-        FTPClient client = createAndLoginClient();
+        FTPSClient client = createAndLoginClient();
 
         try {
             return client.listFiles(remotePath).length == 1;
@@ -158,29 +173,46 @@ public class FtpStorage implements FileStorage {
         }
     }
 
-    // ========================= HELPER =========================
+    // ========================= HELPER (FTPS) =========================
 
-    private FTPClient createAndLoginClient() {
-        FTPClient client = new FTPClient();
+    private FTPSClient createAndLoginClient() {
+        // Explicit FTPS (AUTH TLS) – giống FileZilla “Require explicit FTP over TLS”
+        FTPSClient client = new FTPSClient("TLS");
+
+        // Dev: chấp nhận mọi certificate (self-signed)
+        client.setTrustManager(TrustManagerUtils.getAcceptAllTrustManager());
+
         try {
             client.connect(host, port);
-            if (!client.login(username, password)) {
-                throw new RuntimeException("Login FTP thất bại!");
+
+            int reply = client.getReplyCode();
+            if (!FTPReply.isPositiveCompletion(reply)) {
+                throw new RuntimeException("Server FTP từ chối kết nối. ReplyCode=" + reply +
+                        ", Message=" + client.getReplyString());
             }
+
+            if (!client.login(username, password)) {
+                throw new RuntimeException("Đăng nhập FTP thất bại (user/mật khẩu/TLS).");
+            }
+
+            // Quan trọng cho FTPS – mở TLS cho data channel
+            client.execPBSZ(0);
+            client.execPROT("P");
 
             if (passiveMode) {
                 client.enterLocalPassiveMode();
+            } else {
+                client.enterLocalActiveMode();
             }
 
             return client;
-
         } catch (IOException e) {
             disconnect(client);
             throw new RuntimeException("Không kết nối được FTP server: " + host + ":" + port, e);
         }
     }
 
-    private void disconnect(FTPClient client) {
+    private void disconnect(FTPSClient client) {
         try {
             if (client != null && client.isConnected()) {
                 client.logout();
@@ -195,7 +227,7 @@ public class FtpStorage implements FileStorage {
         }
     }
 
-    private void ensureFolders(FTPClient client, String dir) throws IOException {
+    private void ensureFolders(FTPSClient client, String dir) throws IOException {
         String[] parts = dir.split("/");
         String current = "";
 
@@ -208,8 +240,12 @@ public class FtpStorage implements FileStorage {
 
     private String normalizeRemotePath(String base, String rel) {
         String b = base == null ? "" : base.trim();
-        if (b.endsWith("/")) b = b.substring(0, b.length() - 1);
-        if (!rel.startsWith("/")) rel = "/" + rel;
+        if (b.endsWith("/")) {
+            b = b.substring(0, b.length() - 1);
+        }
+        if (!rel.startsWith("/")) {
+            rel = "/" + rel;
+        }
         return b + rel;
     }
 
