@@ -3,6 +3,7 @@ package com.vn.ecm.view.component.filepreview;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dialog.Dialog;
+import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -11,8 +12,10 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vn.ecm.dto.ZipFileDto;
+import com.vn.ecm.entity.FileDescriptor;
 import com.vn.ecm.service.ecm.zipfile.ZipPreviewService;
 import io.jmix.core.FileRef;
+import io.jmix.flowui.DialogWindows;
 import io.jmix.flowui.Notifications;
 import io.jmix.flowui.UiComponents;
 import io.jmix.flowui.component.grid.TreeDataGrid;
@@ -52,9 +55,12 @@ public class ZipPreview extends StandardView {
     private CollectionContainer<ZipFileDto> zipTreeDc;
 
     private String currentPassword;
+    @Autowired
+    private DialogWindows dialogWindows;
 
-    public void setInputFile(FileRef fileRef) {
-        this.inputFile = fileRef;
+    public void setInputFile(FileRef inputFile) {
+
+        this.inputFile = inputFile;
     }
 
     @Subscribe
@@ -85,6 +91,7 @@ public class ZipPreview extends StandardView {
                     .show();
         }
     }
+
     private void buildTreeAndFill(String password) throws Exception {
         List<ZipFileDto> roots = zipPreviewService.buildZipTree(inputFile, password);
         this.currentPassword = password;
@@ -110,6 +117,7 @@ public class ZipPreview extends StandardView {
             }
         }
     }
+
     private void openPasswordDialog() {
         Dialog dialog = new Dialog();
         dialog.setHeaderTitle("Tệp nén có mật khẩu");
@@ -139,6 +147,7 @@ public class ZipPreview extends StandardView {
         dialog.add(layout);
         dialog.open();
     }
+
     @Subscribe("zipTreeGrid.downloadAction")
     public void onDownload(ActionPerformedEvent event) {
         ZipFileDto selected = zipTreeGrid.getSingleSelectedItem();
@@ -169,6 +178,7 @@ public class ZipPreview extends StandardView {
                     .show();
         }
     }
+
     private void initFolderGridColumn() {
         if (zipTreeGrid.getColumnByKey("name") != null) {
             zipTreeGrid.removeColumn(zipTreeGrid.getColumnByKey("name"));
@@ -253,6 +263,100 @@ public class ZipPreview extends StandardView {
     private String getExtension(String fileName) {
         if (fileName == null || !fileName.contains(".")) return "";
         return fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
+    }
+
+
+    @Subscribe("zipTreeGrid.previewFileAction")
+    public void onZipTreeGridPreviewFileAction(final ActionPerformedEvent event) {
+
+        ZipFileDto selected = zipTreeGrid.getSingleSelectedItem();
+        if (selected == null) return;
+        String extension = getExtension(selected.getName());
+
+        if (extension.startsWith("pdf")) {
+            previewPdfFile(inputFile);
+        } else if (extension.startsWith("txt") || extension.startsWith("docx")) {
+            previewTextFile(inputFile);
+        } else if (extension.startsWith("jpg")
+                || extension.startsWith("png")
+                || extension.startsWith("jpeg")
+                || extension.startsWith("webp")
+                || extension.startsWith("svg")
+                || extension.startsWith("gif")) {
+            previewImageFile(inputFile);
+        } else if (extension.startsWith("mp4")
+                || extension.startsWith("mov")
+                || extension.startsWith("webm")) {
+            preViewVideoFile(inputFile);
+        } else if (extension.startsWith("html")
+                || extension.startsWith("htm")
+                || extension.startsWith("java")
+                || extension.startsWith("js")
+                || extension.startsWith("css")
+                || extension.startsWith("md")
+                || extension.startsWith("xml")
+                || extension.startsWith("sql")) {
+            preViewHtmlFile(inputFile);
+        } else if (extension.startsWith("xlsx")) {
+            previewExcelFile(inputFile);
+        } else if (extension.startsWith("zip")) {
+            previewZipFile(inputFile);
+        } else {
+            notifications.create("Loại file này chưa được hỗ trợ xem trước: " + extension)
+                    .withType(Notifications.Type.WARNING)
+                    .withCloseable(false)
+                    .withDuration(2000)
+                    .show();
+        }
+    }
+
+    private void previewPdfFile(FileRef fileRelf) {
+        DialogWindow<PdfPreview> window = dialogWindows.view(this, PdfPreview.class).build();
+        window.getView().setInputFile(fileRelf);
+        window.setResizable(true);
+        window.open();
+    }
+
+    private void previewTextFile(FileRef fileRelf) {
+        DialogWindow<TextPreview> window = dialogWindows.view(this, TextPreview.class).build();
+        window.getView().setInputFile(fileRelf);
+        window.setResizable(true);
+        window.open();
+    }
+
+    private void previewImageFile(FileRef fileRelf) {
+        DialogWindow<ImagePreview> window = dialogWindows.view(this, ImagePreview.class).build();
+        window.getView().setInputFile(fileRelf);
+        window.setResizable(true);
+        window.open();
+    }
+
+    private void preViewVideoFile(FileRef fileRelf) {
+        DialogWindow<VideoPreview> window = dialogWindows.view(this, VideoPreview.class).build();
+        window.getView().setInputFile(fileRelf);
+        window.setResizable(true);
+        window.open();
+    }
+
+    private void preViewHtmlFile(FileRef fileRelf) {
+        DialogWindow<CodePreview> window = dialogWindows.view(this, CodePreview.class).build();
+        window.getView().setInputFile(fileRelf);
+        window.setResizable(true);
+        window.open();
+    }
+
+    private void previewExcelFile(FileRef fileRelf) {
+        DialogWindow<ExcelPreview> window = dialogWindows.view(this, ExcelPreview.class).build();
+        window.getView().setInputFile(fileRelf);
+        window.setResizable(true);
+        window.open();
+    }
+
+    private void previewZipFile(FileRef fileRelf) {
+        DialogWindow<ZipPreview> window = dialogWindows.view(this, ZipPreview.class).build();
+        window.getView().setInputFile(fileRelf);
+        window.setResizable(true);
+        window.open();
     }
 
 

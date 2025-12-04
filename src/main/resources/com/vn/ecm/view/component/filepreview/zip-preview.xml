@@ -24,7 +24,8 @@
                     <column property="key" header="Đường dẫn" autoWidth="true"/>
                 </columns>
                 <actions>
-                    <action id="downloadAction"/>
+                    <action id="downloadAction" text="Tải xuống"/>
+                    <action id="previewFileAction" text="Xem trước"/>
                 </actions>
             </treeDataGrid>
         </vbox>

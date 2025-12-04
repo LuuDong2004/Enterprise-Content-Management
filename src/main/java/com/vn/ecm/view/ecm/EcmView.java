@@ -578,24 +578,20 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         String extension = file.getExtension();
         if (extension.startsWith("pdf")) {
             previewPdfFile(fileRef);
-        }
-        if (extension.startsWith("txt") || extension.startsWith("doc")) {
+        } else if (extension.startsWith("txt") || extension.startsWith("docx")) {
             previewTextFile(fileRef);
-        }
-        if (extension.startsWith("jpg")
+        } else if (extension.startsWith("jpg")
                 || extension.startsWith("png")
                 || extension.startsWith("jpeg")
                 || extension.startsWith("webp")
                 || extension.startsWith("svg")
                 || extension.startsWith("gif")) {
             previewImageFile(fileRef);
-        }
-        if (extension.startsWith("mp4")
+        } else if (extension.startsWith("mp4")
                 || extension.startsWith("mov")
                 || extension.startsWith("webm")) {
             preViewVideoFile(fileRef);
-        }
-        if (extension.startsWith("html")
+        } else if (extension.startsWith("html")
                 || extension.startsWith("htm")
                 || extension.startsWith("java")
                 || extension.startsWith("js")
@@ -604,16 +600,15 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
                 || extension.startsWith("xml")
                 || extension.startsWith("sql")) {
             preViewHtmlFile(fileRef);
-        }
-        if(extension.startsWith("xlsx")){
+        } else if (extension.startsWith("xlsx")) {
             previewExcelFile(fileRef);
-        }
-        if(extension.startsWith("zip")){
+        } else if (extension.startsWith("zip")) {
             previewZipFile(fileRef);
-        }else {
-            notifications.create("Loại tệp này chưa hỗ trợ xem trước!")
-                    .withDuration(2000)
+        } else {
+            notifications.create("Loại file này chưa được hỗ trợ xem trước: " + extension)
+                    .withType(Notifications.Type.WARNING)
                     .withCloseable(false)
+                    .withDuration(2000)
                     .show();
         }
     }
