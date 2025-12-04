@@ -1,9 +1,7 @@
 package com.vn.ecm.dto;
 
-import io.jmix.core.entity.annotation.JmixGeneratedValue;
 import io.jmix.core.entity.annotation.JmixId;
 import io.jmix.core.metamodel.annotation.JmixEntity;
-
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,9 +11,7 @@ import java.util.UUID;
 public class ZipFileDto {
 
     @JmixId
-    @JmixGeneratedValue
-    private UUID id;
-
+    private UUID id = UUID.randomUUID();
 
     private String name;
 
@@ -32,6 +28,7 @@ public class ZipFileDto {
 
 
     private List<ZipFileDto> children = new ArrayList<>();
+
 
 
     public UUID getId() {

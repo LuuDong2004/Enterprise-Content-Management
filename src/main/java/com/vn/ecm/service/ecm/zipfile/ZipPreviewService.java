@@ -1,7 +1,10 @@
 package com.vn.ecm.service.ecm.zipfile;
+
 import com.vn.ecm.dto.ZipFileDto;
+import com.vn.ecm.ecm.storage.DynamicStorageManager;
 import io.jmix.core.FileRef;
 import io.jmix.core.FileStorage;
+import io.jmix.core.FileStorageLocator;
 import net.lingala.zip4j.ZipFile;
 import net.lingala.zip4j.exception.ZipException;
 import net.lingala.zip4j.model.FileHeader;
@@ -15,88 +18,91 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 
-/**
- * Service phục vụ view ZipPreview:
- *  - Kiểm tra file ZIP có mã hoá không
- *  - Build cây ZipFileDto cho treeDataGrid
- *  - Tải xuống nội dung 1 entry trong ZIP
- */
 @Component
 public class ZipPreviewService {
 
-    private final FileStorage fileStorage;
+    protected final FileStorageLocator fileStorageLocator;
+    protected final DynamicStorageManager dynamicStorageManager;
 
-    public ZipPreviewService(FileStorage fileStorage) {
-        this.fileStorage = fileStorage;
+    public ZipPreviewService(FileStorageLocator fileStorageLocator,
+                             DynamicStorageManager dynamicStorageManager) {
+        this.fileStorageLocator = fileStorageLocator;
+        this.dynamicStorageManager = dynamicStorageManager;
     }
 
     /**
-     * Kiểm tra file ZIP có được mã hoá (có password) hay không.
+     * Lấy đúng FileStorage:
+     * - Kho động (s3-uuid, webdir-uuid, ftp-uuid) -> DynamicStorageManager
+     * - Khác -> kho mặc định (localfs / dbfs)
      */
-    public boolean isEncrypted(FileRef fileRef) {
-        Path tempZip = null;
-        try (InputStream in = fileStorage.openStream(fileRef)) {
-            tempZip = Files.createTempFile("ecm-zip-preview-", ".zip");
-            try (OutputStream out = Files.newOutputStream(tempZip)) {
-                in.transferTo(out);
-            }
+    protected FileStorage getFileStorage(FileRef fileRef) {
+        String storageName = fileRef.getStorageName();
 
-            ZipFile zipFile = new ZipFile(tempZip.toFile());
-            return zipFile.isEncrypted();
-
-        } catch (IOException e) {
-            throw new RuntimeException("Lỗi đọc file ZIP: " + e.getMessage(), e);
-        } finally {
-            if (tempZip != null) {
-                try {
-                    Files.deleteIfExists(tempZip);
-                } catch (IOException ignored) {
-                }
+        if (storageName != null && !storageName.isBlank()) {
+            try {
+                return dynamicStorageManager.getFileStorageByName(storageName);
+            } catch (Exception ignored) {
+                // Không tìm thấy trong kho động -> fallback
             }
         }
+
+        return fileStorageLocator.getDefault();
     }
 
-    /**
-     * Build cây ZipFileDto để hiển thị trên treeDataGrid.
-     *
-     * Quy ước:
-     *  - Nếu ZIP có password nhưng password null/blank -> IllegalArgumentException("PASSWORD_REQUIRED")
-     *  - Nếu password sai -> IllegalArgumentException("WRONG_PASSWORD")
-     */
-    public List<ZipFileDto> buildZipTree(FileRef fileRef, String password) {
+    // =====================================================
+    // Build cây ZIP – DỰA VÀO ZipException để check password
+    // =====================================================
+    public List<ZipFileDto> buildZipTree(FileRef fileRef, String password) throws Exception {
         Path tempZip = null;
-        ZipFile zipFile = null;
+        FileStorage storage = getFileStorage(fileRef);
 
-        try (InputStream in = fileStorage.openStream(fileRef)) {
+        try (InputStream in = storage.openStream(fileRef)) {
             tempZip = Files.createTempFile("ecm-zip-tree-", ".zip");
             try (OutputStream out = Files.newOutputStream(tempZip)) {
                 in.transferTo(out);
             }
 
-            zipFile = new ZipFile(tempZip.toFile());
+            ZipFile zipFile = new ZipFile(tempZip.toFile());
 
-            if (zipFile.isEncrypted()) {
-                if (password == null || password.isBlank()) {
-                    throw new IllegalArgumentException("PASSWORD_REQUIRED");
-                }
+            // Nếu người dùng đã nhập mật khẩu -> set password
+            if (password != null && !password.isBlank()) {
                 zipFile.setPassword(password.toCharArray());
             }
 
             List<FileHeader> headers;
             try {
                 headers = zipFile.getFileHeaders();
-            } catch (ZipException ex) {
-                // Thường là sai mật khẩu
-                if (zipFile.isEncrypted()) {
-                    throw new IllegalArgumentException("WRONG_PASSWORD", ex);
-                }
-                throw new RuntimeException("Lỗi đọc cấu trúc ZIP: " + ex.getMessage(), ex);
+            } catch (ZipException ze) {
+                // Thiếu hoặc sai mật khẩu -> để controller quyết định (mở popup / báo sai pass)
+                throw ze;
             }
+
+            // 🔥 Quan trọng: kiểm tra password thực sự
+            FileHeader testHeader = headers.stream()
+                    .filter(h -> !h.isDirectory())
+                    .findFirst()
+                    .orElse(null);
+
+            if (testHeader != null) {
+                try (InputStream entryStream = zipFile.getInputStream(testHeader)) {
+                    // Đọc 1–2 byte để ép Zip4j decrypt
+                    byte[] buf = new byte[2];
+                    // không cần quan tâm kết quả, chỉ cần nếu sai pass sẽ ném ZipException
+                    entryStream.read(buf);
+                } catch (ZipException ze) {
+                    // Sai hoặc thiếu password
+                    throw ze;
+                }
+            }
+            // Nếu tới đây mà không có ZipException:
+            // -> hoặc không cần password, hoặc password đúng.
 
             return buildTreeFromHeaders(headers);
 
-        } catch (IOException e) {
-            throw new RuntimeException("Lỗi đọc file ZIP từ storage: " + e.getMessage(), e);
+        } catch (ZipException ze) {
+            throw ze;
+        } catch (IOException ioe) {
+            throw new Exception("Lỗi I/O khi đọc file ZIP: " + ioe.getMessage(), ioe);
         } finally {
             if (tempZip != null) {
                 try {
@@ -107,55 +113,46 @@ public class ZipPreviewService {
         }
     }
 
-    /**
-     * Tải nội dung một entry trong ZIP (dùng cho nút "Tải xuống").
-     *
-     * @param fileRef  FileRef tới file ZIP trong storage
-     * @param entryKey key trong ZIP (ví dụ: folder1/file.txt)
-     * @param password mật khẩu (nếu có)
-     */
-    public byte[] loadEntryBytes(FileRef fileRef, String entryKey, String password) {
+    // =====================================================
+    // Đọc bytes 1 entry để download – cũng check password
+    // =====================================================
+    public byte[] loadEntryBytes(FileRef fileRef, String entryKey, String password) throws Exception {
         Path tempZip = null;
-        ZipFile zipFile = null;
+        FileStorage storage = getFileStorage(fileRef);
 
-        try (InputStream in = fileStorage.openStream(fileRef)) {
+        try (InputStream in = storage.openStream(fileRef)) {
             tempZip = Files.createTempFile("ecm-zip-entry-", ".zip");
             try (OutputStream out = Files.newOutputStream(tempZip)) {
                 in.transferTo(out);
             }
 
-            zipFile = new ZipFile(tempZip.toFile());
+            ZipFile zipFile = new ZipFile(tempZip.toFile());
 
-            if (zipFile.isEncrypted()) {
-                if (password == null || password.isBlank()) {
-                    throw new IllegalArgumentException("PASSWORD_REQUIRED");
-                }
+            if (password != null && !password.isBlank()) {
                 zipFile.setPassword(password.toCharArray());
             }
 
             FileHeader header = zipFile.getFileHeader(entryKey);
             if (header == null) {
-                throw new IllegalArgumentException("Không tìm thấy entry: " + entryKey);
+                throw new Exception("Không tìm thấy entry: " + entryKey);
             }
-
             if (header.isDirectory()) {
-                throw new IllegalArgumentException("Không thể tải xuống một thư mục.");
+                throw new Exception("Không thể tải xuống thư mục.");
             }
 
             try (InputStream entryStream = zipFile.getInputStream(header);
                  ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
 
+                // Nếu password thiếu/sai, Zip4j ném ZipException ở đây
                 entryStream.transferTo(baos);
                 return baos.toByteArray();
-            } catch (ZipException ex) {
-                if (zipFile.isEncrypted()) {
-                    throw new IllegalArgumentException("WRONG_PASSWORD", ex);
-                }
-                throw new RuntimeException("Lỗi đọc entry trong ZIP: " + ex.getMessage(), ex);
             }
 
-        } catch (IOException e) {
-            throw new RuntimeException("Lỗi I/O khi xử lý ZIP: " + e.getMessage(), e);
+        } catch (ZipException ze) {
+            // Thiếu hoặc sai password
+            throw ze;
+        } catch (IOException ioe) {
+            throw new Exception("Lỗi I/O khi đọc entry ZIP: " + ioe.getMessage(), ioe);
         } finally {
             if (tempZip != null) {
                 try {
@@ -166,21 +163,19 @@ public class ZipPreviewService {
         }
     }
 
-    /**
-     * Chuyển danh sách FileHeader thành cây ZipFileDto (root level).
-     */
-    private List<ZipFileDto> buildTreeFromHeaders(List<FileHeader> headers) {
+    // =====================================================
+    // Build cây DTO từ FileHeader
+    // =====================================================
+    protected List<ZipFileDto> buildTreeFromHeaders(List<FileHeader> headers) {
         Map<String, ZipFileDto> nodeByKey = new LinkedHashMap<>();
         List<ZipFileDto> roots = new ArrayList<>();
 
         for (FileHeader header : headers) {
-            String path = header.getFileName(); // ví dụ: folder1/folder2/file.txt hoặc folder1/
-
+            String path = header.getFileName();
             if (path == null || path.isEmpty()) {
                 continue;
             }
 
-            // Bỏ slash cuối nếu là thư mục
             if (path.endsWith("/")) {
                 path = path.substring(0, path.length() - 1);
             }
@@ -189,7 +184,7 @@ public class ZipPreviewService {
             }
 
             boolean isDir = header.isDirectory();
-            long size = header.getUncompressedSize(); // kích thước uncompressed
+            long size = header.getUncompressedSize();
 
             String[] parts = path.split("/");
             StringBuilder currentKey = new StringBuilder();
@@ -202,24 +197,22 @@ public class ZipPreviewService {
                 currentKey.append(parts[i]);
 
                 String curKeyStr = currentKey.toString();
-                boolean isLastSegment = (i == parts.length - 1);
+                boolean isLast = (i == parts.length - 1);
 
                 ZipFileDto node = nodeByKey.get(curKeyStr);
                 if (node == null) {
-                    node = new ZipFileDto();
+                    node = new ZipFileDto(); // id tự sinh trong DTO
                     node.setName(parts[i]);
                     node.setKey(curKeyStr);
 
-                    if (isLastSegment) {
+                    if (isLast) {
                         node.setFolder(isDir);
                         node.setSize(isDir ? null : size);
                     } else {
-                        // Các node cha trung gian luôn là thư mục
-                        node.setFolder(true);
+                        node.setFolder(Boolean.TRUE);
                         node.setSize(null);
                     }
 
-                    // Gắn parent/children
                     node.setParent(parent);
                     nodeByKey.put(curKeyStr, node);
 
