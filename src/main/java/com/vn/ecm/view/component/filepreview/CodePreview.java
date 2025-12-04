@@ -30,8 +30,25 @@ public class CodePreview extends StandardView {
         this.inputFile = inputFile;
     }
 
+    private String content;
+    private String fileName;
+
+    public void setContent(String content) {
+        this.content = content;
+    }
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
+    }
+
     @Subscribe
     public void onReady(ReadyEvent event) {
+        if (content != null) {
+            if (fileName != null) {
+                codePreview.setLabel(fileName);
+            }
+            codePreview.setValue(content);
+            return;
+        }
         if (inputFile == null) {
             return;
         }

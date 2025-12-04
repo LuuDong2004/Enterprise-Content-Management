@@ -26,12 +26,29 @@ public class TextPreview extends StandardView {
     @Autowired
     private Notifications notifications;
 
+    private String content;
+    private String fileName;
+
+    public void setContent(String content) {
+        this.content = content;
+    }
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
+    }
+
     public void setInputFile(FileRef inputFile) {
         this.inputFile = inputFile;
     }
 
     @Subscribe
     public void onReady(ReadyEvent event) {
+        if (content != null) {
+            if (fileName != null) {
+                textFormField.setLabel(fileName);
+            }
+            textFormField.setValue(content);
+            return;
+        }
         if (inputFile == null) {
             return;
         }

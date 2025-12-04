@@ -19,6 +19,7 @@ public class ExcelPreview extends StandardView {
     private FileRef inputFile;
 
     public void setInputFile(FileRef inputFile) {
+
         this.inputFile = inputFile;
     }
 
@@ -29,9 +30,6 @@ public class ExcelPreview extends StandardView {
 
     @Subscribe
     public void onReady(ReadyEvent event) {
-        if (inputFile == null) {
-            return;
-        }
         univerContainer.setWidthFull();
         univerContainer.setHeightFull();
         String excelUrl = buildExcelUrl(inputFile);

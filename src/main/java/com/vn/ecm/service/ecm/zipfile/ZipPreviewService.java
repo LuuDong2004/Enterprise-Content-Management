@@ -45,7 +45,6 @@ public class ZipPreviewService {
                 // Không tìm thấy trong kho động -> fallback
             }
         }
-
         return fileStorageLocator.getDefault();
     }
 
