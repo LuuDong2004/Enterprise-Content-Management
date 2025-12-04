@@ -1,13 +1,17 @@
 package com.vn.ecm.view.component.filepreview;
 
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dialog.Dialog;
+import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vn.ecm.dto.ZipFileDto;
 import com.vn.ecm.service.ecm.zipfile.ZipPreviewService;
 import io.jmix.core.FileRef;
 import io.jmix.flowui.Notifications;
+import io.jmix.flowui.UiComponents;
 import io.jmix.flowui.component.grid.TreeDataGrid;
 import io.jmix.flowui.download.DownloadFormat;
 import io.jmix.flowui.download.Downloader;
@@ -36,6 +40,9 @@ public class ZipPreview extends StandardView {
     @Autowired
     private Downloader downloader;
 
+    @Autowired
+    private UiComponents uiComponents;
+
     @ViewComponent
     private TreeDataGrid<ZipFileDto> zipTreeGrid;
     @ViewComponent
@@ -46,6 +53,12 @@ public class ZipPreview extends StandardView {
     public void setInputFile(FileRef fileRef) {
         this.inputFile = fileRef;
     }
+
+    @Subscribe
+    public void onInit(final InitEvent event) {
+        initFolderGridColumn();
+    }
+
 
     @Subscribe
     public void onReady(ReadyEvent event) {
@@ -109,7 +122,7 @@ public class ZipPreview extends StandardView {
                 notifications.create("Mật khẩu không đúng, vui lòng nhập lại.")
                         .withType(Notifications.Type.ERROR)
                         .show();
-                openPasswordDialog();   // mở lại dialog mới, giống code cũ
+                openPasswordDialog();
             } catch (Exception ex) {
                 ex.printStackTrace();
                 notifications.create("Lỗi giải nén: " + ex.getMessage())
@@ -125,10 +138,6 @@ public class ZipPreview extends StandardView {
         dialog.add(layout);
         dialog.open();
     }
-
-    // ======================================
-    // Download
-    // ======================================
     @Subscribe("zipTreeGrid.downloadAction")
     public void onDownload(ActionPerformedEvent event) {
         ZipFileDto selected = zipTreeGrid.getSingleSelectedItem();
@@ -160,4 +169,98 @@ public class ZipPreview extends StandardView {
                     .show();
         }
     }
+    private void initFolderGridColumn() {
+        // Xóa cột "name" default để thay bằng component column
+        if (zipTreeGrid.getColumnByKey("name") != null) {
+            zipTreeGrid.removeColumn(zipTreeGrid.getColumnByKey("name"));
+        }
+
+        TreeDataGrid.Column<ZipFileDto> nameColumn =
+                zipTreeGrid.addComponentHierarchyColumn(this::renderItem);
+
+        nameColumn.setHeader("Tên");
+        nameColumn.setFlexGrow(1);
+        nameColumn.setResizable(true);
+
+        zipTreeGrid.setColumnPosition(nameColumn, 0);
+    }
+
+    private Component renderItem(ZipFileDto item) {
+
+        var hboxMain = uiComponents.create(HorizontalLayout.class);
+        hboxMain.setAlignItems(com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment.CENTER);
+        hboxMain.setWidthFull();
+        hboxMain.setSpacing(true);
+        hboxMain.setPadding(false);
+
+        var icon = uiComponents.create(com.vaadin.flow.component.icon.Icon.class);
+
+        if (Boolean.TRUE.equals(item.getFolder())) {
+            icon.setIcon(com.vaadin.flow.component.icon.VaadinIcon.FOLDER);
+            icon.addClassName("file-icon");
+            icon.addClassName("folder"); // màu vàng
+        } else {
+            com.vaadin.flow.component.icon.VaadinIcon vaadinIcon = pickIcon(item);
+            icon.setIcon(vaadinIcon);
+            icon.addClassName("file-icon");
+            icon.addClassName(fileTypeClass(item));
+        }
+
+        icon.getElement().getStyle().set("flex-shrink", "0");
+
+        var span = uiComponents.create(com.vaadin.flow.component.html.Span.class);
+        span.setText(item.getName());
+        span.addClassName("folder-text");
+
+        hboxMain.add(icon, span);
+
+        // Khi click vào dòng → chọn node
+        hboxMain.addClickListener(event -> {
+            zipTreeGrid.select(item);
+            zipTreeDc.setItem(item);
+        });
+
+        return hboxMain;
+    }
+
+    // ======================================
+// Icon logic: lấy extension file
+// ======================================
+    private VaadinIcon pickIcon(ZipFileDto dto) {
+        String ext = getExtension(dto.getName());
+        return switch (ext) {
+            case "png", "jpg", "jpeg", "gif", "bmp", "svg" -> VaadinIcon.PICTURE;
+            case "pdf" -> VaadinIcon.FILE_TEXT;
+            case "xls", "xlsx" -> VaadinIcon.FILE_TABLE;
+            case "doc", "docx" -> VaadinIcon.FILE_TEXT_O;
+            case "zip", "rar", "7z" -> VaadinIcon.ARCHIVE;
+            case "mp3", "wav", "flac" -> VaadinIcon.MUSIC;
+            case "mp4", "avi", "mkv", "mov" -> VaadinIcon.FILM;
+            case "txt" -> VaadinIcon.FILE_TEXT_O;
+            default -> VaadinIcon.FILE_O;
+        };
+    }
+
+    private String fileTypeClass(ZipFileDto dto) {
+        String ext = getExtension(dto.getName());
+        return switch (ext) {
+            case "png", "jpg", "jpeg", "gif", "bmp", "svg" -> "ext-image";
+            case "pdf" -> "ext-pdf";
+            case "xls", "xlsx" -> "ext-excel";
+            case "doc", "docx" -> "ext-word";
+            case "ppt", "pptx" -> "ext-powerpoint";
+            case "zip", "rar", "7z" -> "ext-archive";
+            case "mp3", "wav", "flac" -> "ext-audio";
+            case "mp4", "avi", "mkv", "mov" -> "ext-video";
+            case "txt" -> "ext-text";
+            default -> "ext-file";
+        };
+    }
+
+    private String getExtension(String fileName) {
+        if (fileName == null || !fileName.contains(".")) return "";
+        return fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
+    }
+
+
 }

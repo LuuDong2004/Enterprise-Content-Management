@@ -209,8 +209,8 @@ vaadin-grid::part(font-weight-bold) {
 }
 
 /* Windows-like colors for file icons */
-.file-icon.ext-folder { color: #c19a00; } /* gold-ish folder */
-.file-icon.folder { color: #c19a00; } /* support 'folder' class from Java */
+.file-icon.ext-folder { color: #cccc00; } /* gold-ish folder */
+.file-icon.folder { color: #cccc00; } /* support 'folder' class from Java */
 .file-icon.ext-word { color: #185ABD; } /* Word blue */
 .file-icon.ext-excel { color: #107C41; } /* Excel green */
 .file-icon.ext-powerpoint { color: #D24726; } /* PowerPoint orange */
