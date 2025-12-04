@@ -63,6 +63,7 @@ public class FileDescriptorService implements IFileDescriptorService {
                 .orElse(null);
     }
 
+
     private boolean existsName(Folder folder, SourceStorage src, String name, UUID excludeId) {
         Long cnt = dataManager.loadValue(
                         "select count(f) from FileDescriptor f " +
