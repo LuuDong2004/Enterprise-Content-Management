@@ -3,7 +3,10 @@ package com.vn.ecm.view.component.filepreview;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dialog.Dialog;
+import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.PasswordField;
@@ -98,12 +101,12 @@ public class ZipPreview extends StandardView {
         }
     }
 
-    private void collectNodes(ZipFileDto node, ZipFileDto parent, List<ZipFileDto> acc) {
-        node.setParent(parent);
-        acc.add(node);
-        if (node.getChildren() != null) {
-            for (ZipFileDto child : node.getChildren()) {
-                collectNodes(child, node, acc);
+    private void collectNodes(ZipFileDto fileZipDto, ZipFileDto parent, List<ZipFileDto> list) {
+        fileZipDto.setParent(parent);
+        list.add(fileZipDto);
+        if (fileZipDto.getChildren() != null) {
+            for (ZipFileDto child : fileZipDto.getChildren()) {
+                collectNodes(child, fileZipDto, list);
             }
         }
     }
@@ -111,30 +114,28 @@ public class ZipPreview extends StandardView {
         Dialog dialog = new Dialog();
         dialog.setHeaderTitle("Tệp nén có mật khẩu");
 
-        PasswordField pf = new PasswordField("Mật khẩu");
-        pf.setWidthFull();
+        PasswordField passwordField = new PasswordField("Mật khẩu");
+        passwordField.setWidthFull();
 
-        Button ok = new Button("Giải nén", e -> {
+        Button unZipBtn = new Button("Giải nén", e -> {
             dialog.close();
             try {
-                buildTreeAndFill(pf.getValue());
+                buildTreeAndFill(passwordField.getValue());
             } catch (ZipException ze) {
                 notifications.create("Mật khẩu không đúng, vui lòng nhập lại.")
                         .withType(Notifications.Type.ERROR)
                         .show();
                 openPasswordDialog();
             } catch (Exception ex) {
-                ex.printStackTrace();
                 notifications.create("Lỗi giải nén: " + ex.getMessage())
                         .withType(Notifications.Type.ERROR)
                         .show();
             }
         });
 
-        VerticalLayout layout = new VerticalLayout(pf, ok);
+        VerticalLayout layout = new VerticalLayout(passwordField, unZipBtn);
         layout.setPadding(false);
         layout.setSpacing(true);
-
         dialog.add(layout);
         dialog.open();
     }
@@ -163,14 +164,12 @@ public class ZipPreview extends StandardView {
                     .withType(Notifications.Type.ERROR)
                     .show();
         } catch (Exception e) {
-            e.printStackTrace();
             notifications.create("Không tải được file: " + e.getMessage())
                     .withType(Notifications.Type.ERROR)
                     .show();
         }
     }
     private void initFolderGridColumn() {
-        // Xóa cột "name" default để thay bằng component column
         if (zipTreeGrid.getColumnByKey("name") != null) {
             zipTreeGrid.removeColumn(zipTreeGrid.getColumnByKey("name"));
         }
@@ -187,20 +186,20 @@ public class ZipPreview extends StandardView {
 
     private Component renderItem(ZipFileDto item) {
 
-        var hboxMain = uiComponents.create(HorizontalLayout.class);
-        hboxMain.setAlignItems(com.vaadin.flow.component.orderedlayout.FlexComponent.Alignment.CENTER);
+        HorizontalLayout hboxMain = uiComponents.create(HorizontalLayout.class);
+        hboxMain.setAlignItems(FlexComponent.Alignment.CENTER);
         hboxMain.setWidthFull();
         hboxMain.setSpacing(true);
         hboxMain.setPadding(false);
 
-        var icon = uiComponents.create(com.vaadin.flow.component.icon.Icon.class);
+        Icon icon = uiComponents.create(Icon.class);
 
         if (Boolean.TRUE.equals(item.getFolder())) {
-            icon.setIcon(com.vaadin.flow.component.icon.VaadinIcon.FOLDER);
+            icon.setIcon(VaadinIcon.FOLDER);
             icon.addClassName("file-icon");
             icon.addClassName("folder"); // màu vàng
         } else {
-            com.vaadin.flow.component.icon.VaadinIcon vaadinIcon = pickIcon(item);
+            VaadinIcon vaadinIcon = pickIcon(item);
             icon.setIcon(vaadinIcon);
             icon.addClassName("file-icon");
             icon.addClassName(fileTypeClass(item));
@@ -208,13 +207,10 @@ public class ZipPreview extends StandardView {
 
         icon.getElement().getStyle().set("flex-shrink", "0");
 
-        var span = uiComponents.create(com.vaadin.flow.component.html.Span.class);
+        Span span = uiComponents.create(Span.class);
         span.setText(item.getName());
         span.addClassName("folder-text");
-
         hboxMain.add(icon, span);
-
-        // Khi click vào dòng → chọn node
         hboxMain.addClickListener(event -> {
             zipTreeGrid.select(item);
             zipTreeDc.setItem(item);
@@ -223,9 +219,6 @@ public class ZipPreview extends StandardView {
         return hboxMain;
     }
 
-    // ======================================
-// Icon logic: lấy extension file
-// ======================================
     private VaadinIcon pickIcon(ZipFileDto dto) {
         String ext = getExtension(dto.getName());
         return switch (ext) {
