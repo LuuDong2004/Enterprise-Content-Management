@@ -602,6 +602,14 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         if(extension.startsWith("xlsx")){
             previewExcelFile(fileRef);
         }
+        if(extension.startsWith("zip")){
+            previewZipFile(fileRef);
+        }else {
+            notifications.create("Loại tệp này chưa hỗ trợ xem trước!")
+                    .withDuration(2000)
+                    .withCloseable(false)
+                    .show();
+        }
 
     }
 
@@ -641,6 +649,12 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     }
     private void previewExcelFile(FileRef fileRelf){
         DialogWindow<ExcelPreview> window = dialogWindows.view(this, ExcelPreview.class).build();
+        window.getView().setInputFile(fileRelf);
+        window.setResizable(true);
+        window.open();
+    }
+    private void previewZipFile(FileRef fileRelf){
+        DialogWindow<ZipPreview> window = dialogWindows.view(this, ZipPreview.class).build();
         window.getView().setInputFile(fileRelf);
         window.setResizable(true);
         window.open();
@@ -701,94 +715,5 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         metadataEmptyState.setVisible(true);
     }
 
-    // @Subscribe("fileDataGird.preViewFile")
-    // public void onFileDataGirdPreViewFile(final ActionPerformedEvent event) {
-    // FileDescriptor file = fileDataGird.getSingleSelectedItem();
-    // if (file == null) {
-    // return;
-    // }
-    // FileRef fileRef = file.getFileRef();
-    // String extension = file.getExtension();
-    // if (extension.startsWith("pdf")) {
-    // previewPdfFile(fileRef);
-    // }
-    // if (extension.startsWith("txt") || extension.startsWith("doc")) {
-    // previewTextFile(fileRef);
-    // }
-    // if (extension.startsWith("jpg")
-    // || extension.startsWith("png")
-    // || extension.startsWith("jpeg")
-    // || extension.startsWith("webp")
-    // || extension.startsWith("svg")
-    // || extension.startsWith("gif")) {
-    // previewImageFile(fileRef);
-    // }
-    // if (extension.startsWith("mp4")
-    // || extension.startsWith("mov")
-    // || extension.startsWith("webm")) {
-    // preViewVideoFile(fileRef);
-    // }
-    // if (extension.startsWith("html")
-    // || extension.startsWith("htm")
-    // || extension.startsWith("java")
-    // || extension.startsWith("js")
-    // || extension.startsWith("css")
-    // || extension.startsWith("md")
-    // || extension.startsWith("xml")
-    // || extension.startsWith("sql")) {
-    // preViewHtmlFile(fileRef);
-    // }
-    // if(extension.startsWith("xlsx")){
-    // previewExcelFile(fileRef);
-    // }
-    //
-    // }
-    //
-    // private void previewPdfFile(FileRef fileRelf) {
-    // DialogWindow<PdfPreview> window = dialogWindows.view(this,
-    // PdfPreview.class).build();
-    // window.getView().setInputFile(fileRelf);
-    // window.setResizable(true);
-    // window.open();
-    // }
-    //
-    // private void previewTextFile(FileRef fileRelf) {
-    // DialogWindow<TextPreview> window = dialogWindows.view(this,
-    // TextPreview.class).build();
-    // window.getView().setInputFile(fileRelf);
-    // window.setResizable(true);
-    // window.open();
-    // }
-
-    // private void previewImageFile(FileRef fileRelf) {
-    // DialogWindow<ImagePreview> window = dialogWindows.view(this,
-    // ImagePreview.class).build();
-    // window.getView().setInputFile(fileRelf);
-    // window.setResizable(true);
-    // window.open();
-    // }
-    //
-    // private void preViewVideoFile(FileRef fileRelf) {
-    // DialogWindow<VideoPreview> window = dialogWindows.view(this,
-    // VideoPreview.class).build();
-    // window.getView().setInputFile(fileRelf);
-    // window.setResizable(true);
-    // window.open();
-    // }
-    //
-    // private void preViewHtmlFile(FileRef fileRelf) {
-    // DialogWindow<CodePreview> window = dialogWindows.view(this,
-    // CodePreview.class).build();
-    // window.getView().setInputFile(fileRelf);
-    // window.setResizable(true);
-    // window.open();
-    // }
-    // private void previewExcelFile(FileRef fileRelf){
-    // DialogWindow<ExcelPreview> window = dialogWindows.view(this,
-    // ExcelPreview.class).build();
-    // window.getView().setInputFile(fileRelf);
-    // window.setResizable(true);
-    // window.open();
-    // }
 
 }
