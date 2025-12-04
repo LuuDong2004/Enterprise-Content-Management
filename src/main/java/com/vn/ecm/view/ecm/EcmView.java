@@ -610,7 +610,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
                     .withCloseable(false)
                     .show();
         }
-
     }
 
     private void previewPdfFile(FileRef fileRelf) {

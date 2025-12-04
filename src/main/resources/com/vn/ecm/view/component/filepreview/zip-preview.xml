@@ -1,6 +1,36 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <view xmlns="http://jmix.io/schema/flowui/view"
       title="msg://zipPreview.title">
+
+    <data>
+        <collection id="zipTreeDc"
+                    class="com.vn.ecm.dto.ZipFileDto"/>
+    </data>
+
+    <actions>
+        <action id="downloadAction"
+                text="Tải xuống"
+                icon="DOWNLOAD"/>
+    </actions>
+
     <layout>
+        <vbox width="100%" height="100%" padding="true">
+            <treeDataGrid id="zipTreeGrid"
+                          dataContainer="zipTreeDc"
+                          width="100%"
+                          height="100%"
+                          selectionMode="SINGLE"
+                          hierarchyProperty="parent">
+                <columns>
+                    <column property="name" header="Tên" autoWidth="true"/>
+                    <column property="size" header="Kích thước (bytes)" autoWidth="true"/>
+<!--                    <column property="type" header="kiểu" autoWidth="true"/>-->
+                    <column property="key" header="Đường dẫn" autoWidth="true"/>
+                </columns>
+                <actions>
+                    <action id="downloadAction"/>
+                </actions>
+            </treeDataGrid>
+        </vbox>
     </layout>
 </view>
