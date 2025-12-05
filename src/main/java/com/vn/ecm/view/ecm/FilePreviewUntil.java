@@ -85,12 +85,16 @@ public class FilePreviewUntil {
         window.setResizable(true);
         window.open();
     }
-    private void previewZipFile(FileRef fileRelf  , View<?> parentView) {
-        DialogWindow<ZipPreview> window = dialogWindows.view(parentView, ZipPreview.class).build();
-        window.getView().setInputFile(fileRelf);
+    private void previewZipFile(FileRef fileRef, View<?> parentView) {
+        DialogWindow<ZipPreview> window =
+                dialogWindows.view(null, ZipPreview.class).build();
+
+        window.getView().setInputFile(fileRef);
         window.setResizable(true);
         window.open();
     }
+
+
     private void previewDocxFile(FileRef fileRef, View<?> parentView) {
         DialogWindow<DocxPreview> window =
                 dialogWindows.view(parentView, DocxPreview.class)
@@ -100,6 +104,7 @@ public class FilePreviewUntil {
         window.setResizable(true);
         window.open();
     }
+
 
     private String extractExtension(String fileName) {
         if (fileName == null) return "";

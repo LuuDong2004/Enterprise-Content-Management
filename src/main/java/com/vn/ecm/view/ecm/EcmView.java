@@ -571,6 +571,8 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         }
     }
 
+
+    //preview file
     @Subscribe("fileDataGird.preViewFile")
     public void onFileDataGirdPreViewFile(final ActionPerformedEvent event) {
         FileDescriptor file = fileDataGird.getSingleSelectedItem();

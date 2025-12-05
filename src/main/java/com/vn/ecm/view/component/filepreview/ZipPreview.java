@@ -12,9 +12,13 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vn.ecm.dto.ZipFileDto;
+import com.vn.ecm.ecm.storage.DynamicStorageManager;
 import com.vn.ecm.entity.FileDescriptor;
 import com.vn.ecm.service.ecm.zipfile.ZipPreviewService;
+import com.vn.ecm.view.ecm.FilePreviewUntil;
 import io.jmix.core.FileRef;
+import io.jmix.core.FileStorage;
+import io.jmix.core.FileStorageLocator;
 import io.jmix.flowui.DialogWindows;
 import io.jmix.flowui.Notifications;
 import io.jmix.flowui.UiComponents;
@@ -23,13 +27,14 @@ import io.jmix.flowui.download.DownloadFormat;
 import io.jmix.flowui.download.Downloader;
 import io.jmix.flowui.kit.action.ActionPerformedEvent;
 import io.jmix.flowui.model.CollectionContainer;
+import io.jmix.flowui.upload.TemporaryStorage;
 import io.jmix.flowui.view.*;
 import net.lingala.zip4j.exception.ZipException;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @ViewController("zipPreview")
 @ViewDescriptor("zip-preview.xml")
@@ -55,9 +60,17 @@ public class ZipPreview extends StandardView {
     @ViewComponent
     private CollectionContainer<ZipFileDto> zipTreeDc;
 
-    private String currentPassword;
     @Autowired
-    private DialogWindows dialogWindows;
+    private FilePreviewUntil filePreviewUntil;
+    @Autowired
+    private FileStorageLocator fileStorageLocator;
+
+    private String currentPassword;
+
+    @Autowired
+    private DynamicStorageManager dynamicStorageManager;
+    @Autowired
+    private TemporaryStorage temporaryStorage;
 
     public void setInputFile(FileRef inputFile) {
 
@@ -268,122 +281,49 @@ public class ZipPreview extends StandardView {
 
 
     @Subscribe("zipTreeGrid.previewFileAction")
-    public void onZipTreeGridPreviewFileAction(final ActionPerformedEvent event) {
+    public void onZipTreeGridPreviewFileAction(ActionPerformedEvent event) {
 
         ZipFileDto selected = zipTreeGrid.getSingleSelectedItem();
-
-        if (selected == null) return;
-        String extension = getExtension(selected.getName());
+        if (selected == null || Boolean.TRUE.equals(selected.getFolder())) {
+            return;
+        }
 
         try {
-            if (extension.startsWith("pdf")) {
-                previewPdfFile(inputFile);
-            } else if (extension.startsWith("txt") || extension.startsWith("docx")) {
-                previewTextFile(selected);
-            } else if (extension.equals("jpg")
-                    || extension.startsWith("png")
-                    || extension.startsWith("jpeg")
-                    || extension.startsWith("webp")
-                    || extension.startsWith("svg")
-                    || extension.startsWith("gif")) {
-                previewImageFile(inputFile);
-            } else if (extension.startsWith("mp4")
-                    || extension.startsWith("mov")
-                    || extension.startsWith("webm")) {
-                preViewVideoFile(inputFile);
-            } else if (extension.startsWith("html")
-                    || extension.startsWith("htm")
-                    || extension.startsWith("java")
-                    || extension.startsWith("js")
-                    || extension.startsWith("css")
-                    || extension.startsWith("md")
-                    || extension.startsWith("xml")
-                    || extension.startsWith("sql")) {
-                //preViewHtmlFile(inputFile);
-                previewCodeFile(selected);
-            } else if (extension.startsWith("xlsx")) {
-                previewExcelFile(inputFile);
-            } else if (extension.startsWith("zip")) {
-                previewZipFile(inputFile);
+
+            byte[] bytes = zipPreviewService.loadEntryBytes(
+                    inputFile,
+                    selected.getKey(),
+                    currentPassword
+            );
+
+            UUID tempId = temporaryStorage.saveFile(bytes);
+
+            FileStorage fileStorage;
+            String storageName = (inputFile != null) ? inputFile.getStorageName() : null;
+
+            if (storageName != null && !storageName.isBlank()) {
+                try {
+                    fileStorage = dynamicStorageManager.getFileStorageByName(storageName);
+                } catch (IllegalArgumentException ignored) {
+                    fileStorage = fileStorageLocator.getDefault();
+                }
             } else {
-                notifications.create("Loại file này chưa được hỗ trợ xem trước: " + extension)
-                        .withType(Notifications.Type.WARNING)
-                        .withCloseable(false)
-                        .withDuration(2000)
-                        .show();
+                fileStorage = fileStorageLocator.getDefault();
             }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+
+            FileRef fileRef = temporaryStorage.putFileIntoStorage(
+                    tempId,
+                    selected.getName(),
+                    fileStorage
+            );
+            filePreviewUntil.previewFile(fileRef, selected.getName(), this);
+
+        } catch (Exception ex) {
+            notifications.create("Lỗi xem trước: " + ex.getMessage())
+                    .withType(Notifications.Type.ERROR)
+                    .show();
         }
     }
 
-
-    private void previewPdfFile(FileRef fileRelf) {
-        DialogWindow<PdfPreview> window = dialogWindows.view(this, PdfPreview.class).build();
-        window.getView().setInputFile(fileRelf);
-        window.setResizable(true);
-        window.open();
-    }
-
-    private void previewTextFile(ZipFileDto entry) throws Exception {
-        byte[] bytes = zipPreviewService.loadEntryBytes(
-                inputFile,
-                entry.getKey(),
-                currentPassword
-        );
-
-        String content = new String(bytes, StandardCharsets.UTF_8);
-        DialogWindow<TextPreview> window = dialogWindows.view(this, TextPreview.class).build();
-        window.getView().setContent(content);
-        window.getView().setFileName(entry.getName());
-        window.setResizable(true);
-        window.open();
-    }
-
-    private void previewImageFile(FileRef fileRelf) {
-        DialogWindow<ImagePreview> window = dialogWindows.view(this, ImagePreview.class).build();
-        window.getView().setInputFile(fileRelf);
-        window.setResizable(true);
-        window.open();
-    }
-
-    private void preViewVideoFile(FileRef fileRelf) {
-        DialogWindow<VideoPreview> window = dialogWindows.view(this, VideoPreview.class).build();
-        window.getView().setInputFile(fileRelf);
-        window.setResizable(true);
-        window.open();
-    }
-    private void previewExcelFile(FileRef fileRelf) {
-        DialogWindow<ExcelPreview> window = dialogWindows.view(this, ExcelPreview.class).build();
-        window.getView().setInputFile(fileRelf);
-        window.setResizable(true);
-        window.open();
-    }
-
-
-    private void previewCodeFile(ZipFileDto entry) throws Exception {
-        byte[] bytes = zipPreviewService.loadEntryBytes(
-                inputFile,
-                entry.getKey(),
-                currentPassword
-        );
-
-        String content = new String(bytes, StandardCharsets.UTF_8);
-        DialogWindow<CodePreview> window = dialogWindows.view(this, CodePreview.class).build();
-        window.getView().setContent(content);
-        window.getView().setFileName(entry.getName());
-        window.setResizable(true);
-        window.open();
-    }
-
-
-
-    private void previewZipFile(FileRef fileRelf) {
-        DialogWindow<ZipPreview> window = dialogWindows.view(this, ZipPreview.class).build();
-        window.getView().setInputFile(fileRelf);
-        window.setResizable(true);
-        window.open();
-    }
-
-
 }
+
