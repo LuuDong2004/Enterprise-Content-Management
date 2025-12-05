@@ -5,6 +5,7 @@ import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 
+import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -135,6 +136,8 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
      private Metadata metadata;
 
      private String conditions = " and e.inTrash = false and e.sourceStorage = :storage";
+    @Autowired
+    private FilePreviewUntil filePreviewUntil;
 
     @Subscribe
     public void onInit(InitEvent event) {
@@ -574,90 +577,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         if (file == null) {
             return;
         }
-        FileRef fileRef = file.getFileRef();
-        String extension = file.getExtension();
-        if (extension.startsWith("pdf")) {
-            previewPdfFile(fileRef);
-        } else if (extension.startsWith("txt") || extension.startsWith("docx")) {
-            previewTextFile(fileRef);
-        } else if (extension.startsWith("jpg")
-                || extension.startsWith("png")
-                || extension.startsWith("jpeg")
-                || extension.startsWith("webp")
-                || extension.startsWith("svg")
-                || extension.startsWith("gif")) {
-            previewImageFile(fileRef);
-        } else if (extension.startsWith("mp4")
-                || extension.startsWith("mov")
-                || extension.startsWith("webm")) {
-            preViewVideoFile(fileRef);
-        } else if (extension.startsWith("html")
-                || extension.startsWith("htm")
-                || extension.startsWith("java")
-                || extension.startsWith("js")
-                || extension.startsWith("css")
-                || extension.startsWith("md")
-                || extension.startsWith("xml")
-                || extension.startsWith("sql")) {
-            preViewHtmlFile(fileRef);
-        } else if (extension.startsWith("xlsx")) {
-            previewExcelFile(fileRef);
-        } else if (extension.startsWith("zip")) {
-            previewZipFile(fileRef);
-        } else {
-            notifications.create("Loại file này chưa được hỗ trợ xem trước: " + extension)
-                    .withType(Notifications.Type.WARNING)
-                    .withCloseable(false)
-                    .withDuration(2000)
-                    .show();
-        }
-    }
-
-    private void previewPdfFile(FileRef fileRelf) {
-        DialogWindow<PdfPreview> window = dialogWindows.view(this, PdfPreview.class).build();
-        window.getView().setInputFile(fileRelf);
-        window.setResizable(true);
-        window.open();
-    }
-
-    private void previewTextFile(FileRef fileRelf) {
-        DialogWindow<TextPreview> window = dialogWindows.view(this, TextPreview.class).build();
-        window.getView().setInputFile(fileRelf);
-        window.setResizable(true);
-        window.open();
-    }
-
-    private void previewImageFile(FileRef fileRelf) {
-        DialogWindow<ImagePreview> window = dialogWindows.view(this, ImagePreview.class).build();
-        window.getView().setInputFile(fileRelf);
-        window.setResizable(true);
-        window.open();
-    }
-
-    private void preViewVideoFile(FileRef fileRelf) {
-        DialogWindow<VideoPreview> window = dialogWindows.view(this, VideoPreview.class).build();
-        window.getView().setInputFile(fileRelf);
-        window.setResizable(true);
-        window.open();
-    }
-
-    private void preViewHtmlFile(FileRef fileRelf) {
-        DialogWindow<CodePreview> window = dialogWindows.view(this, CodePreview.class).build();
-        window.getView().setInputFile(fileRelf);
-        window.setResizable(true);
-        window.open();
-    }
-    private void previewExcelFile(FileRef fileRelf){
-        DialogWindow<ExcelPreview> window = dialogWindows.view(this, ExcelPreview.class).build();
-        window.getView().setInputFile(fileRelf);
-        window.setResizable(true);
-        window.open();
-    }
-    private void previewZipFile(FileRef fileRelf){
-        DialogWindow<ZipPreview> window = dialogWindows.view(this, ZipPreview.class).build();
-        window.getView().setInputFile(fileRelf);
-        window.setResizable(true);
-        window.open();
+        filePreviewUntil.previewFile(file.getFileRef(), file.getName(), this);
     }
 
     private void executeOcrSearch() {
