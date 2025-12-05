@@ -25,12 +25,12 @@ public class FilePreviewUntil {
                     .show();
             return;
         }
-
         String ext = extractExtension(fileName);
         String extension = ext.toLowerCase();
         switch (extension) {
             case "pdf" -> previewPdfFile(fileRef , parentView);
-            case "txt", "docx" -> previewTextFile(fileRef , parentView);
+            case "txt" -> previewTextFile(fileRef , parentView);
+            case "doc" , "docx" -> previewDocxFile(fileRef , parentView);
             case "jpg", "jpeg", "png", "webp", "svg", "gif" -> previewImageFile(fileRef , parentView);
             case "mp4", "mov", "webm" -> preViewVideoFile(fileRef , parentView);
             case "html", "htm", "java", "js", "css", "md", "xml", "sql" ->
@@ -88,7 +88,15 @@ public class FilePreviewUntil {
     private void previewZipFile(FileRef fileRelf  , View<?> parentView) {
         DialogWindow<ZipPreview> window = dialogWindows.view(parentView, ZipPreview.class).build();
         window.getView().setInputFile(fileRelf);
-        // window.setPreviewCallback((ref, name) -> previewFile(ref, name));
+        window.setResizable(true);
+        window.open();
+    }
+    private void previewDocxFile(FileRef fileRef, View<?> parentView) {
+        DialogWindow<DocxPreview> window =
+                dialogWindows.view(parentView, DocxPreview.class)
+                        .build();
+
+        window.getView().setInputFile(fileRef);
         window.setResizable(true);
         window.open();
     }
