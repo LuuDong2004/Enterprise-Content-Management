@@ -94,7 +94,6 @@ public class FilePreviewUntil {
         window.open();
     }
 
-
     private void previewDocxFile(FileRef fileRef, View<?> parentView) {
         DialogWindow<DocxPreview> window =
                 dialogWindows.view(parentView, DocxPreview.class)
