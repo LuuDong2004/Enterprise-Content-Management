@@ -1,97 +1,98 @@
 package com.vn.ecm.service.ecm.zipfile;
 
-import com.vn.ecm.dto.ZipEntrySourceDto;
-import com.vn.ecm.ecm.storage.DynamicStorageManager;
-import com.vn.ecm.entity.SourceStorage;
-import io.jmix.core.FileStorageLocator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
-import com.vn.ecm.entity.FileDescriptor;
-import io.jmix.core.FileRef;
-import io.jmix.core.FileStorage;
-import net.lingala.zip4j.ZipFile;
-import net.lingala.zip4j.model.ZipParameters;
-import net.lingala.zip4j.model.enums.AesKeyStrength;
-import net.lingala.zip4j.model.enums.EncryptionMethod;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import com.vn.ecm.dto.ZipEntrySourceDto;
+import com.vn.ecm.entity.FileDescriptor;
+
+
+import com.vn.ecm.service.ecm.folderandfile.IFileDescriptorUploadAndDownloadService;
+import net.lingala.zip4j.ZipFile;
+import net.lingala.zip4j.exception.ZipException;
+import net.lingala.zip4j.model.ZipParameters;
+import net.lingala.zip4j.model.enums.EncryptionMethod;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.io.ByteArrayInputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
+
+
 
 @Service
 public class ZipCompressionService {
-    private final FileStorageLocator fileStorageLocator;
-    private final DynamicStorageManager dynamicStorageManager;
+    @Autowired
+    private IFileDescriptorUploadAndDownloadService downloadService;
 
-    public ZipCompressionService(FileStorageLocator fileStorageLocator, DynamicStorageManager dynamicStorageManager) {
-        this.fileStorageLocator = fileStorageLocator;
-        this.dynamicStorageManager = dynamicStorageManager;
-    }
 
     /**
-     * Nén danh sách ZipEntrySource thành một file ZIP với cấu trúc thư mục giống Windows.
+     * Nén danh sách entry thành 1 file ZIP, trả về mảng byte để Download.
+     * Hiện tại chưa hỗ trợ password (zipPassword đang bỏ qua).
      */
-    public FileRef zipEntries(List<ZipEntrySourceDto> zipEntrySources,
-                              String zipFileName,
-                              String zipPassword) throws IOException {
+    public byte[] zipEntries(List<ZipEntrySourceDto> sources,
+                             String zipFileName,
+                             String password) throws Exception {
 
-        if (zipEntrySources == null || zipEntrySources.isEmpty()) {
+        if (sources == null || sources.isEmpty()) {
             throw new IllegalArgumentException("Danh sách file cần nén đang rỗng.");
         }
 
-        if (zipFileName == null || zipFileName.isBlank()) {
-            zipFileName = "archive.zip";
-        } else if (!zipFileName.toLowerCase().endsWith(".zip")) {
-            zipFileName = zipFileName + ".zip";
-        }
+        Path tempZipPath = Files.createTempFile("ecm-zip-", ".zip");
 
-        File temporaryZipFile = File.createTempFile("ecm-zip-", ".zip");
-        try {
-            boolean hasPassword = zipPassword != null && !zipPassword.isBlank();
-            ZipFile zipFile = hasPassword
-                    ? new ZipFile(temporaryZipFile, zipPassword.toCharArray())
-                    : new ZipFile(temporaryZipFile);
 
-            for (ZipEntrySourceDto entry : zipEntrySources) {
-                FileDescriptor fileDescriptor = entry.getFileDescriptor();
-                if (fileDescriptor == null || fileDescriptor.getFileRef() == null) {
+        boolean usePassword = password != null && !password.isBlank();
+
+        ZipFile zipFile = usePassword
+                ? new ZipFile(tempZipPath.toFile(), password.toCharArray())
+                : new ZipFile(tempZipPath.toFile());
+
+        for (ZipEntrySourceDto dto : sources) {
+            FileDescriptor fd = dto.getFileDescriptor();
+            String entryPath = dto.getPath();
+
+            if (fd == null || fd.getId() == null) {
+                continue;
+            }
+            if (entryPath == null || entryPath.isBlank()) {
+                continue;
+            }
+
+            try {
+
+                byte[] fileBytes = downloadService.downloadFile(fd);
+                if (fileBytes == null || fileBytes.length == 0) {
                     continue;
                 }
 
-                FileRef fileRef = fileDescriptor.getFileRef();
-                FileStorage fileStorage = dynamicStorageManager.resolveFileStorage(fileRef);;
+                ZipParameters params = new ZipParameters();
+                params.setFileNameInZip(entryPath);
 
-
-                try (InputStream fileInputStream = fileStorage.openStream(fileRef)) {
-
-                    ZipParameters parameters = new ZipParameters();
-                    parameters.setFileNameInZip(entry.getPath());
-
-                    if (hasPassword) {
-                        parameters.setEncryptFiles(true);
-                        parameters.setEncryptionMethod(EncryptionMethod.AES);
-                        parameters.setAesKeyStrength(AesKeyStrength.KEY_STRENGTH_256);
-                    }
-
-                    zipFile.addStream(fileInputStream, parameters);
+                if (usePassword) {
+                    params.setEncryptFiles(true);
+                    params.setEncryptionMethod(EncryptionMethod.ZIP_STANDARD);
                 }
-            }
 
+                try (ByteArrayInputStream bais = new ByteArrayInputStream(fileBytes)) {
+                    zipFile.addStream(bais, params);
+                }
 
-            FileStorage targetStorage = fileStorageLocator.getDefault();
-            try (InputStream zipInputStream = new FileInputStream(temporaryZipFile)) {
-                FileRef resultRef = targetStorage.saveStream(zipFileName, zipInputStream);
-                return resultRef;
-            }
-        } finally {
-            if (temporaryZipFile.exists() && !temporaryZipFile.delete()) {
+            } catch (ZipException ze) {
+                throw ze;
+            } catch (Exception ex) {
+                throw ex;
             }
         }
-    }
 
+        byte[] zipBytes = Files.readAllBytes(tempZipPath);
+
+        try {
+            Files.deleteIfExists(tempZipPath);
+        } catch (Exception ignore) {
+        }
+
+        return zipBytes;
+    }
 
 
 }

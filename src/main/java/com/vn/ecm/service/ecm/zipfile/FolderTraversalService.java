@@ -18,47 +18,49 @@ public class FolderTraversalService {
         this.dataManager = dataManager;
     }
 
-    public List<ZipEntrySourceDto> buildPathRecursively(Folder folder) {
-        List<ZipEntrySourceDto> zipEntrySourceDtoList = new ArrayList<>();
-        traverseFolder(folder, "", zipEntrySourceDtoList , folder.getSourceStorage());
-        return zipEntrySourceDtoList;
+    public List<ZipEntrySourceDto> buildZipEntriesForFolder(Folder rootFolder) {
+        List<ZipEntrySourceDto> zipEntries = new ArrayList<>();
+        traverseFolder(rootFolder, "", zipEntries);
+        return zipEntries;
     }
-
     /**
      * Hàm đệ quy duyệt folder.
-     *
-     * @param folder                   folder hiện tại
-     * @param parentZipPath            đường dẫn folder cha bên trong ZIP
-     * @param collectedZipEntrySources danh sách kết quả
      */
     private void traverseFolder(Folder folder,
-                                String parentZipPath,
-                                List<ZipEntrySourceDto> collectedZipEntrySources,
-                                SourceStorage sourceStorage) {
+                                String path,
+                                List<ZipEntrySourceDto> zipEntrySourceDtos) {
 
-        String currentZipPath = (parentZipPath == null || parentZipPath.isEmpty())
+        String currentZipPath = (path == null || path.isEmpty())
                 ? folder.getName()
-                : parentZipPath + "/" + folder.getName();
+                : path + "/" + folder.getName();
 
-        List<FileDescriptor> fileDescriptors = dataManager.load(FileDescriptor.class)
-                .query("select f from FileDescriptor f where f.folder = :folder")
+        // 1. Lấy file trực tiếp trong folder hiện tại
+        List<FileDescriptor> files = dataManager.load(FileDescriptor.class)
+                .query("select f from FileDescriptor f " +
+                        "where f.folder = :folder and f.inTrash = false")
                 .parameter("folder", folder)
                 .list();
 
-        for (FileDescriptor fileDescriptor : fileDescriptors) {
+        for (FileDescriptor fileDescriptor : files) {
+            // Bỏ qua file chưa upload storage
+            if (fileDescriptor.getFileRef() == null) {
+                continue;
+            }
+
             String zipEntryPath = currentZipPath + "/" + fileDescriptor.getName();
-            ZipEntrySourceDto dto =
-                    new ZipEntrySourceDto(fileDescriptor, zipEntryPath, sourceStorage);
-            collectedZipEntrySources.add(dto);
+            ZipEntrySourceDto dto = new ZipEntrySourceDto(fileDescriptor, zipEntryPath);
+            zipEntrySourceDtos.add(dto);
         }
 
+        // 2. Duyệt các folder con
         List<Folder> childFolders = dataManager.load(Folder.class)
-                .query("select f from Folder f where f.parent = :folder")
-                .parameter("folder", folder)
+                .query("select f from Folder f " +
+                        "where f.parent = :parent and f.inTrash = false")
+                .parameter("parent", folder)
                 .list();
 
-        for (Folder childFolder : childFolders) {
-            traverseFolder(childFolder, currentZipPath, collectedZipEntrySources, sourceStorage);
+        for (Folder child : childFolders) {
+            traverseFolder(child, currentZipPath, zipEntrySourceDtos);
         }
     }
 }

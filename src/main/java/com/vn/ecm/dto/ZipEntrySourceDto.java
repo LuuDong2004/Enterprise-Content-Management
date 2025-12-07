@@ -12,12 +12,11 @@ public class ZipEntrySourceDto {
 
     private final FileDescriptor fileDescriptor;
     private final String path;
-    private final SourceStorage sourceStorage;
 
-    public ZipEntrySourceDto(FileDescriptor fileDescriptor, String path, SourceStorage sourceStorage) {
+
+    public ZipEntrySourceDto(FileDescriptor fileDescriptor, String path) {
         this.fileDescriptor = fileDescriptor;
         this.path = path;
-        this.sourceStorage = sourceStorage;
     }
 
 
@@ -27,9 +26,5 @@ public class ZipEntrySourceDto {
 
     public String getPath() {
         return path;
-    }
-
-    public SourceStorage getSourceStorage() {
-        return sourceStorage;
     }
 }

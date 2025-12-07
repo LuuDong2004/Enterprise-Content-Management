@@ -658,8 +658,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
 
         createFolderZipAction.openZipFilesDialog(
                 selectedFolder,
-                selectedFiles,
-                zipFileDescriptor -> filesDc.getMutableItems().add(zipFileDescriptor)
+                selectedFiles
         );
     }
 
@@ -669,10 +668,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         if (selectedFolder == null) {
             return;
         }
-
-        createFolderZipAction.openZipFolderDialog(selectedFolder, zipFileDescriptor -> {
-            filesDc.getMutableItems().add(zipFileDescriptor);
-        });
+        createFolderZipAction.openZipFolderDialog(selectedFolder);
     }
 
 
