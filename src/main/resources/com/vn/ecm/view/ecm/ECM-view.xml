@@ -124,7 +124,7 @@
                         <action id="renameFolder" text="Đổi tên" type="folderActionSelected"/>
                         <action id="assignPermission" text="Phân quyền" type="assignPermission"/>
                         <action id="moveFolder" text="Di chuyển" type="folderActionSelected"/>
-                        <action id="zipFile" text="Nén thư mục" type="fileActionSelected"/>
+                        <action id="zipFolder" text="Nén thư mục" type="folderActionSelected"/>
                     </actions>
                 </treeDataGrid>
             </vbox>
@@ -144,7 +144,7 @@
                             <action id="preViewFile" type="fileActionSelected" text="Xem trước"/>
                             <action id="onObjectAssignPermission" text="Phân quyền"
                                     type="onObjectAssignPermission"/>
-
+                            <action id="zipFile" text="Nén tệp" type="fileActionSelected"/>
                         </actions>
                         <columns>
                             <column property="name"/>

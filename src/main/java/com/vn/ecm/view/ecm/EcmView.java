@@ -65,6 +65,7 @@ import java.util.stream.Collectors;
 @ViewController("EcmView")
 @ViewDescriptor("ECM-view.xml")
 public class EcmView extends StandardView implements BeforeEnterObserver, AfterNavigationObserver {
+
     @ViewComponent
     private CollectionContainer<Folder> foldersDc;
     @ViewComponent
@@ -642,15 +643,37 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         metadataEmptyState.setVisible(true);
     }
 
-    @Subscribe("foldersTree.zipFile")
-    public void onFoldersTreeZipFile(final ActionPerformedEvent event) {
+    @Subscribe("fileDataGird.zipFile")
+    public void onFileDataGirdZipFile(final ActionPerformedEvent event) {
+        Folder selectedFolder = foldersTree.getSingleSelectedItem();
+        if (selectedFolder == null) {
+
+            return;
+        }
+
+        var selectedFiles = fileDataGird.getSelectedItems();
+        if (selectedFiles == null || selectedFiles.isEmpty()) {
+            return;
+        }
+
+        createFolderZipAction.openZipFilesDialog(
+                selectedFolder,
+                selectedFiles,
+                zipFileDescriptor -> filesDc.getMutableItems().add(zipFileDescriptor)
+        );
+    }
+
+    @Subscribe("foldersTree.zipFolder")
+    public void onFoldersTreeZipFolder(final ActionPerformedEvent event) {
         Folder selectedFolder = foldersTree.getSingleSelectedItem();
         if (selectedFolder == null) {
             return;
         }
-        FileDescriptor file = fileDataGird.getSingleSelectedItem();
+
         createFolderZipAction.openZipFolderDialog(selectedFolder, zipFileDescriptor -> {
             filesDc.getMutableItems().add(zipFileDescriptor);
         });
     }
+
+
 }

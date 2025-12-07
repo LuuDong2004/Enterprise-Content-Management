@@ -44,24 +44,27 @@ public class ZipFolderService {
             zipFileName += ".zip";
         }
 
-        // 1. Build danh sách entry
         List<ZipEntrySourceDto> zipEntrySources =
                 folderTraversalService.buildPathRecursively(rootFolder);
 
-        // 2. Tạo file ZIP trong storage (S3/Web/FTP...)
         FileRef zipFileRef = zipCompressionService.zipEntries(
                 zipEntrySources,
                 zipFileName,
                 zipPassword
         );
-        FileDescriptor fileDescriptor = dataManager.create(FileDescriptor.class);
-        fileDescriptor.setName(zipFileName);
-        fileDescriptor.setFileRef(zipFileRef);
-        fileDescriptor.setFolder(rootFolder);
+
+        FileDescriptor zipDescriptor = dataManager.create(FileDescriptor.class);
+        zipDescriptor.setName(zipFileName);
+        zipDescriptor.setFileRef(zipFileRef);
+        zipDescriptor.setFolder(rootFolder);
+
         SourceStorage sourceStorage = rootFolder.getSourceStorage();
-        fileDescriptor.setSourceStorage(sourceStorage);
-        fileDescriptor.setInTrash(false);
-        fileDescriptor.setLastModified(LocalDateTime.now());
-        return dataManager.save(fileDescriptor);
+        zipDescriptor.setSourceStorage(sourceStorage);
+        zipDescriptor.setExtension("zip");
+
+        zipDescriptor.setInTrash(false);
+        zipDescriptor.setLastModified(LocalDateTime.now());
+
+        return dataManager.save(zipDescriptor);
     }
 }
