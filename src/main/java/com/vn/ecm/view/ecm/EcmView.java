@@ -657,6 +657,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         }
 
         createFolderZipAction.openZipFilesDialog(
+                this,
                 selectedFolder,
                 selectedFiles
         );
@@ -668,7 +669,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         if (selectedFolder == null) {
             return;
         }
-        createFolderZipAction.openZipFolderDialog(selectedFolder);
+        createFolderZipAction.openZipFolderDialog(this,selectedFolder);
     }
 
 
