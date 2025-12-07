@@ -35,10 +35,12 @@ public class FileDescriptor {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "FOLDER_ID")
+
     private Folder folder;
 
     @Column(name = "FILE_REF")
     private FileRef fileRef;
+
 
     @Column(name = "IN_TRASH")
     private Boolean inTrash;

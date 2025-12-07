@@ -23,6 +23,7 @@ import com.vn.ecm.service.ecm.folderandfile.IFolderService;
 import com.vn.ecm.view.component.filepreview.*;
 import com.vn.ecm.view.file.EditFileNameDialogView;
 import com.vn.ecm.view.folder.CreateFolderDialogView;
+import com.vn.ecm.view.folder.CreateFolderZipAction;
 import com.vn.ecm.view.folder.EditNameFolderDialogView;
 import com.vn.ecm.view.folder.FolderLazyTreeItems;
 import com.vn.ecm.view.main.MainView;
@@ -130,14 +131,17 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     @ViewComponent
     private TypedTextField<String> ocrSearchField;
 
-     FolderLazyTreeItems dataProvider;
+    FolderLazyTreeItems dataProvider;
 
-     @Autowired
-     private Metadata metadata;
+    @Autowired
+    private Metadata metadata;
 
-     private String conditions = " and e.inTrash = false and e.sourceStorage = :storage";
+    private String conditions = " and e.inTrash = false and e.sourceStorage = :storage";
     @Autowired
     private FilePreviewUntil filePreviewUntil;
+
+    @Autowired
+    private CreateFolderZipAction createFolderZipAction;
 
     @Subscribe
     public void onInit(InitEvent event) {
@@ -514,6 +518,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         List<FileDescriptor> accessibleFiles = permissionService.getAccessibleFiles(user, currentStorage, folder);
         filesDc.setItems(accessibleFiles);
     }
+
     // css
     private void initFolderGridColumn() {
         // remove column by key
@@ -637,5 +642,15 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         metadataEmptyState.setVisible(true);
     }
 
-
+    @Subscribe("foldersTree.zipFile")
+    public void onFoldersTreeZipFile(final ActionPerformedEvent event) {
+        Folder selectedFolder = foldersTree.getSingleSelectedItem();
+        if (selectedFolder == null) {
+            return;
+        }
+        FileDescriptor file = fileDataGird.getSingleSelectedItem();
+        createFolderZipAction.openZipFolderDialog(selectedFolder, zipFileDescriptor -> {
+            filesDc.getMutableItems().add(zipFileDescriptor);
+        });
+    }
 }
