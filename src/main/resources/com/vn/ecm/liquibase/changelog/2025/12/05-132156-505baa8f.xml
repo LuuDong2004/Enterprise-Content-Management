@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd"
+        objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="1" author="ECM">
+        <addNotNullConstraint columnDataType="VARCHAR(255)" columnName="PERMISSION_TYPE" tableName="SHARE_LINK"
+                              validate="true"/>
+    </changeSet>
+    <changeSet id="2" author="ECM">
+        <addNotNullConstraint columnDataType="VARCHAR(255)" columnName="REQUESTED_PERMISSION"
+                              tableName="SHARE_PERMISSION_REQUEST" validate="true"/>
+    </changeSet>
+    <changeSet id="3" author="ECM">
+        <addNotNullConstraint columnDataType="VARCHAR(255)" columnName="STATUS" tableName="SHARE_PERMISSION_REQUEST"
+                              validate="true"/>
+    </changeSet>
+</databaseChangeLog>

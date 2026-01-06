@@ -523,6 +523,7 @@ public class PermissionService {
             currentLevelIds = nextLevelIds;
         }
     }
+
     // Fixed disableInheritance methods for User + Folder
     @Transactional
     public void disableInheritance(User user, Folder folder, boolean convertToExplicit) {
@@ -531,6 +532,7 @@ public class PermissionService {
                 .parameter("user", user)
                 .parameter("folder", folder)
                 .list();
+
         for (Permission perm : permissions) {
             perm.setInheritEnabled(false);
             if (Boolean.TRUE.equals(perm.getInherited())) {

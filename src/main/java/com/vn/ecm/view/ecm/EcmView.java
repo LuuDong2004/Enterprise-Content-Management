@@ -1,6 +1,5 @@
 package com.vn.ecm.view.ecm;
 
-
 import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
@@ -129,12 +128,12 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     @ViewComponent
     private TypedTextField<String> ocrSearchField;
 
-     FolderLazyTreeItems dataProvider;
+    FolderLazyTreeItems dataProvider;
 
-     @Autowired
-     private Metadata metadata;
+    @Autowired
+    private Metadata metadata;
 
-     private String conditions = " and e.inTrash = false and e.sourceStorage = :storage";
+    private String conditions = " and e.inTrash = false and e.sourceStorage = :storage";
 
     @Subscribe
     public void onInit(InitEvent event) {
@@ -187,7 +186,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
             event.rerouteTo(SourceStorageListView.class);
         }
     }
-
 
     @Override
     public void afterNavigation(AfterNavigationEvent event) {
@@ -282,13 +280,13 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         var dw = dialogWindows.view(this, CreateFolderDialogView.class).build();
         dw.getView().setContext(parent, currentStorage);
         dw.addAfterCloseListener(e -> {
-            //loadAccessibleFolders(user);
+            // loadAccessibleFolders(user);
             loadLazyFolder();
         });
         dw.open();
     }
 
-    //rename folder
+    // rename folder
     @Subscribe("foldersTree.renameFolder")
     public void onFoldersTreeRenameFolder(final ActionPerformedEvent event) {
         Folder selected = foldersTree.getSingleSelectedItem();
@@ -309,7 +307,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         var dw = dialogWindows.view(this, EditNameFolderDialogView.class).build();
         dw.getView().setContext(selected, currentStorage);
         dw.addAfterCloseListener(e -> {
-            //loadAccessibleFolders(userCurr);
+            // loadAccessibleFolders(userCurr);
             loadLazyFolder();
         });
         dw.open();
@@ -414,7 +412,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
             try {
                 String useName = userCurr.getUsername();
                 folderService.moveToTrash(selected, useName);
-                //loadAccessibleFolders(userCurr);
+                // loadAccessibleFolders(userCurr);
                 loadLazyFolder();
                 notifications.show(messageBundle.getMessage("ecmDeleteFolderAlert"));
             } catch (Exception ex) {
@@ -496,15 +494,17 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         foldersDc.setItems(dataProvider.getItems());
     }
 
-//    private void loadAccessibleFolders(User user) {
-//        List<Folder> accessibleFolders = permissionService.getAccessibleFolders(user, currentStorage);
-//        foldersDc.setItems(accessibleFolders);
-//    }
+    // private void loadAccessibleFolders(User user) {
+    // List<Folder> accessibleFolders = permissionService.getAccessibleFolders(user,
+    // currentStorage);
+    // foldersDc.setItems(accessibleFolders);
+    // }
 
     private void loadAccessibleFiles(User user, Folder folder) {
         List<FileDescriptor> accessibleFiles = permissionService.getAccessibleFiles(user, currentStorage, folder);
         filesDc.setItems(accessibleFiles);
     }
+
     // css
     private void initFolderGridColumn() {
         // remove column by key
@@ -599,12 +599,12 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
                 || extension.startsWith("sql")) {
             preViewHtmlFile(fileRef);
         }
-        if(extension.startsWith("xlsx")){
+        if (extension.startsWith("xlsx")) {
             previewExcelFile(fileRef);
         }
-        if(extension.startsWith("zip")){
+        if (extension.startsWith("zip")) {
             previewZipFile(fileRef);
-        }else {
+        } else {
             notifications.create("Loại tệp này chưa hỗ trợ xem trước!")
                     .withDuration(2000)
                     .withCloseable(false)
@@ -646,13 +646,15 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         window.setResizable(true);
         window.open();
     }
-    private void previewExcelFile(FileRef fileRelf){
+
+    private void previewExcelFile(FileRef fileRelf) {
         DialogWindow<ExcelPreview> window = dialogWindows.view(this, ExcelPreview.class).build();
         window.getView().setInputFile(fileRelf);
         window.setResizable(true);
         window.open();
     }
-    private void previewZipFile(FileRef fileRelf){
+
+    private void previewZipFile(FileRef fileRelf) {
         DialogWindow<ZipPreview> window = dialogWindows.view(this, ZipPreview.class).build();
         window.getView().setInputFile(fileRelf);
         window.setResizable(true);
@@ -714,5 +716,54 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         metadataEmptyState.setVisible(true);
     }
 
+    @Subscribe("foldersTree.shareFolder")
+    public void onFoldersTreeShareFolder(final ActionPerformedEvent event) {
+        Folder selected = foldersTree.getSingleSelectedItem();
+        if (selected == null) {
+            notifications.create("Vui lòng chọn thư mục để chia sẻ")
+                    .withType(Notifications.Type.WARNING)
+                    .withDuration(2000)
+                    .show();
+            return;
+        }
+        User userCurr = (User) currentAuthentication.getUser();
+        boolean per = permissionService.hasPermission(userCurr, PermissionType.READ, selected);
+        if (!per) {
+            notifications.create("Bạn không có quyền chia sẻ thư mục này.")
+                    .withType(Notifications.Type.ERROR)
+                    .withDuration(2000)
+                    .withCloseable(false)
+                    .show();
+            return;
+        }
+        var dw = dialogWindows.view(this, com.vn.ecm.view.sharecontent.ShareContentView.class).build();
+        dw.getView().setTargetFolder(selected);
+        dw.open();
+    }
+
+    @Subscribe("fileDataGird.shareFile")
+    public void onFileDataGirdShareFile(final ActionPerformedEvent event) {
+        FileDescriptor selected = fileDataGird.getSingleSelectedItem();
+        if (selected == null) {
+            notifications.create("Vui lòng chọn file để chia sẻ")
+                    .withType(Notifications.Type.WARNING)
+                    .withDuration(2000)
+                    .show();
+            return;
+        }
+        User userCurr = (User) currentAuthentication.getUser();
+        boolean per = permissionService.hasPermission(userCurr, PermissionType.READ, selected);
+        if (!per) {
+            notifications.create("Bạn không có quyền chia sẻ file này.")
+                    .withType(Notifications.Type.ERROR)
+                    .withDuration(2000)
+                    .withCloseable(false)
+                    .show();
+            return;
+        }
+        var dw = dialogWindows.view(this, com.vn.ecm.view.sharecontent.ShareContentView.class).build();
+        dw.getView().setTargetFile(selected);
+        dw.open();
+    }
 
 }

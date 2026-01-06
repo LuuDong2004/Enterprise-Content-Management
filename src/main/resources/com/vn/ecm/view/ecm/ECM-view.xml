@@ -122,6 +122,7 @@
                         <action id="createFolder" text="Tạo thư mục"/>
                         <action id="delete" text="Xóa" type="folderActionSelected"/>
                         <action id="renameFolder" text="Đổi tên" type="folderActionSelected"/>
+                        <action id="shareFolder" text="Chia sẻ"/>
                         <action id="assignPermission" text="Phân quyền" type="assignPermission"/>
                         <action id="moveFolder" text="Di chuyển" type="folderActionSelected"/>
                     </actions>
@@ -140,6 +141,7 @@
                             <action id="deleteFile" type="fileActionSelected" text="Xóa" icon="CLOSE_CIRCLE_O"/>
                             <action id="renameFile" type="fileActionSelected" text="Đổi tên"/>
                             <action id="downloadFile" type="fileActionSelected" text="Tải xuống"/>
+                            <action id="shareFile" text="Chia sẻ"/>
                             <action id="preViewFile" type="fileActionSelected" text="Xem trước"/>
                             <action id="onObjectAssignPermission" text="Phân quyền"
                                     type="onObjectAssignPermission"/>
