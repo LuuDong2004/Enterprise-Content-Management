@@ -3,8 +3,6 @@
 
     <menu id="application" title="Quản lý người dùng" icon="vaadin:user-card">
         <item view="User.list" title="Danh sách người dùng" icon="vaadin:user"/>
-        <item view="SharePermissionRequestListView"
-              title="msg://com.vn.ecm.view.sharepermissionrequestlist/sharePermissionRequestListView.title"/>
     </menu>
 
     <menu id="storage" title="msg://com.vn.ecm.view.ecm/ecmView.title" icon="vaadin:database">

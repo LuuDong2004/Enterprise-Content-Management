@@ -128,7 +128,7 @@ public class ShareService {
             return;
         }
 
-        PermissionType permissionType = PermissionType.READ; // Mặc định READ
+        PermissionType permissionType = PermissionType.READ; // Mặc  địnhREAD
         if ("MODIFY".equals(shareLink.getPermissionType())) {
             permissionType = PermissionType.MODIFY;
         } else if ("FULL".equals(shareLink.getPermissionType())) {
