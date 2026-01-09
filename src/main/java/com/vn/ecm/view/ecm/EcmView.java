@@ -1,6 +1,5 @@
 package com.vn.ecm.view.ecm;
 
-
 import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
@@ -144,6 +143,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     @Autowired
     private CreateFolderZipAction createFolderZipAction;
 
+
     @Subscribe
     public void onInit(InitEvent event) {
         previewBtn.getElement().getStyle().set("position", "fixed");
@@ -195,7 +195,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
             event.rerouteTo(SourceStorageListView.class);
         }
     }
-
 
     @Override
     public void afterNavigation(AfterNavigationEvent event) {
@@ -296,13 +295,13 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         var dw = dialogWindows.view(this, CreateFolderDialogView.class).build();
         dw.getView().setContext(parent, currentStorage);
         dw.addAfterCloseListener(e -> {
-            //loadAccessibleFolders(user);
+            // loadAccessibleFolders(user);
             loadLazyFolder();
         });
         dw.open();
     }
 
-    //rename folder
+    // rename folder
     @Subscribe("foldersTree.renameFolder")
     public void onFoldersTreeRenameFolder(final ActionPerformedEvent event) {
         Folder selected = foldersTree.getSingleSelectedItem();
@@ -323,7 +322,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         var dw = dialogWindows.view(this, EditNameFolderDialogView.class).build();
         dw.getView().setContext(selected, currentStorage);
         dw.addAfterCloseListener(e -> {
-            //loadAccessibleFolders(userCurr);
+            // loadAccessibleFolders(userCurr);
             loadLazyFolder();
         });
         dw.open();
@@ -428,7 +427,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
             try {
                 String useName = userCurr.getUsername();
                 folderService.moveToTrash(selected, useName);
-                //loadAccessibleFolders(userCurr);
+                // loadAccessibleFolders(userCurr);
                 loadLazyFolder();
                 notifications.show(messageBundle.getMessage("ecmDeleteFolderAlert"));
             } catch (Exception ex) {
@@ -510,10 +509,11 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         foldersDc.setItems(dataProvider.getItems());
     }
 
-//    private void loadAccessibleFolders(User user) {
-//        List<Folder> accessibleFolders = permissionService.getAccessibleFolders(user, currentStorage);
-//        foldersDc.setItems(accessibleFolders);
-//    }
+    // private void loadAccessibleFolders(User user) {
+    // List<Folder> accessibleFolders = permissionService.getAccessibleFolders(user,
+    // currentStorage);
+    // foldersDc.setItems(accessibleFolders);
+    // }
 
     private void loadAccessibleFiles(User user, Folder folder) {
         List<FileDescriptor> accessibleFiles = permissionService.getAccessibleFiles(user, currentStorage, folder);
@@ -585,7 +585,99 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         if (file == null) {
             return;
         }
+
         filePreviewUntil.previewFile(file.getFileRef(), file.getName(), this);
+        FileRef fileRef = file.getFileRef();
+        String extension = file.getExtension();
+        if (extension.startsWith("pdf")) {
+            previewPdfFile(fileRef);
+        }
+        if (extension.startsWith("txt") || extension.startsWith("doc")) {
+            previewTextFile(fileRef);
+        }
+        if (extension.startsWith("jpg")
+                || extension.startsWith("png")
+                || extension.startsWith("jpeg")
+                || extension.startsWith("webp")
+                || extension.startsWith("svg")
+                || extension.startsWith("gif")) {
+            previewImageFile(fileRef);
+        }
+        if (extension.startsWith("mp4")
+                || extension.startsWith("mov")
+                || extension.startsWith("webm")) {
+            preViewVideoFile(fileRef);
+        }
+        if (extension.startsWith("html")
+                || extension.startsWith("htm")
+                || extension.startsWith("java")
+                || extension.startsWith("js")
+                || extension.startsWith("css")
+                || extension.startsWith("md")
+                || extension.startsWith("xml")
+                || extension.startsWith("sql")) {
+            preViewHtmlFile(fileRef);
+        }
+        if (extension.startsWith("xlsx")) {
+            previewExcelFile(fileRef);
+        }
+        if (extension.startsWith("zip")) {
+            previewZipFile(fileRef);
+        } else {
+            notifications.create("Loại tệp này chưa hỗ trợ xem trước!")
+                    .withDuration(2000)
+                    .withCloseable(false)
+                    .show();
+        }
+    }
+
+    private void previewPdfFile(FileRef fileRelf) {
+        DialogWindow<PdfPreview> window = dialogWindows.view(this, PdfPreview.class).build();
+        window.getView().setInputFile(fileRelf);
+        window.setResizable(true);
+        window.open();
+    }
+
+    private void previewTextFile(FileRef fileRelf) {
+        DialogWindow<TextPreview> window = dialogWindows.view(this, TextPreview.class).build();
+        window.getView().setInputFile(fileRelf);
+        window.setResizable(true);
+        window.open();
+    }
+
+    private void previewImageFile(FileRef fileRelf) {
+        DialogWindow<ImagePreview> window = dialogWindows.view(this, ImagePreview.class).build();
+        window.getView().setInputFile(fileRelf);
+        window.setResizable(true);
+        window.open();
+    }
+
+    private void preViewVideoFile(FileRef fileRelf) {
+        DialogWindow<VideoPreview> window = dialogWindows.view(this, VideoPreview.class).build();
+        window.getView().setInputFile(fileRelf);
+        window.setResizable(true);
+        window.open();
+    }
+
+    private void preViewHtmlFile(FileRef fileRelf) {
+        DialogWindow<CodePreview> window = dialogWindows.view(this, CodePreview.class).build();
+        window.getView().setInputFile(fileRelf);
+        window.setResizable(true);
+        window.open();
+    }
+
+    private void previewExcelFile(FileRef fileRelf) {
+        DialogWindow<ExcelPreview> window = dialogWindows.view(this, ExcelPreview.class).build();
+        window.getView().setInputFile(fileRelf);
+        window.setResizable(true);
+        window.open();
+    }
+
+    private void previewZipFile(FileRef fileRelf) {
+        DialogWindow<ZipPreview> window = dialogWindows.view(this, ZipPreview.class).build();
+        window.getView().setInputFile(fileRelf);
+        window.setResizable(true);
+        window.open();
     }
 
     private void executeOcrSearch() {
@@ -643,6 +735,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         metadataEmptyState.setVisible(true);
     }
 
+
     @Subscribe("fileDataGird.zipFile")
     public void onFileDataGirdZipFile(final ActionPerformedEvent event) {
         Folder selectedFolder = foldersTree.getSingleSelectedItem();
@@ -670,6 +763,57 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
             return;
         }
         createFolderZipAction.openZipFolderDialog(this,selectedFolder);
+    }
+
+
+    @Subscribe("foldersTree.shareFolder")
+    public void onFoldersTreeShareFolder(final ActionPerformedEvent event) {
+        Folder selected = foldersTree.getSingleSelectedItem();
+        if (selected == null) {
+            notifications.create("Vui lòng chọn thư mục để chia sẻ")
+                    .withType(Notifications.Type.WARNING)
+                    .withDuration(2000)
+                    .show();
+            return;
+        }
+        User userCurr = (User) currentAuthentication.getUser();
+        boolean per = permissionService.hasPermission(userCurr, PermissionType.READ, selected);
+        if (!per) {
+            notifications.create("Bạn không có quyền chia sẻ thư mục này.")
+                    .withType(Notifications.Type.ERROR)
+                    .withDuration(2000)
+                    .withCloseable(false)
+                    .show();
+            return;
+        }
+        var dw = dialogWindows.view(this, com.vn.ecm.view.sharecontent.ShareContentView.class).build();
+        dw.getView().setTargetFolder(selected);
+        dw.open();
+    }
+
+    @Subscribe("fileDataGird.shareFile")
+    public void onFileDataGirdShareFile(final ActionPerformedEvent event) {
+        FileDescriptor selected = fileDataGird.getSingleSelectedItem();
+        if (selected == null) {
+            notifications.create("Vui lòng chọn file để chia sẻ")
+                    .withType(Notifications.Type.WARNING)
+                    .withDuration(2000)
+                    .show();
+            return;
+        }
+        User userCurr = (User) currentAuthentication.getUser();
+        boolean per = permissionService.hasPermission(userCurr, PermissionType.READ, selected);
+        if (!per) {
+            notifications.create("Bạn không có quyền chia sẻ file này.")
+                    .withType(Notifications.Type.ERROR)
+                    .withDuration(2000)
+                    .withCloseable(false)
+                    .show();
+            return;
+        }
+        var dw = dialogWindows.view(this, com.vn.ecm.view.sharecontent.ShareContentView.class).build();
+        dw.getView().setTargetFile(selected);
+        dw.open();
     }
 
 
