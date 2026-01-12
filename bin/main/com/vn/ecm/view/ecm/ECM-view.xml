@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<view xmlns="http://jmix.io/schema/flowui/view"
+      title="msg://ecmView.title">
+    <data>
+        <collection id="foldersDc" class="com.vn.ecm.entity.Folder">
+            <fetchPlan>
+                <property name="name"/>
+                <property name="parent"/>
+                <property name="sourceStorage"/>
+                <property name="deleteDate"/>
+                <property name="deletedBy"/>
+                <property name="inTrash"/>
+                <property name="fullPath"/>
+                <property name="createdDate"/>
+            </fetchPlan>
+            <!--            <loader id="foldersDl">-->
+            <!--                <query><![CDATA[-->
+            <!--                select f from Folder f-->
+            <!--                where f.sourceStorage = :storage-->
+            <!--                and f.inTrash = false-->
+            <!--            ]]></query>-->
+            <!--            </loader>-->
+        </collection>
+        <collection id="filesDc" class="com.vn.ecm.entity.FileDescriptor">
+            <fetchPlan>
+                <property name="name"/>
+                <property name="extension"/>
+                <property name="size"/>
+                <property name="lastModified"/>
+                <property name="folder"/>
+                <property name="fileRef"/>
+                <property name="inTrash"/>
+                <property name="deletedBy"/>
+                <property name="deleteDate"/>
+                <property name="createBy"/>
+            </fetchPlan>
+            <loader id="filesDl">
+                <query><![CDATA[
+                select f from FileDescriptor f
+                where f.sourceStorage = :storage
+                and (:folder is null or f.folder = :folder)
+                and f.inTrash = false
+            ]]></query>
+            </loader>
+        </collection>
+        <collection id="StorageDc" class="com.vn.ecm.entity.SourceStorage">
+            <loader id="storagesDl">
+                <query>
+                    <![CDATA[
+                        select s from SourceStorage s
+                        where s.active = true
+                    ]]>
+                </query>
+            </loader>
+        </collection>
+        <instance id="metadataFileDc" class="com.vn.ecm.entity.FileDescriptor"/>
+    </data>
+    <actions>
+        <action id="uploadAction" type="UploadDownloadFile"/>
+        <action id="downloadAction" type="UploadDownloadFile"/>
+    </actions>
+    <layout>
+        <hbox>
+            <textField id="ocrSearchField"
+                       placeholder="Tìm nội dung (OCR)"
+                       clearButtonVisible="true"
+                       width="250px"/>
+            <checkbox id="exactSearchCheckbox"
+                      label="Tìm đích danh"/>
+            <checkbox id="ignoreDiacriticsCheckbox"
+                      label="Không dấu"/>
+            <button id="ocrSearchBtn" text="Tìm nội dung" icon="SEARCH"/>
+        </hbox>
+        <hbox id="ecmBtnAct">
+            <button id="newFolderBtn" text="Tạo mới" action="foldersTree.createFolder" icon="PLUS_CIRCLE_O"
+                    title="Tạo mới thư mục"/>
+            <button id="phanquyenbtn" text="Phân quyền" action="foldersTree.assignPermission" icon="LOCK"/>
+            <button id="renameFolderBtn" text="Đổi tên" action="foldersTree.renameFolder" icon="lumo:edit"
+                    title="Đổi tên thư mục"/>
+            <button id="deleteFolderBtn" text="Xóa thư mục" action="foldersTree.delete" icon="TRASH"
+                    title="Xóa thư mục"/>
+            <button id="moveFolderBtn" text="Di chuyển" action="foldersTree.moveFolder" icon="ARROW_RIGHT"/>
+            <!--            <button id="phanquyenbtn" text="Phân quyền" action="foldersTree.assignPermission" icon="LOCK"/>-->
+            <!--            <button id="renameFolderBtn" text="Đổi tên" action="foldersTree.renameFolder" icon="lumo:edit"/>-->
+            <fileStorageUploadField id="fileRefField"
+                                    property="fileRef"
+                                    dataContainer="filesDc"
+                                    uploadText="Tải lên"
+                                    dropAllowed="true"
+                                    clearButtonVisible="true"
+                                    maxFileSize="1073741824"
+                                    fileStoragePutMode="MANUAL"
+                                    uploadIcon="UPLOAD"/>
+            <button id="btnDownload" text="Tải xuống" action="downloadAction" icon="DOWNLOAD"/>
+            <button id="preViewFileBtn" text="Xem trước" action="fileDataGird.preViewFile" icon="vaadin:eye"/>
+            <fragment id="viewModeFragment" class="com.vn.ecm.view.viewmode.ViewModeFragment"/>
+            <button id="previewBtn" text="Xem chi tiết" icon="MENU"/>
+        </hbox>
+        <split width="100%" height="100%" splitterPosition="28">
+            <vbox>
+                <!--                <treeDataGrid id="folderTreeGird" metaClass="Folder" hierarchyProperty="parent">-->
+                <!--                    <columns>-->
+                <!--                        <column property="name"/>-->
+                <!--                    </columns>-->
+                <!--                    <actions>-->
+                <!--                        <action id="createFolder" text="Tạo thư mục"/>-->
+                <!--                        <action id="delete" text="Xóa" type="folderActionSelected"/>-->
+                <!--                        <action id="renameFolder" text="Đổi tên" type="folderActionSelected"/>-->
+                <!--                        <action id="assignPermission" text="Phân quyền" type="assignPermission"/>-->
+                <!--                    </actions>-->
+                <!--                </treeDataGrid>-->
+                <treeDataGrid id="foldersTree"
+                              dataContainer="foldersDc"
+                              hierarchyProperty="parent"
+                              width="100%"
+                              height="100%"
+                              themeNames="compact, no-row-borders">
+                    <columns>
+                        <column property="name"/>
+                    </columns>
+                    <actions>
+                        <action id="createFolder" text="Tạo thư mục"/>
+                        <action id="delete" text="Xóa" type="folderActionSelected"/>
+                        <action id="renameFolder" text="Đổi tên" type="folderActionSelected"/>
+                        <action id="shareFolder" text="Chia sẻ"/>
+                        <action id="assignPermission" text="Phân quyền" type="assignPermission"/>
+                        <action id="moveFolder" text="Di chuyển" type="folderActionSelected"/>
+                    </actions>
+                </treeDataGrid>
+            </vbox>
+            <split width="100%" height="100%" splitterPosition="72">
+                <vbox>
+                    <hbox id="iconTiles" visible="false" classNames="icon-tiles"/>
+                    <dataGrid id="fileDataGird"
+                              width="100%"
+                              height="100%"
+                              dataContainer="filesDc"
+                              pageSize="50"
+                              themeNames="compact, no-row-borders">
+                        <actions>
+                            <action id="deleteFile" type="fileActionSelected" text="Xóa" icon="CLOSE_CIRCLE_O"/>
+                            <action id="renameFile" type="fileActionSelected" text="Đổi tên"/>
+                            <action id="downloadFile" type="fileActionSelected" text="Tải xuống"/>
+                            <action id="shareFile" text="Chia sẻ"/>
+                            <action id="preViewFile" type="fileActionSelected" text="Xem trước"/>
+                            <action id="onObjectAssignPermission" text="Phân quyền"
+                                    type="onObjectAssignPermission"/>
+                        </actions>
+                        <columns>
+                            <column property="name"/>
+                            <column property="size"/>
+                            <column property="extension"/>
+                            <column property="lastModified"/>
+                        </columns>
+                        <emptyStateComponent>
+                            <vbox width="100%" height="100%" justifyContent="CENTER" alignItems="CENTER">
+                                <span id="emptyStateText" text="Chưa chọn thư mục"/>
+                            </vbox>
+                        </emptyStateComponent>
+                    </dataGrid>
+                </vbox>
+
+                <vbox id="metadataPanel">
+                    <hbox spacing="true" alignItems="CENTER" justifyContent="BETWEEN" padding="true"
+                          classNames="metadataTitle" width="100%">
+                        <h4 text="Thông tin tệp"/>
+                    </hbox>
+
+                    <vbox id="metadataContent" width="100%" height="100%" classNames="metadata-content">
+                        <hbox spacing="true" alignItems="CENTER" classNames="metadata-row">
+                            <h5 text="Tệp:" classNames="metadata-label"/>
+                            <span id="metadataName" property="name" dataContainer="metadataFileDc"/>
+                        </hbox>
+                        <hbox spacing="true" alignItems="CENTER" classNames="metadata-row">
+                            <h5 text="Kích cỡ:" classNames="metadata-label"/>
+                            <span id="metadataSize" property="size" dataContainer="metadataFileDc"/>
+                        </hbox>
+                        <hbox spacing="true" alignItems="CENTER" classNames="metadata-row">
+                            <h5 text="Phần mở rộng:" classNames="metadata-label"/>
+                            <span id="metadataExtension" property="extension" dataContainer="metadataFileDc"/>
+                        </hbox>
+                        <hbox spacing="true" alignItems="CENTER" classNames="metadata-row">
+                            <h5 text="Ngày sửa:" classNames="metadata-label"/>
+                            <span id="metadataLastModified" property="lastModified" dataContainer="metadataFileDc"/>
+                        </hbox>
+                        <hbox spacing="true" alignItems="CENTER" classNames="metadata-row">
+                            <h5 text="Người tạo:" classNames="metadata-label"/>
+                            <span id="metadataCreateBy" dataContainer="metadataFileDc" property="createBy"/>
+                        </hbox>
+                        <hbox spacing="true" alignItems="CENTER" classNames="metadata-row">
+                            <h5 text="Nội dung tệp:" classNames="metadata-label"/>
+                            <span id="metadataContentType" dataContainer="metadataFileDc"/>
+                        </hbox>
+                    </vbox>
+                    <vbox id="metadataEmptyState" width="100%" height="100%" justifyContent="CENTER" alignItems="CENTER"
+                          visible="false">
+                        <span id="metadataEmptyText" text="Vui lòng chọn tệp để xem trước"/>
+                    </vbox>
+                </vbox>
+            </split>
+        </split>
+    </layout>
+</view>

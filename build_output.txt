@@ -1,0 +1,69 @@
+
+> Task :compileJava
+D:\OJT\Enterprise-Content-Management\src\main\java\com\vn\ecm\service\ecm\PermissionService.java:385: error: cannot find symbol
+    public ShareLink shareByLink(Folder folder, FileDescriptor file, User owner, PermissionType permissionType, LocalDateTime expiryDate) {
+                                                                                                                ^
+  symbol:   class LocalDateTime
+  location: class PermissionService
+D:\OJT\Enterprise-Content-Management\src\main\java\com\vn\ecm\service\ecm\PermissionService.java:46: error: incompatible types: String cannot be converted to AppliesTo
+        permission.setAppliesTo("USER");
+                                ^
+D:\OJT\Enterprise-Content-Management\src\main\java\com\vn\ecm\service\ecm\PermissionService.java:84: error: incompatible types: String cannot be converted to AppliesTo
+        permission.setAppliesTo("ROLE");
+                                ^
+D:\OJT\Enterprise-Content-Management\src\main\java\com\vn\ecm\service\ecm\PermissionService.java:213: error: incompatible types: bad type in conditional expression
+            String appliesTo = p.getAppliesTo() != null ? p.getAppliesTo() : "";
+                                                                        ^
+    AppliesTo cannot be converted to String
+D:\OJT\Enterprise-Content-Management\src\main\java\com\vn\ecm\service\ecm\PermissionService.java:404: error: incompatible types: String cannot be converted to AppliesTo
+        p.setAppliesTo("ANYONE_WITH_LINK");
+                       ^
+D:\OJT\Enterprise-Content-Management\src\main\java\com\vn\ecm\service\ecm\PermissionService.java:418: error: cannot find symbol
+        sl.setCreatedDate(LocalDateTime.now());
+                          ^
+  symbol:   variable LocalDateTime
+  location: class PermissionService
+Note: Some messages have been simplified; recompile with -Xdiags:verbose to get full output
+6 errors
+
+> Task :compileJava FAILED
+
+
+[Incubating] Problems report is available at: file:///D:/OJT/Enterprise-Content-Management/build/reports/problems/problems-report.html
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':compileJava'.
+> Compilation failed; see the compiler output below.
+  D:\OJT\Enterprise-Content-Management\src\main\java\com\vn\ecm\service\ecm\PermissionService.java:385: error: cannot find symbol
+      public ShareLink shareByLink(Folder folder, FileDescriptor file, User owner, PermissionType permissionType, LocalDateTime expiryDate) {
+                                                                                                                  ^
+    symbol:   class LocalDateTime
+    location: class PermissionService
+  D:\OJT\Enterprise-Content-Management\src\main\java\com\vn\ecm\service\ecm\PermissionService.java:46: error: incompatible types: String cannot be converted to AppliesTo
+          permission.setAppliesTo("USER");
+                                  ^
+  D:\OJT\Enterprise-Content-Management\src\main\java\com\vn\ecm\service\ecm\PermissionService.java:84: error: incompatible types: String cannot be converted to AppliesTo
+          permission.setAppliesTo("ROLE");
+                                  ^
+  D:\OJT\Enterprise-Content-Management\src\main\java\com\vn\ecm\service\ecm\PermissionService.java:213: error: incompatible types: bad type in conditional expression
+              String appliesTo = p.getAppliesTo() != null ? p.getAppliesTo() : "";
+                                                                          ^
+      AppliesTo cannot be converted to String
+  D:\OJT\Enterprise-Content-Management\src\main\java\com\vn\ecm\service\ecm\PermissionService.java:404: error: incompatible types: String cannot be converted to AppliesTo
+          p.setAppliesTo("ANYONE_WITH_LINK");
+                         ^
+  D:\OJT\Enterprise-Content-Management\src\main\java\com\vn\ecm\service\ecm\PermissionService.java:418: error: cannot find symbol
+          sl.setCreatedDate(LocalDateTime.now());
+1 actionable task: 1 executed
+                            ^
+    symbol:   variable LocalDateTime
+    location: class PermissionService
+  Note: Some messages have been simplified; recompile with -Xdiags:verbose to get full output
+  6 errors
+
+* Try:
+> Check your code and dependencies to fix the compilation error(s)
+> Run with --scan to get full insights.
+
+BUILD FAILED in 7s
