@@ -6,6 +6,9 @@ import com.vn.ecm.service.ecm.folderandfile.IFolderService;
 import io.jmix.core.DataManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -26,7 +29,7 @@ public class FolderController {
 
     // Helper to get current user
     private User getCurrentUser() {
-        org.springframework.security.core.Authentication authentication = org.springframework.security.core.context.SecurityContextHolder
+        Authentication authentication = SecurityContextHolder
                 .getContext().getAuthentication();
 
         if (authentication == null) {
@@ -45,7 +48,7 @@ public class FolderController {
         }
 
         if (principal instanceof org.springframework.security.oauth2.jwt.Jwt) {
-            org.springframework.security.oauth2.jwt.Jwt jwt = (org.springframework.security.oauth2.jwt.Jwt) principal;
+            Jwt jwt = (Jwt) principal;
             String username = jwt.getClaimAsString("preferred_username");
             if (username == null) {
                 username = jwt.getSubject();
