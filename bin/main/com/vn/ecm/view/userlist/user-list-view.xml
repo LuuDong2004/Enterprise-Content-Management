@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<view xmlns="http://jmix.io/schema/flowui/view"
+      title="Danh sách "
+      focusComponent="objectDataGrid">
+
+    <data>
+        <!-- Nguồn dữ liệu hiển thị trên lưới -->
+        <collection id="objectsDc"
+                    class="com.vn.ecm.entity.EcmObject">
+            <fetchPlan extends="_base"/>
+        </collection>
+
+        <!-- Loader Users để controller gọi -->
+        <collection id="usersDc"
+                    class="com.vn.ecm.entity.User">
+            <fetchPlan extends="_base"/>
+            <loader id="usersDl" readOnly="true">
+                <query>
+                    <![CDATA[
+            select u from User u
+            where not exists (
+                select p from Permission p
+                where p.user = u
+                  and (
+                        (p.file = :file and :file is not null)
+                     or (p.folder = :folder and :folder is not null)
+                  )
+            )
+            order by u.username
+        ]]>
+                </query>
+            </loader>
+        </collection>
+
+        <!-- Loader Roles để controller gọi -->
+        <collection id="rolesDc"
+                    class="io.jmix.securitydata.entity.ResourceRoleEntity">
+            <fetchPlan extends="_base"/>
+            <loader id="rolesDl" readOnly="true">
+                <query>
+                    <![CDATA[
+            select r from sec_ResourceRoleEntity r
+            where not exists (
+                select p from Permission p
+                where p.roleCode = r.code
+                  and (
+                        (p.file = :file and :file is not null)
+                     or (p.folder = :folder and :folder is not null)
+                  )
+            )
+            order by r.name
+        ]]>
+                </query>
+            </loader>
+        </collection>
+
+        <!-- Loader Permissions phục vụ reload sau khi Apply -->
+        <collection id="permissionsDc"
+                    class="com.vn.ecm.entity.Permission">
+            <fetchPlan extends="_base"/>
+            <loader id="permissionsDl" readOnly="true">
+                <query>
+                    <![CDATA[
+                        select p from Permission p
+                        where (:file is null or p.file = :file)
+                          and (:folder is null or p.folder = :folder)
+                          and (:user is null or p.user = :user)
+                          and (:roleCode is null or p.roleCode = :roleCode)
+                    ]]>
+                </query>
+            </loader>
+        </collection>
+    </data>
+
+    <facets>
+        <dataLoadCoordinator auto="false"/>
+    </facets>
+
+    <layout>
+        <textField id="pathArea" width="100%" readOnly="true"/>
+        <hbox id="toolbar" classNames="buttons-panel">
+            <checkbox id="usersFilterCb" label="Người dùng"/>
+            <checkbox id="rolesFilterCb" label="Nhóm"/>
+        </hbox>
+        <dataGrid id="objectDataGrid"
+                  columnReorderingAllowed="true"
+                  dataContainer="objectsDc">
+            <columns resizable="true">
+                <!-- Cột "Thêm" sẽ được thêm bằng ComponentRenderer trong onInit() -->
+                <column property="name" header="Tên"/>
+                <column property="type" header="Loại"/>
+            </columns>
+        </dataGrid>
+        <hbox width="100%" justifyContent="END">
+            <button id="applyBtn" text="Áp dụng" themeNames="primary" icon="CHECK_CIRCLE"/>
+        </hbox>
+    </layout>
+</view>

@@ -3,6 +3,7 @@
 
     <menu id="application" title="Quản lý người dùng" icon="vaadin:user-card">
         <item view="User.list" title="Danh sách người dùng" icon="vaadin:user"/>
+        <item view="MyDriveAssignDialog" title="msg://com.vn.ecm.view.mydrive/myDriveAssignDialog.title"/>
     </menu>
 
     <menu id="storage" title="msg://com.vn.ecm.view.ecm/ecmView.title" icon="vaadin:database">

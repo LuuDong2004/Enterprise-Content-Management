@@ -98,7 +98,7 @@ public class EditPermissionView extends StandardView {
     private PermissionService permissionService;
     @Autowired
     private UiComponents uiComponents;
-    @ViewComponent
+    @Autowired
     private Dialogs dialogs;
 
     @Subscribe(id = "addBtn", subject = "clickListener")

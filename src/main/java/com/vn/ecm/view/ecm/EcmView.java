@@ -4,7 +4,6 @@ import com.vaadin.flow.component.ClickEvent;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 
-import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -22,10 +21,11 @@ import com.vn.ecm.service.ecm.folderandfile.IFolderService;
 import com.vn.ecm.view.component.filepreview.*;
 import com.vn.ecm.view.file.EditFileNameDialogView;
 import com.vn.ecm.view.folder.CreateFolderDialogView;
-import com.vn.ecm.view.folder.CreateFolderZipAction;
 import com.vn.ecm.view.folder.EditNameFolderDialogView;
 import com.vn.ecm.view.folder.FolderLazyTreeItems;
 import com.vn.ecm.view.main.MainView;
+import com.vn.ecm.view.mydrive.MyDriveAssignDialog;
+import com.vn.ecm.view.sharecontent.ShareContentView;
 import com.vn.ecm.view.sourcestorage.SourceStorageListView;
 import com.vn.ecm.view.viewmode.ViewModeFragment;
 import io.jmix.core.DataManager;
@@ -64,7 +64,6 @@ import java.util.stream.Collectors;
 @ViewController("EcmView")
 @ViewDescriptor("ECM-view.xml")
 public class EcmView extends StandardView implements BeforeEnterObserver, AfterNavigationObserver {
-
     @ViewComponent
     private CollectionContainer<Folder> foldersDc;
     @ViewComponent
@@ -137,12 +136,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     private Metadata metadata;
 
     private String conditions = " and e.inTrash = false and e.sourceStorage = :storage";
-    @Autowired
-    private FilePreviewUntil filePreviewUntil;
-
-    @Autowired
-    private CreateFolderZipAction createFolderZipAction;
-
 
     @Subscribe
     public void onInit(InitEvent event) {
@@ -262,15 +255,9 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
                     .withCloseable(false)
                     .show();
         } catch (Exception e) {
-//            notifications.create("Lỗi tải lên : " + event.getFileName())
-//                    .withType(Notifications.Type.ERROR)
-//                    .withDuration(4000)
-//                    .withCloseable(false)
-//                    .show();
-            e.printStackTrace();
-            notifications.create("Lỗi tải lên: " + e.getMessage())
+            notifications.create("Lỗi tải lên : " + event.getFileName())
                     .withType(Notifications.Type.ERROR)
-                    .withDuration(2000)
+                    .withDuration(4000)
                     .withCloseable(false)
                     .show();
         }
@@ -577,16 +564,12 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         }
     }
 
-
-    //preview file
     @Subscribe("fileDataGird.preViewFile")
     public void onFileDataGirdPreViewFile(final ActionPerformedEvent event) {
         FileDescriptor file = fileDataGird.getSingleSelectedItem();
         if (file == null) {
             return;
         }
-
-        filePreviewUntil.previewFile(file.getFileRef(), file.getName(), this);
         FileRef fileRef = file.getFileRef();
         String extension = file.getExtension();
         if (extension.startsWith("pdf")) {
@@ -735,37 +718,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         metadataEmptyState.setVisible(true);
     }
 
-
-    @Subscribe("fileDataGird.zipFile")
-    public void onFileDataGirdZipFile(final ActionPerformedEvent event) {
-        Folder selectedFolder = foldersTree.getSingleSelectedItem();
-        if (selectedFolder == null) {
-
-            return;
-        }
-
-        var selectedFiles = fileDataGird.getSelectedItems();
-        if (selectedFiles == null || selectedFiles.isEmpty()) {
-            return;
-        }
-
-        createFolderZipAction.openZipFilesDialog(
-                this,
-                selectedFolder,
-                selectedFiles
-        );
-    }
-
-    @Subscribe("foldersTree.zipFolder")
-    public void onFoldersTreeZipFolder(final ActionPerformedEvent event) {
-        Folder selectedFolder = foldersTree.getSingleSelectedItem();
-        if (selectedFolder == null) {
-            return;
-        }
-        createFolderZipAction.openZipFolderDialog(this,selectedFolder);
-    }
-
-
     @Subscribe("foldersTree.shareFolder")
     public void onFoldersTreeShareFolder(final ActionPerformedEvent event) {
         Folder selected = foldersTree.getSingleSelectedItem();
@@ -811,10 +763,21 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
                     .show();
             return;
         }
-        var dw = dialogWindows.view(this, com.vn.ecm.view.sharecontent.ShareContentView.class).build();
+        var dw = dialogWindows.view(this, ShareContentView.class).build();
         dw.getView().setTargetFile(selected);
         dw.open();
     }
 
+    @Subscribe("foldersTree.accessDrive")
+    public void onFoldersTreeAccessDrive(final ActionPerformedEvent event) {
+        Folder selected = foldersTree.getSingleSelectedItem();
+        var dw = dialogWindows.view(this, MyDriveAssignDialog.class).build();
+        if(selected == null){
+            return;
+        }
+        dw.getView().setFolder(selected.getId());
+        dw.setResizable(true);
+        dw.open();
+    }
 
 }

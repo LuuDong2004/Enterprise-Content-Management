@@ -12,6 +12,7 @@ import java.util.UUID;
         @Index(name = "IDX_SHARE_PERM_REQ_SHARE_LINK", columnList = "SHARE_LINK_ID"),
         @Index(name = "IDX_SHARE_PERM_REQ_REQUESTER", columnList = "REQUESTER_EMAIL")
 })
+
 @Entity
 public class SharePermissionRequest {
     @JmixGeneratedValue

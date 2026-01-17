@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<view xmlns="http://jmix.io/schema/flowui/view"
+      title="msg://videoPreview.title">
+    <layout>
+        <vbox id="loadingOverlay"
+              classNames="preview-overlay"
+              width="100%"
+              height="100%">
+            <hbox classNames="preview-spinner"/>
+            <label text="Đang tải video..."/>
+        </vbox>
+        <vbox width="100%" height="100%"
+              padding="false" spacing="false"
+              alignItems="CENTER"
+              justifyContent="CENTER"
+              expand="videoPreView">
+            <iframe id="videoPreView"
+                   width="100%" height="100%"/>
+        </vbox>
+    </layout>
+</view>

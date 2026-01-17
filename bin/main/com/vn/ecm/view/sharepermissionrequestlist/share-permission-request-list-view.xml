@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<view xmlns="http://jmix.io/schema/flowui/view"
+      title="Yêu cầu cấp quyền chia sẻ"
+      focusComponent="requestsDataGrid">
+    <data>
+        <collection id="requestsDc"
+                    class="com.vn.ecm.entity.SharePermissionRequest">
+            <fetchPlan extends="_base">
+                <property name="shareLink" fetchPlan="_base">
+                    <property name="owner" fetchPlan="_base"/>
+                    <property name="folder" fetchPlan="_base"/>
+                    <property name="file" fetchPlan="_base"/>
+                </property>
+                <property name="respondedBy" fetchPlan="_base"/>
+            </fetchPlan>
+            <loader id="requestsDl">
+                <query>
+                    <![CDATA[select e from SharePermissionRequest e
+                    where e.shareLink.owner.id = :current_user_id
+                    and e.status = 'PENDING'
+                    order by e.createdDate desc]]>
+                </query>
+            </loader>
+        </collection>
+    </data>
+    <facets>
+        <dataLoadCoordinator auto="true"/>
+    </facets>
+    <layout>
+        <hbox id="buttonsPanel" classNames="buttons-panel">
+            <button id="approveBtn"
+                    text="Phê duyệt"
+                    icon="CHECK"
+                    themeNames="success"/>
+            <button id="rejectBtn"
+                    text="Từ chối"
+                    icon="CLOSE"
+                    themeNames="error"/>
+            <button id="refreshBtn"
+                    text="Làm mới"
+                    icon="REFRESH"/>
+        </hbox>
+        <dataGrid id="requestsDataGrid"
+                  dataContainer="requestsDc"
+                  width="100%"
+                  minHeight="20em">
+            <columns>
+                <column property="requesterEmail" header="Email người yêu cầu"/>
+                <column property="message" header="Lời nhắn"/>
+                <column property="createdDate" header="Ngày yêu cầu"/>
+                <column property="status" header="Trạng thái"/>
+            </columns>
+        </dataGrid>
+    </layout>
+</view>
