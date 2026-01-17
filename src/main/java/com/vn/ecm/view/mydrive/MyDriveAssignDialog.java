@@ -6,8 +6,10 @@ import com.vaadin.flow.router.Route;
 import com.vn.ecm.entity.Folder;
 import com.vn.ecm.entity.MyDriveConfig;
 import com.vn.ecm.entity.User;
+import com.vn.ecm.service.ecm.mydrive.MyDriveService;
 import com.vn.ecm.view.main.MainView;
 import io.jmix.core.DataManager;
+import io.jmix.flowui.Dialogs;
 import io.jmix.flowui.Notifications;
 import io.jmix.flowui.component.grid.DataGrid;
 import io.jmix.flowui.kit.component.button.JmixButton;
@@ -26,7 +28,7 @@ public class MyDriveAssignDialog extends StandardView {
     private DataManager dataManager;
     @ViewComponent
     private CollectionLoader<User> usersDl;
-    @ViewComponent
+
 
     @Autowired
     private Notifications notifications;
@@ -35,6 +37,9 @@ public class MyDriveAssignDialog extends StandardView {
 
     @ViewComponent
     private DataGrid<User> usersDataGrid;
+
+    @Autowired
+    private MyDriveService myDriveService;
 
     @Subscribe
     public void onInit(final InitEvent event) {
@@ -53,51 +58,12 @@ public class MyDriveAssignDialog extends StandardView {
     public void onSaveBtnClick(final ClickEvent<JmixButton> event) {
         User owner = usersDataGrid.getSingleSelectedItem();
 
-        if (owner == null || folder == null) {
-            notifications.create("Vui lòng chọn người dùng để cấp Drive!")
-                    .withDuration(2000)
-                    .withType(Notifications.Type.WARNING)
-                    .withCloseable(false)
-                    .show();
-            return;
-        }
-        // check folder đã bị gán cho user khác chưa
-        boolean folderAssigned = dataManager.loadValue(
-                        "select count(c) from MyDriveConfig c where c.myDrive = :folder", Long.class)
-                .parameter("folder", folder)
-                .one() > 0;
+        boolean ok = myDriveService.assignDrive(owner, folder);
 
-        if (folderAssigned) {
-            notifications.create("Thư mục này đã cấp quyền cho người khác !")
-                    .withDuration(2000)
-                    .withType(Notifications.Type.ERROR)
-                    .withCloseable(false)
-                    .show();
-            return;
+        if (ok) {
+            close(StandardOutcome.SAVE);
         }
 
-        // check nếu user đã có MyDrive rồi
-        boolean exists = dataManager.load(MyDriveConfig.class)
-                .query("select m from MyDriveConfig m where m.owner = :owner")
-                .parameter("owner", owner)
-                .optional()
-                .isPresent();
-        if (exists) {
-            notifications.create("Người dùng này đã có My Drive")
-                    .withDuration(2000)
-                    .withType(Notifications.Type.ERROR)
-                    .withCloseable(false)
-                    .show();
-            return;
-        }
-
-        MyDriveConfig config = dataManager.create(MyDriveConfig.class);
-        config.setOwner(owner);
-        config.setMyDrive(folder);
-
-        dataManager.save(config);
-        close(StandardOutcome.SAVE);
-        close(StandardOutcome.SAVE);
     }
 
     @Subscribe(id = "cancelBtn", subject = "clickListener")
