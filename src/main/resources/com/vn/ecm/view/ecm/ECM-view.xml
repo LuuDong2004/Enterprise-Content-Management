@@ -125,6 +125,7 @@
                         <action id="shareFolder" text="Chia sẻ"/>
                         <action id="assignPermission" text="Phân quyền" type="assignPermission"/>
                         <action id="moveFolder" text="Di chuyển" type="folderActionSelected"/>
+                        <action id="accessDrive" text="My Drive" type="folderActionSelected"/>
                     </actions>
                 </treeDataGrid>
             </vbox>

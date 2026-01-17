@@ -24,6 +24,8 @@ import com.vn.ecm.view.folder.CreateFolderDialogView;
 import com.vn.ecm.view.folder.EditNameFolderDialogView;
 import com.vn.ecm.view.folder.FolderLazyTreeItems;
 import com.vn.ecm.view.main.MainView;
+import com.vn.ecm.view.mydrive.MyDriveAssignDialog;
+import com.vn.ecm.view.sharecontent.ShareContentView;
 import com.vn.ecm.view.sourcestorage.SourceStorageListView;
 import com.vn.ecm.view.viewmode.ViewModeFragment;
 import io.jmix.core.DataManager;
@@ -761,8 +763,20 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
                     .show();
             return;
         }
-        var dw = dialogWindows.view(this, com.vn.ecm.view.sharecontent.ShareContentView.class).build();
+        var dw = dialogWindows.view(this, ShareContentView.class).build();
         dw.getView().setTargetFile(selected);
+        dw.open();
+    }
+
+    @Subscribe("foldersTree.accessDrive")
+    public void onFoldersTreeAccessDrive(final ActionPerformedEvent event) {
+        Folder selected = foldersTree.getSingleSelectedItem();
+        var dw = dialogWindows.view(this, MyDriveAssignDialog.class).build();
+        if(selected == null){
+            return;
+        }
+        dw.getView().setFolder(selected.getId());
+        dw.setResizable(true);
         dw.open();
     }
 
