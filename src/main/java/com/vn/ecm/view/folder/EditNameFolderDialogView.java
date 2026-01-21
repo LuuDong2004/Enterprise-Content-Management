@@ -63,7 +63,6 @@ public class EditNameFolderDialogView extends StandardView {
 
     @Subscribe(id = "cancelBtn", subject = "clickListener")
     public void onCancelBtnClick(final ClickEvent<JmixButton> event) {
-
         close(StandardOutcome.CLOSE);
 	}
 }

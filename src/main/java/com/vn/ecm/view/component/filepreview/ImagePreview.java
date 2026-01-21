@@ -21,14 +21,17 @@ public class ImagePreview extends StandardView {
 
     @ViewComponent
     private JmixImage<Object> imagePreView;
+
     @Autowired
     private DynamicStorageManager dynamicStorageManager;
 
     public void setInputFile(FileRef inputFile) {
+
         this.inputFile = inputFile;
     }
     @Subscribe
     public void onReady(ReadyEvent event) {
+
         if (inputFile == null) {
             return;
         }

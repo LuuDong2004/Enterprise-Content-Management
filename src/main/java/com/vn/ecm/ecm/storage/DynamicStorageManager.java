@@ -1,7 +1,6 @@
 package com.vn.ecm.ecm.storage;
 
 import com.vn.ecm.ecm.storage.ftp.FtpStorage;
-
 import com.vn.ecm.ecm.storage.ftp.config.FtpStorageConfig;
 import com.vn.ecm.ecm.storage.s3.S3ClientFactory;
 import com.vn.ecm.ecm.storage.s3.S3Storage;
@@ -10,7 +9,9 @@ import com.vn.ecm.entity.FtpStorageEntity;
 import com.vn.ecm.entity.SourceStorage;
 import com.vn.ecm.entity.StorageType;
 import io.jmix.core.DataManager;
+import io.jmix.core.FileRef;
 import io.jmix.core.FileStorage;
+import io.jmix.core.FileStorageLocator;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
@@ -31,6 +32,7 @@ public class DynamicStorageManager {
     private final DataManager dataManager;
     private final DefaultListableBeanFactory springBeanFactory;
     private final S3ClientFactory s3ClientFactory;
+    private final FileStorageLocator fileStorageLocator;
 
     /**
      * Map SourceStorage.id -> beanName (fs_xxx-uuid)
@@ -39,11 +41,13 @@ public class DynamicStorageManager {
 
     public DynamicStorageManager(ApplicationContext applicationContext,
                                  DataManager dataManager,
-                                 S3ClientFactory s3ClientFactory) {
+                                 S3ClientFactory s3ClientFactory,
+                                 FileStorageLocator fileStorageLocator) {
         this.springBeanFactory =
                 (DefaultListableBeanFactory) applicationContext.getAutowireCapableBeanFactory();
         this.dataManager = dataManager;
         this.s3ClientFactory = s3ClientFactory;
+        this.fileStorageLocator = fileStorageLocator;
     }
 
     // =====================================================================
@@ -51,7 +55,7 @@ public class DynamicStorageManager {
     // =====================================================================
 
     /**
-     * Tạo tên storage cho FileRef (ví dụ: webdir-uuid, s3-uuid, ftp-uuid)
+     * Tạo tên storage cho FileRef (ví dụ: s3-uuid, webdir-uuid, ftp-uuid)
      */
     private String generateStorageName(SourceStorage sourceStorage) {
         String storageTypePrefix;
@@ -69,7 +73,7 @@ public class DynamicStorageManager {
     }
 
     /**
-     * Tạo tên bean trong Spring context (ví dụ: fs_webdir-uuid)
+     * Tạo tên bean trong Spring context (ví dụ: fs_s3-uuid)
      */
     private String generateBeanName(SourceStorage sourceStorage) {
         return "fs_" + generateStorageName(sourceStorage);
@@ -107,11 +111,11 @@ public class DynamicStorageManager {
     }
 
     // =====================================================================
-    // Lấy / tạo FileStorage instance
+    // Lấy / tạo FileStorage instance (dynamic)
     // =====================================================================
 
     /**
-     * Lấy hoặc tạo mới FileStorage instance cho SourceStorage
+     * Lấy hoặc tạo mới FileStorage instance cho SourceStorage (dynamic)
      */
     public FileStorage getOrCreateFileStorage(SourceStorage sourceStorage) {
         String beanName = generateBeanName(sourceStorage);
@@ -197,7 +201,7 @@ public class DynamicStorageManager {
     }
 
     // =====================================================================
-    // Refresh / remove
+    // Refresh / remove dynamic storage
     // =====================================================================
 
     public FileStorage refreshFileStorage(SourceStorage sourceStorage) {
@@ -219,7 +223,7 @@ public class DynamicStorageManager {
     }
 
     // =====================================================================
-    // Đăng ký storage theo tên (Jmix gọi)
+    // Đăng ký storage theo tên (Jmix gọi) – cho dynamic
     // =====================================================================
 
     public void ensureStorageRegistered(String storageName) {
@@ -229,7 +233,9 @@ public class DynamicStorageManager {
 
         String beanName = "fs_" + storageName;
 
+        // Đã có dynamic storage với beanName fs_xxx
         if (springBeanFactory.containsBean(beanName)) {
+            // Đảm bảo alias storageName cũng tồn tại
             if (!springBeanFactory.containsBean(storageName)) {
                 FileStorage existingStorage =
                         springBeanFactory.getBean(beanName, FileStorage.class);
@@ -238,6 +244,7 @@ public class DynamicStorageManager {
             return;
         }
 
+        // storageName không map được sang dynamic (ví dụ: "fs") thì bỏ qua
         StorageNameInfo nameInfo = parseStorageName(storageName);
         if (nameInfo == null) {
             return;
@@ -303,13 +310,35 @@ public class DynamicStorageManager {
         }
     }
 
-    public FileStorage getFileStorageByName(String storageName) {
-        ensureStorageRegistered(storageName);
+    // =====================================================================
+    // API công khai
+    // =====================================================================
 
+    /**
+     * Dùng cho code cũ chỉ có storageName (dynamic hoặc chuẩn).
+     */
+    public FileStorage getFileStorageByName(String storageName) {
+        // 1. Thử dynamic
+        ensureStorageRegistered(storageName);
         if (springBeanFactory.containsBean(storageName)) {
             return springBeanFactory.getBean(storageName, FileStorage.class);
         }
 
-        throw new IllegalArgumentException("Dynamic FileStorage not found: " + storageName);
+        // 2. Nếu không phải dynamic → fallback sang FileStorageLocator (fs, v.v.)
+        return fileStorageLocator.getByName(storageName);
+    }
+
+    /**
+     *  Hàm: với mọi FileRef (fs hoặc dynamic) đều resolve được FileStorage.
+     * Nên dùng hàm này ở các service Preview / Download / Zip, v.v.
+     */
+    public FileStorage resolveFileStorage(FileRef fileRef) {
+        String storageName = fileRef.getStorageName();
+
+        ensureStorageRegistered(storageName);
+        if (springBeanFactory.containsBean(storageName)) {
+            return springBeanFactory.getBean(storageName, FileStorage.class);
+        }
+        return fileStorageLocator.getByName(storageName);
     }
 }

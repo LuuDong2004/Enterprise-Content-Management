@@ -122,8 +122,12 @@
                         <action id="createFolder" text="Tạo thư mục"/>
                         <action id="delete" text="Xóa" type="folderActionSelected"/>
                         <action id="renameFolder" text="Đổi tên" type="folderActionSelected"/>
+                        <action id="shareFolder" text="Chia sẻ"/>
                         <action id="assignPermission" text="Phân quyền" type="assignPermission"/>
                         <action id="moveFolder" text="Di chuyển" type="folderActionSelected"/>
+                        <action id="zipFolder" text="Nén thư mục" type="folderActionSelected"/>
+                        <action id="accessDrive" text="My Drive" type="folderActionSelected"/>
+
                     </actions>
                 </treeDataGrid>
             </vbox>
@@ -140,9 +144,11 @@
                             <action id="deleteFile" type="fileActionSelected" text="Xóa" icon="CLOSE_CIRCLE_O"/>
                             <action id="renameFile" type="fileActionSelected" text="Đổi tên"/>
                             <action id="downloadFile" type="fileActionSelected" text="Tải xuống"/>
+                            <action id="shareFile" text="Chia sẻ"/>
                             <action id="preViewFile" type="fileActionSelected" text="Xem trước"/>
                             <action id="onObjectAssignPermission" text="Phân quyền"
                                     type="onObjectAssignPermission"/>
+                            <action id="zipFile" text="Nén tệp" type="fileActionSelected"/>
                         </actions>
                         <columns>
                             <column property="name"/>

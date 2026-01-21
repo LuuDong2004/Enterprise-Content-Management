@@ -153,6 +153,7 @@ vaadin-big-decimal-field input[type="text"] {
     margin-bottom: 8px;
 }
 
+
 @keyframes preview-spin {
     to {
         transform: rotate(360deg);

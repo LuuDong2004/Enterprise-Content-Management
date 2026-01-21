@@ -310,6 +310,41 @@ public class PermissionService {
                         .setParameter(9, userId)
                         .executeUpdate();
 
+                // UPDATE Files
+                // Fix: Check xem có ancestor nào trong path bị block inheritance không
+                entityManager.createNativeQuery(
+                        "UPDATE P " +
+                                "SET P.PERMISSION_MASK = ?, P.INHERITED = 1, P.INHERITED_FROM = ? " +
+                                "FROM PERMISSION P " +
+                                "INNER JOIN FILE_Descriptor FD ON P.FILE_ID = FD.ID " +
+                                "INNER JOIN FOLDER F ON FD.FOLDER_ID = F.ID " +
+                                "LEFT JOIN PERMISSION P_BLOCKED ON P_BLOCKED.FOLDER_ID = F.ID " +
+                                "  AND P_BLOCKED.USER_ID = ? AND P_BLOCKED.INHERIT_ENABLED = 0 " +
+                                "WHERE P.USER_ID = ? " +
+                                "AND (P.INHERIT_ENABLED = 1 OR P.INHERIT_ENABLED IS NULL) " +
+                                "AND (F.ID = ? OR F.FULL_PATH LIKE ? ESCAPE '\\') " +
+                                "AND FD.IN_TRASH = 0 " +
+                                "AND P_BLOCKED.FOLDER_ID IS NULL " +
+                                "AND NOT EXISTS ( " +
+                                "  SELECT 1 FROM FOLDER F_ANC " +
+                                "  INNER JOIN PERMISSION P_ANC ON P_ANC.FOLDER_ID = F_ANC.ID " +
+                                "  WHERE F_ANC.FULL_PATH LIKE ? ESCAPE '\\' " +
+                                "  AND F.FULL_PATH LIKE F_ANC.FULL_PATH + '%' ESCAPE '\\' " +
+                                "  AND F_ANC.ID != ? " +
+                                "  AND P_ANC.USER_ID = ? " +
+                                "  AND P_ANC.INHERIT_ENABLED = 0 " +
+                                ")")
+                        .setParameter(1, parentMask)
+                        .setParameter(2, parentPathForInherited)
+                        .setParameter(3, userId)
+                        .setParameter(4, userId)
+                        .setParameter(5, parentFolder.getId())
+                        .setParameter(6, pathPattern)
+                        .setParameter(7, pathPattern)
+                        .setParameter(8, parentFolder.getId())
+                        .setParameter(9, userId)
+                        .executeUpdate();
+
                 // INSERT: Tối ưu - dùng LEFT JOIN thay vì EXISTS (nhanh hơn 10-100x với 1M+
                 // rows)
                 // Fix: Check xem có ancestor nào trong path bị block inheritance không
@@ -342,6 +377,41 @@ public class PermissionService {
                         .setParameter(5, userId)
                         .setParameter(6, pathPattern)
                         .setParameter(7, parentFolder.getId())
+                        .setParameter(8, pathPattern)
+                        .setParameter(9, parentFolder.getId())
+                        .setParameter(10, userId)
+                        .executeUpdate();
+
+                // INSERT Files
+                entityManager.createNativeQuery(
+                        "INSERT INTO PERMISSION (ID, USER_ID, FILE_ID, PERMISSION_MASK, INHERITED, INHERIT_ENABLED, INHERITED_FROM, APPLIES_TO) "
+                                +
+                                "SELECT NEWID(), ?, FD.ID, ?, 1, 1, ?, 0 " +
+                                "FROM FILE_Descriptor FD " +
+                                "INNER JOIN FOLDER F ON FD.FOLDER_ID = F.ID " +
+                                "LEFT JOIN PERMISSION P ON P.FILE_ID = FD.ID AND P.USER_ID = ? " +
+                                "LEFT JOIN PERMISSION P_BLOCKED ON P_BLOCKED.FOLDER_ID = F.ID " +
+                                "  AND P_BLOCKED.USER_ID = ? AND P_BLOCKED.INHERIT_ENABLED = 0 " +
+                                "WHERE (F.ID = ? OR F.FULL_PATH LIKE ? ESCAPE '\\') " +
+                                "AND FD.IN_TRASH = 0 " +
+                                "AND P.FILE_ID IS NULL " +
+                                "AND P_BLOCKED.FOLDER_ID IS NULL " +
+                                "AND NOT EXISTS ( " +
+                                "  SELECT 1 FROM FOLDER F_ANC " +
+                                "  INNER JOIN PERMISSION P_ANC ON P_ANC.FOLDER_ID = F_ANC.ID " +
+                                "  WHERE F_ANC.FULL_PATH LIKE ? ESCAPE '\\' " +
+                                "  AND F.FULL_PATH LIKE F_ANC.FULL_PATH + '%' ESCAPE '\\' " +
+                                "  AND F_ANC.ID != ? " +
+                                "  AND P_ANC.USER_ID = ? " +
+                                "  AND P_ANC.INHERIT_ENABLED = 0 " +
+                                ")")
+                        .setParameter(1, userId)
+                        .setParameter(2, parentMask)
+                        .setParameter(3, parentPathForInherited)
+                        .setParameter(4, userId)
+                        .setParameter(5, userId)
+                        .setParameter(6, parentFolder.getId())
+                        .setParameter(7, pathPattern)
                         .setParameter(8, pathPattern)
                         .setParameter(9, parentFolder.getId())
                         .setParameter(10, userId)
@@ -383,6 +453,40 @@ public class PermissionService {
                         .setParameter(9, roleCode)
                         .executeUpdate();
 
+                // UPDATE Files (Role)
+                entityManager.createNativeQuery(
+                        "UPDATE P " +
+                                "SET P.PERMISSION_MASK = ?, P.INHERITED = 1, P.INHERITED_FROM = ? " +
+                                "FROM PERMISSION P " +
+                                "INNER JOIN FILE_Descriptor FD ON P.FILE_ID = FD.ID " +
+                                "INNER JOIN FOLDER F ON FD.FOLDER_ID = F.ID " +
+                                "LEFT JOIN PERMISSION P_BLOCKED ON P_BLOCKED.FOLDER_ID = F.ID " +
+                                "  AND P_BLOCKED.ROLE_CODE = ? AND P_BLOCKED.INHERIT_ENABLED = 0 " +
+                                "WHERE P.ROLE_CODE = ? " +
+                                "AND (P.INHERIT_ENABLED = 1 OR P.INHERIT_ENABLED IS NULL) " +
+                                "AND (F.ID = ? OR F.FULL_PATH LIKE ? ESCAPE '\\') " +
+                                "AND FD.IN_TRASH = 0 " +
+                                "AND P_BLOCKED.FOLDER_ID IS NULL " +
+                                "AND NOT EXISTS ( " +
+                                "  SELECT 1 FROM FOLDER F_ANC " +
+                                "  INNER JOIN PERMISSION P_ANC ON P_ANC.FOLDER_ID = F_ANC.ID " +
+                                "  WHERE F_ANC.FULL_PATH LIKE ? ESCAPE '\\' " +
+                                "  AND F.FULL_PATH LIKE F_ANC.FULL_PATH + '%' ESCAPE '\\' " +
+                                "  AND F_ANC.ID != ? " +
+                                "  AND P_ANC.ROLE_CODE = ? " +
+                                "  AND P_ANC.INHERIT_ENABLED = 0 " +
+                                ")")
+                        .setParameter(1, parentMask)
+                        .setParameter(2, parentPathForInherited)
+                        .setParameter(3, roleCode)
+                        .setParameter(4, roleCode)
+                        .setParameter(5, parentFolder.getId())
+                        .setParameter(6, pathPattern)
+                        .setParameter(7, pathPattern)
+                        .setParameter(8, parentFolder.getId())
+                        .setParameter(9, roleCode)
+                        .executeUpdate();
+
                 entityManager.createNativeQuery(
                         "INSERT INTO PERMISSION (ID, ROLE_CODE, FOLDER_ID, PERMISSION_MASK, INHERITED, INHERIT_ENABLED, INHERITED_FROM, APPLIES_TO) "
                                 +
@@ -412,6 +516,41 @@ public class PermissionService {
                         .setParameter(5, roleCode)
                         .setParameter(6, pathPattern)
                         .setParameter(7, parentFolder.getId())
+                        .setParameter(8, pathPattern)
+                        .setParameter(9, parentFolder.getId())
+                        .setParameter(10, roleCode)
+                        .executeUpdate();
+
+                // INSERT Files (Role)
+                entityManager.createNativeQuery(
+                        "INSERT INTO PERMISSION (ID, ROLE_CODE, FILE_ID, PERMISSION_MASK, INHERITED, INHERIT_ENABLED, INHERITED_FROM, APPLIES_TO) "
+                                +
+                                "SELECT NEWID(), ?, FD.ID, ?, 1, 1, ?, 0 " +
+                                "FROM FILE_Descriptor FD " +
+                                "INNER JOIN FOLDER F ON FD.FOLDER_ID = F.ID " +
+                                "LEFT JOIN PERMISSION P ON P.FILE_ID = FD.ID AND P.ROLE_CODE = ? " +
+                                "LEFT JOIN PERMISSION P_BLOCKED ON P_BLOCKED.FOLDER_ID = F.ID " +
+                                "  AND P_BLOCKED.ROLE_CODE = ? AND P_BLOCKED.INHERIT_ENABLED = 0 " +
+                                "WHERE (F.ID = ? OR F.FULL_PATH LIKE ? ESCAPE '\\') " +
+                                "AND FD.IN_TRASH = 0 " +
+                                "AND P.FILE_ID IS NULL " +
+                                "AND P_BLOCKED.FOLDER_ID IS NULL " +
+                                "AND NOT EXISTS ( " +
+                                "  SELECT 1 FROM FOLDER F_ANC " +
+                                "  INNER JOIN PERMISSION P_ANC ON P_ANC.FOLDER_ID = F_ANC.ID " +
+                                "  WHERE F_ANC.FULL_PATH LIKE ? ESCAPE '\\' " +
+                                "  AND F.FULL_PATH LIKE F_ANC.FULL_PATH + '%' ESCAPE '\\' " +
+                                "  AND F_ANC.ID != ? " +
+                                "  AND P_ANC.ROLE_CODE = ? " +
+                                "  AND P_ANC.INHERIT_ENABLED = 0 " +
+                                ")")
+                        .setParameter(1, roleCode)
+                        .setParameter(2, parentMask)
+                        .setParameter(3, parentPathForInherited)
+                        .setParameter(4, roleCode)
+                        .setParameter(5, roleCode)
+                        .setParameter(6, parentFolder.getId())
+                        .setParameter(7, pathPattern)
                         .setParameter(8, pathPattern)
                         .setParameter(9, parentFolder.getId())
                         .setParameter(10, roleCode)
@@ -497,6 +636,32 @@ public class PermissionService {
                             .setParameter(3, parentPathForInherited)
                             .setParameter(4, userId)
                             .executeUpdate();
+
+                    // Fallback Files for User
+                    entityManager.createNativeQuery(
+                            "UPDATE PERMISSION SET PERMISSION_MASK = ?, INHERITED = 1, INHERITED_FROM = ? " +
+                                    "FROM PERMISSION P " +
+                                    "INNER JOIN FILE_Descriptor FD ON P.FILE_ID = FD.ID " +
+                                    "WHERE P.USER_ID = ? AND (P.INHERIT_ENABLED = 1 OR P.INHERIT_ENABLED IS NULL) " +
+                                    "AND FD.FOLDER_ID IN (" + validIdsStr + ")")
+                            .setParameter(1, parentMask)
+                            .setParameter(2, parentPathForInherited)
+                            .setParameter(3, userId)
+                            .executeUpdate();
+
+                    entityManager.createNativeQuery(
+                            "INSERT INTO PERMISSION (ID, USER_ID, FILE_ID, PERMISSION_MASK, INHERITED, INHERIT_ENABLED, INHERITED_FROM, APPLIES_TO) "
+                                    +
+                                    "SELECT NEWID(), ?, FD.ID, ?, 1, 1, ?, 0 " +
+                                    "FROM FILE_Descriptor FD " +
+                                    "WHERE FD.FOLDER_ID IN (" + validIdsStr + ") " +
+                                    "AND NOT EXISTS (SELECT 1 FROM PERMISSION P WHERE P.FILE_ID = FD.ID AND P.USER_ID = ?)")
+                            .setParameter(1, userId)
+                            .setParameter(2, parentMask)
+                            .setParameter(3, parentPathForInherited)
+                            .setParameter(4, userId)
+                            .executeUpdate();
+
                 } else {
                     entityManager.createNativeQuery(
                             "UPDATE PERMISSION SET PERMISSION_MASK = ?, INHERITED = 1, INHERITED_FROM = ? " +
@@ -518,11 +683,37 @@ public class PermissionService {
                             .setParameter(3, parentPathForInherited)
                             .setParameter(4, roleCode)
                             .executeUpdate();
+
+                    // Fallback Files for Role
+                    entityManager.createNativeQuery(
+                            "UPDATE PERMISSION SET PERMISSION_MASK = ?, INHERITED = 1, INHERITED_FROM = ? " +
+                                    "FROM PERMISSION P " +
+                                    "INNER JOIN FILE_Descriptor FD ON P.FILE_ID = FD.ID " +
+                                    "WHERE P.ROLE_CODE = ? AND (P.INHERIT_ENABLED = 1 OR P.INHERIT_ENABLED IS NULL) " +
+                                    "AND FD.FOLDER_ID IN (" + validIdsStr + ")")
+                            .setParameter(1, parentMask)
+                            .setParameter(2, parentPathForInherited)
+                            .setParameter(3, roleCode)
+                            .executeUpdate();
+
+                    entityManager.createNativeQuery(
+                            "INSERT INTO PERMISSION (ID, ROLE_CODE, FILE_ID, PERMISSION_MASK, INHERITED, INHERIT_ENABLED, INHERITED_FROM, APPLIES_TO) "
+                                    +
+                                    "SELECT NEWID(), ?, FD.ID, ?, 1, 1, ?, 0 " +
+                                    "FROM FILE_Descriptor FD " +
+                                    "WHERE FD.FOLDER_ID IN (" + validIdsStr + ") " +
+                                    "AND NOT EXISTS (SELECT 1 FROM PERMISSION P WHERE P.FILE_ID = FD.ID AND P.ROLE_CODE = ?)")
+                            .setParameter(1, roleCode)
+                            .setParameter(2, parentMask)
+                            .setParameter(3, parentPathForInherited)
+                            .setParameter(4, roleCode)
+                            .executeUpdate();
                 }
             }
             currentLevelIds = nextLevelIds;
         }
     }
+
     // Fixed disableInheritance methods for User + Folder
     @Transactional
     public void disableInheritance(User user, Folder folder, boolean convertToExplicit) {
@@ -531,6 +722,7 @@ public class PermissionService {
                 .parameter("user", user)
                 .parameter("folder", folder)
                 .list();
+
         for (Permission perm : permissions) {
             perm.setInheritEnabled(false);
             if (Boolean.TRUE.equals(perm.getInherited())) {

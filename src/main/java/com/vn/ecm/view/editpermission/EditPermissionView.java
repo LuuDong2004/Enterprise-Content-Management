@@ -342,7 +342,7 @@ public class EditPermissionView extends StandardView {
         SavePermissionTask task = new SavePermissionTask(permissionDc.getItems());
         dialogs.createBackgroundTaskDialog(task)
                 .withHeader("Lưu quyền")
-                .withText("Đang lưu quyền...")
+                .withText("Đang lưu quyền và kế thừa cho các đối tượng con...")
                 .withCancelAllowed(true)
                 .open();
     }
@@ -396,6 +396,9 @@ public class EditPermissionView extends StandardView {
         }
     }
 
+    /**
+     * BackgroundTask để lưu quyền và propagate cho các đối tượng con.
+     */
     private class SavePermissionTask extends BackgroundTask<Integer, Void> {
         private final Collection<Permission> permissions;
         private final UI ui;
@@ -447,7 +450,7 @@ public class EditPermissionView extends StandardView {
                     permissionsDl.setParameter("user", selectedUser);
                     permissionsDl.setParameter("roleCode", selectedRole != null ? selectedRole.getCode() : null);
                     permissionsDl.load();
-                    Notification.show("Lưu quyền thành công");
+                    Notification.show("Permission saved");
                     close(StandardOutcome.SAVE);
                 });
             } else if (ui != null) {

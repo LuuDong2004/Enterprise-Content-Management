@@ -45,7 +45,6 @@ public class ZipPreviewService {
                 // Không tìm thấy trong kho động -> fallback
             }
         }
-
         return fileStorageLocator.getDefault();
     }
 
@@ -113,9 +112,6 @@ public class ZipPreviewService {
         }
     }
 
-    // =====================================================
-    // Đọc bytes 1 entry để download – cũng check password
-    // =====================================================
     public byte[] loadEntryBytes(FileRef fileRef, String entryKey, String password) throws Exception {
         Path tempZip = null;
         FileStorage storage = getFileStorage(fileRef);
@@ -163,9 +159,6 @@ public class ZipPreviewService {
         }
     }
 
-    // =====================================================
-    // Build cây DTO từ FileHeader
-    // =====================================================
     protected List<ZipFileDto> buildTreeFromHeaders(List<FileHeader> headers) {
         Map<String, ZipFileDto> nodeByKey = new LinkedHashMap<>();
         List<ZipFileDto> roots = new ArrayList<>();
