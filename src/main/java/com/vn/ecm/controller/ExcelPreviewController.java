@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.InputStream;
+
 //
 @RestController
 @RequestMapping("/api/excel-preview")
@@ -21,7 +22,7 @@ public class ExcelPreviewController {
     @Autowired
     private DynamicStorageManager dynamicStorageManager;
 
-    @GetMapping(value = "/file", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    @GetMapping(value = "/file")
     public ResponseEntity<byte[]> getExcelFile(
             @RequestParam String storageName,
             @RequestParam String path,
@@ -29,16 +30,19 @@ public class ExcelPreviewController {
         try {
             FileRef fileRef = new FileRef(storageName, path, fileName);
             FileStorage storage = dynamicStorageManager.getFileStorageByName(storageName);
-            
+
             try (InputStream is = storage.openStream(fileRef)) {
                 byte[] fileBytes = is.readAllBytes();
-                
+
                 HttpHeaders headers = new HttpHeaders();
                 headers.setContentType(MediaType.parseMediaType(
-                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
                 headers.setContentDispositionFormData("inline", fileName);
                 headers.setContentLength(fileBytes.length);
-                
+                // Add CORS headers to allow fetch from same origin
+                headers.set("Access-Control-Allow-Origin", "*");
+                headers.set("Access-Control-Allow-Methods", "GET, OPTIONS");
+                headers.set("Access-Control-Allow-Headers", "*");
                 return ResponseEntity.ok()
                         .headers(headers)
                         .body(fileBytes);
