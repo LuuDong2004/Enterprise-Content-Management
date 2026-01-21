@@ -33,7 +33,7 @@ public class FilePreviewUntil {
             case "doc" , "docx" -> previewDocxFile(fileRef , parentView);
             case "jpg", "jpeg", "png", "webp", "svg", "gif" -> previewImageFile(fileRef , parentView);
             case "mp4", "mov", "webm" -> preViewVideoFile(fileRef , parentView);
-            case "html", "htm", "java", "js", "css", "md", "xml", "sql" ->
+            case "html", "htm", "java", "js", "css", "md", "xml", "sql" ,"json" ->
                     preViewHtmlFile(fileRef ,  parentView);
             case "xlsx", "xls" -> previewExcelFile(fileRef , parentView);
             case "zip" -> previewZipFile(fileRef, parentView);

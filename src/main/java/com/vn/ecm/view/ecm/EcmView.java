@@ -135,6 +135,9 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
     @Autowired
     private Metadata metadata;
 
+    @Autowired
+    private FilePreviewUntil filePreviewUntil;
+
     private String conditions = " and e.inTrash = false and e.sourceStorage = :storage";
 
     @Subscribe
@@ -570,48 +573,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         if (file == null) {
             return;
         }
-        FileRef fileRef = file.getFileRef();
-        String extension = file.getExtension();
-        if (extension.startsWith("pdf")) {
-            previewPdfFile(fileRef);
-        }
-        if (extension.startsWith("txt") || extension.startsWith("doc")) {
-            previewTextFile(fileRef);
-        }
-        if (extension.startsWith("jpg")
-                || extension.startsWith("png")
-                || extension.startsWith("jpeg")
-                || extension.startsWith("webp")
-                || extension.startsWith("svg")
-                || extension.startsWith("gif")) {
-            previewImageFile(fileRef);
-        }
-        if (extension.startsWith("mp4")
-                || extension.startsWith("mov")
-                || extension.startsWith("webm")) {
-            preViewVideoFile(fileRef);
-        }
-        if (extension.startsWith("html")
-                || extension.startsWith("htm")
-                || extension.startsWith("java")
-                || extension.startsWith("js")
-                || extension.startsWith("css")
-                || extension.startsWith("md")
-                || extension.startsWith("xml")
-                || extension.startsWith("sql")) {
-            preViewHtmlFile(fileRef);
-        }
-        if (extension.startsWith("xlsx")) {
-            previewExcelFile(fileRef);
-        }
-        if (extension.startsWith("zip")) {
-            previewZipFile(fileRef);
-        } else {
-            notifications.create("Loại tệp này chưa hỗ trợ xem trước!")
-                    .withDuration(2000)
-                    .withCloseable(false)
-                    .show();
-        }
+        filePreviewUntil.previewFile(file.getFileRef(), file.getName(), this);
     }
 
     private void previewPdfFile(FileRef fileRelf) {

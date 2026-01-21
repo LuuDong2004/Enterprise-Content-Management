@@ -51,8 +51,19 @@ public class FileDescriptor {
     @Column(name = "DELETE_DATE")
     private LocalDateTime deleteDate;
 
+    @Column(name = "CREATE_DATE")
+    private LocalDateTime createDate;
+
     @Column(name = "CREATE_BY")
     private String createBy;
+
+    public void setCreateDate(LocalDateTime createDate) {
+        this.createDate = createDate;
+    }
+
+    public LocalDateTime getCreateDate() {
+        return createDate;
+    }
 
     public String getCreateBy() {
         return createBy;

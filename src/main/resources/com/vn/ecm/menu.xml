@@ -3,12 +3,11 @@
 
     <menu id="application" title="Quản lý người dùng" icon="vaadin:user-card">
         <item view="User.list" title="Danh sách người dùng" icon="vaadin:user"/>
-        <item view="MyDriveAssignDialog" title="msg://com.vn.ecm.view.mydrive/myDriveAssignDialog.title"/>
     </menu>
 
     <menu id="storage" title="msg://com.vn.ecm.view.ecm/ecmView.title" icon="vaadin:database">
         <item view="SourceStorage.list" title="Kho dữ liệu" icon="vaadin:storage"/>
-        <item view="ShareContentView" title="Chia sẻ dữ liệu" icon="vaadin:share"/>
+<!--        <item view="ShareContentView" title="Chia sẻ dữ liệu" icon="vaadin:share"/>-->
     </menu>
 
     <menu id="security" title="Bảo mật" icon="vaadin:shield">
