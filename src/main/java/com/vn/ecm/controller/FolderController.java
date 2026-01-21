@@ -68,22 +68,12 @@ public class FolderController {
     @GetMapping("/root")
     public ResponseEntity<?> getRootFolder() {
         try {
+            User user = getCurrentUser();
+            Folder rootFolder = folderService.getOrCreateRootFolder(user);
 
-            // Find a root folder (parent is null) - get first one or find by user's default
-            // storage
-            List<Folder> rootFolders = dataManager.load(Folder.class)
-                    .query("select f from Folder f where f.parent is null and f.inTrash = false")
-                    .list();
-
-            if (rootFolders.isEmpty()) {
-                // No root folder exists, could return 404 or create one
+            if (rootFolder == null) {
                 return ResponseEntity.notFound().build();
             }
-
-            // For now, return the first root folder
-            // In a multi-storage scenario, you might want to filter by user's default
-            // storage
-            Folder rootFolder = rootFolders.get(0);
 
             // Convert to DTO
             Map<String, Object> folderDto = toFolderDto(rootFolder);
@@ -102,10 +92,8 @@ public class FolderController {
             Folder folder = dataManager.load(Folder.class).id(id).optional()
                     .orElseThrow(() -> new IllegalArgumentException("Folder not found: " + id));
 
-            // Check permission - Allow access to root folders (parent is null) or if user
-            // has READ permission
-            boolean isRootFolder = folder.getParent() == null;
-            if (!isRootFolder && !permissionService.hasPermission(user, PermissionType.READ, folder)) {
+            // Check permission - Always check READ permission
+            if (!permissionService.hasPermission(user, PermissionType.READ, folder)) {
                 return ResponseEntity.status(403).body(Map.of("error", "No permission to access this folder"));
             }
 
@@ -122,27 +110,13 @@ public class FolderController {
                     .list();
 
             // Filter subfolders and files by permission
-            // For root folder, allow all subfolders/files (owner should have permission
-            // anyway)
-            // For other folders, filter by permission
-            List<Folder> subfolders;
-            List<FileDescriptor> files;
+            List<Folder> subfolders = allSubfolders.stream()
+                    .filter(subfolder -> permissionService.hasPermission(user, PermissionType.READ, subfolder))
+                    .collect(Collectors.toList());
 
-            if (isRootFolder) {
-                // Root folder: show all subfolders and files (permission already checked at
-                // folder level)
-                subfolders = allSubfolders;
-                files = allFiles;
-            } else {
-                // Non-root folder: filter by permission
-                subfolders = allSubfolders.stream()
-                        .filter(subfolder -> permissionService.hasPermission(user, PermissionType.READ, subfolder))
-                        .collect(Collectors.toList());
-
-                files = allFiles.stream()
-                        .filter(file -> permissionService.hasPermission(user, PermissionType.READ, file))
-                        .collect(Collectors.toList());
-            }
+            List<FileDescriptor> files = allFiles.stream()
+                    .filter(file -> permissionService.hasPermission(user, PermissionType.READ, file))
+                    .collect(Collectors.toList());
 
             // Build response DTO
             Map<String, Object> response = new HashMap<>();

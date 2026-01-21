@@ -24,4 +24,6 @@ public interface IFolderService {
 
     Folder moveFolderPathOnly(Folder source, Folder target);
 
+    Folder getOrCreateRootFolder(com.vn.ecm.entity.User user);
+
 }

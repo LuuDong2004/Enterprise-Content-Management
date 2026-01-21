@@ -124,48 +124,77 @@ public class SharingService {
     }
 
     public List<ShareLinkItemDto> getSharedWithMe(User currentUser) {
-
-        return dataManager.load(ShareLink.class)
-                .query("""
-            select s from ShareLink s
-            where s.recipientEmail = :email
-              and s.active = true
-        """)
-                .parameter("email", currentUser.getEmail())
+        return dataManager.load(Permission.class)
+                .query("select p from Permission p where p.user = :user and p.inherited = false")
+                .parameter("user", currentUser)
                 .fetchPlan(fp -> {
-                    fp.add("createdDate");
-                    fp.add("permissionType");
-                    fp.add("expiryDate");
-                    fp.add("active");
-
-                    fp.add("owner", o -> o.add("username"));
-
+                    fp.add("permissionMask");
                     fp.add("folder", f -> {
                         f.add("id");
                         f.add("name");
+                        f.add("createdDate");
                     });
-
                     fp.add("file", f -> {
                         f.add("id");
                         f.add("name");
+                        f.add("createBy");
+                        f.add("lastModified");
+                        f.add("extension");
                     });
                 })
                 .list()
                 .stream()
-                .map(s -> {
-                    boolean isFolder = s.getFolder() != null;
-
-                    return new ShareLinkItemDto(
-                            s.getId(),
-                            isFolder ? s.getFolder().getName() : s.getFile().getName(),
-                            isFolder ? DriveItemType.FOLDER : driveItemTypeResolver.resolve(s.getFile()),
-                            s.getOwner().getUsername(),     // Shared by
-                            s.getCreatedDate(),             // Shared date
-                            s.getPermissionType(),
-                            s.isValid()
-                    );
+                .map(p -> {
+                    boolean isFolder = p.getFolder() != null;
+                    if (isFolder) {
+                        Folder f = p.getFolder();
+                        String ownerName = resolveFolderOwnerName(f);
+                        if (ownerName.equals(currentUser.getUsername())) {
+                            return null;
+                        }
+                        return new ShareLinkItemDto(
+                                f.getId(),
+                                f.getName(),
+                                DriveItemType.FOLDER,
+                                null,
+                                ownerName,
+                                f.getCreatedDate(),
+                                PermissionType.fromId(p.getPermissionMask()) != null ?
+                                        PermissionType.fromId(p.getPermissionMask()).name() : "READ",
+                                true
+                        );
+                    } else if (p.getFile() != null) {
+                        FileDescriptor fd = p.getFile();
+                        if (fd.getCreateBy() != null && fd.getCreateBy().equals(currentUser.getUsername())) {
+                            return null;
+                        }
+                        return new ShareLinkItemDto(
+                                fd.getId(),
+                                fd.getName(),
+                                driveItemTypeResolver.resolve(fd),
+                                fd.getExtension(),
+                                fd.getCreateBy() != null ? fd.getCreateBy() : "System",
+                                fd.getLastModified(),
+                                PermissionType.fromId(p.getPermissionMask()) != null ?
+                                        PermissionType.fromId(p.getPermissionMask()).name() : "READ",
+                                true
+                        );
+                    }
+                    return null;
                 })
+                .filter(Objects::nonNull)
                 .toList();
+    }
+
+    private String resolveFolderOwnerName(Folder folder) {
+        return dataManager.load(Permission.class)
+                .query("select p from Permission p where p.folder = :folder and p.inherited = false and p.permissionMask = :mask")
+                .parameter("folder", folder)
+                .parameter("mask", PermissionType.FULL.getValue())
+                .maxResults(1)
+                .optional()
+                .map(p -> p.getUser() != null ? p.getUser().getUsername() : "System")
+                .orElse("System");
     }
 
     /**
@@ -193,6 +222,7 @@ public class SharingService {
                     fp.add("file", f -> {
                         f.add("id");
                         f.add("name");
+                        f.add("extension");
                     });
                 })
                 .list();
@@ -204,6 +234,7 @@ public class SharingService {
                     s.getId(),
                     isFolder ? s.getFolder().getName() : s.getFile().getName(),
                     isFolder ? DriveItemType.FOLDER : driveItemTypeResolver.resolve(s.getFile()),
+                    isFolder ? null : s.getFile().getExtension(),
                     s.getOwner().getUsername(),
                     s.getCreatedDate(),
                     s.getPermissionType(),
@@ -361,6 +392,21 @@ public class SharingService {
         return false;
     }
     
+    public List<User> searchUsers(String query) {
+        return dataManager.load(User.class)
+                .query("select u from User u where u.username like :query or u.email like :query")
+                .parameter("query", "%" + query + "%")
+                .maxResults(10)
+                .list();
+    }
+
+    public Optional<User> findUserByUsernameOrEmail(String identifier) {
+        return dataManager.load(User.class)
+                .query("select u from User u where u.username = :id or u.email = :id")
+                .parameter("id", identifier)
+                .optional();
+    }
+
     private String generateUniqueToken() {
         byte[] randomBytes = new byte[32];
         secureRandom.nextBytes(randomBytes);

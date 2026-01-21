@@ -57,10 +57,7 @@ public class SharingController {
     public ResponseEntity<?> shareWithUser(@RequestBody ShareUserRequest request) {
         try {
             User owner = getCurrentUser();
-            User recipient = dataManager.load(User.class)
-                    .query("select u from User u where u.username = :username")
-                    .parameter("username", request.recipientUsername)
-                    .optional()
+            User recipient = sharingService.findUserByUsernameOrEmail(request.recipientUsername)
                     .orElseThrow(() -> new IllegalArgumentException("User not found: " + request.recipientUsername));
 
             Object target = loadTarget(request.targetId, request.targetType);
@@ -68,6 +65,22 @@ public class SharingController {
 
             sharingService.shareWithUser(owner, recipient, target, type);
             return ResponseEntity.ok().body(Map.of("message", "Success"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/search-users")
+    public ResponseEntity<?> searchUsers(@RequestParam String query) {
+        try {
+            List<User> users = sharingService.searchUsers(query);
+            List<Map<String, String>> result = users.stream()
+                    .map(u -> Map.of(
+                            "username", u.getUsername(),
+                            "email", u.getEmail() != null ? u.getEmail() : ""
+                    ))
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(result);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
