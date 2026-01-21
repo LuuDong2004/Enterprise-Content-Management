@@ -87,7 +87,7 @@ public class FtpStorage implements FileStorage {
             }
 
         } catch (IOException e) {
-            throw new RuntimeException("Lỗi khi ghi file lên FTP", e);
+            throw new RuntimeException("Lỗi khi tải tệp lên FTP", e);
         } finally {
             disconnect(client);
         }

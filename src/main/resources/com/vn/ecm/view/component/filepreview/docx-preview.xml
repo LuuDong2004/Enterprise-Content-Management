@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<view xmlns="http://jmix.io/schema/flowui/view"
+      title="msg://docxPreview.title">
+    <layout>
+        <vbox width="100%" height="100%">
+            <div id="contentBox"
+                 width="100%"
+                 height="100%"/>
+        </vbox>
+    </layout>
+</view>

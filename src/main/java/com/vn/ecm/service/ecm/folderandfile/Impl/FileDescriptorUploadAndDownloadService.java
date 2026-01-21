@@ -70,11 +70,11 @@ public class FileDescriptorUploadAndDownloadService implements IFileDescriptorUp
             FileDescriptor savedDescriptor = dataManager.save(fileDescriptor);
 
             File fileForOcr = resolveFileForOcr(tempFile, ocrTempCopy, fileName);
-            if (fileForOcr != null) {
-                ocrFileTextSearchService.indexFile(savedDescriptor, fileForOcr);
-            } else {
-                log.debug("Skip OCR for {} because source file is not available anymore", fileName);
-            }
+//            if (fileForOcr != null) {
+//                ocrFileTextSearchService.indexFile(savedDescriptor, fileForOcr);
+//            } else {
+//                log.debug("Skip OCR for {} because source file is not available anymore", fileName);
+//            }
 
             return savedDescriptor;
 

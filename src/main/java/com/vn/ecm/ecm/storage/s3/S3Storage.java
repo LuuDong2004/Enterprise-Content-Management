@@ -3,6 +3,8 @@ package com.vn.ecm.ecm.storage.s3;
 import com.vn.ecm.entity.SourceStorage;
 import io.jmix.core.FileRef;
 import io.jmix.core.FileStorage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -20,6 +22,7 @@ public class S3Storage implements FileStorage {
     private final SourceStorage source;
     private final S3Client s3;
     private final String storageName;
+    private static final Logger log = LoggerFactory.getLogger(S3Storage.class);
 
     public S3Storage(SourceStorage source, S3Client s3) {
         this.source = Objects.requireNonNull(source);
@@ -65,19 +68,45 @@ public class S3Storage implements FileStorage {
         }
     }
 
+    //    @Override
+//    public InputStream openStream(FileRef reference) {
+//        assertSameStorage(reference);
+//        try {
+//            var rsp = s3.getObject(GetObjectRequest.builder()
+//                            .bucket(source.getBucket())
+//                            .key(reference.getPath())
+//                            .build(),
+//                   ResponseTransformer.toBytes());
+//            return new ByteArrayInputStream(rsp.asByteArray());
+//        } catch (NoSuchKeyException e) {
+//            throw new RuntimeException("Object not found: " + reference.getPath(), e);
+//        } catch (Exception e) {
+//            throw new RuntimeException("Open stream failed for: " + reference, e);
+//        }
+//    }
     @Override
     public InputStream openStream(FileRef reference) {
         assertSameStorage(reference);
+        String key = reference.getPath();
         try {
+            log.info("[S3Storage] openStream bucket={} key={} storageName={} fileRef={}",
+                    source.getBucket(), key, storageName, reference);
+
+            s3.serviceClientConfiguration().endpointOverride().ifPresent(endpoint ->
+                    log.info("[S3Storage] S3 endpoint={}", endpoint));
+
             var rsp = s3.getObject(GetObjectRequest.builder()
                             .bucket(source.getBucket())
-                            .key(reference.getPath())
+                            .key(key)
                             .build(),
-                   ResponseTransformer.toBytes());
+                    ResponseTransformer.toBytes());
+
             return new ByteArrayInputStream(rsp.asByteArray());
         } catch (NoSuchKeyException e) {
-            throw new RuntimeException("Object not found: " + reference.getPath(), e);
+            log.error("[S3Storage] Object not found bucket={} key={}", source.getBucket(), key, e);
+            throw new RuntimeException("Object not found: " + key, e);
         } catch (Exception e) {
+            log.error("[S3Storage] Open stream FAILED bucket={} key={}", source.getBucket(), key, e);
             throw new RuntimeException("Open stream failed for: " + reference, e);
         }
     }

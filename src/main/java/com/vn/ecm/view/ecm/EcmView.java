@@ -24,6 +24,8 @@ import com.vn.ecm.view.folder.CreateFolderDialogView;
 import com.vn.ecm.view.folder.EditNameFolderDialogView;
 import com.vn.ecm.view.folder.FolderLazyTreeItems;
 import com.vn.ecm.view.main.MainView;
+import com.vn.ecm.view.mydrive.MyDriveAssignDialog;
+import com.vn.ecm.view.sharecontent.ShareContentView;
 import com.vn.ecm.view.sourcestorage.SourceStorageListView;
 import com.vn.ecm.view.viewmode.ViewModeFragment;
 import io.jmix.core.DataManager;
@@ -132,6 +134,9 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
 
     @Autowired
     private Metadata metadata;
+
+    @Autowired
+    private FilePreviewUntil filePreviewUntil;
 
     private String conditions = " and e.inTrash = false and e.sourceStorage = :storage";
 
@@ -568,97 +573,7 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         if (file == null) {
             return;
         }
-        FileRef fileRef = file.getFileRef();
-        String extension = file.getExtension();
-        if (extension.startsWith("pdf")) {
-            previewPdfFile(fileRef);
-        }
-        if (extension.startsWith("txt") || extension.startsWith("doc")) {
-            previewTextFile(fileRef);
-        }
-        if (extension.startsWith("jpg")
-                || extension.startsWith("png")
-                || extension.startsWith("jpeg")
-                || extension.startsWith("webp")
-                || extension.startsWith("svg")
-                || extension.startsWith("gif")) {
-            previewImageFile(fileRef);
-        }
-        if (extension.startsWith("mp4")
-                || extension.startsWith("mov")
-                || extension.startsWith("webm")) {
-            preViewVideoFile(fileRef);
-        }
-        if (extension.startsWith("html")
-                || extension.startsWith("htm")
-                || extension.startsWith("java")
-                || extension.startsWith("js")
-                || extension.startsWith("css")
-                || extension.startsWith("md")
-                || extension.startsWith("xml")
-                || extension.startsWith("sql")) {
-            preViewHtmlFile(fileRef);
-        }
-        if (extension.startsWith("xlsx")) {
-            previewExcelFile(fileRef);
-        }
-        if (extension.startsWith("zip")) {
-            previewZipFile(fileRef);
-        } else {
-            notifications.create("Loại tệp này chưa hỗ trợ xem trước!")
-                    .withDuration(2000)
-                    .withCloseable(false)
-                    .show();
-        }
-    }
-
-    private void previewPdfFile(FileRef fileRelf) {
-        DialogWindow<PdfPreview> window = dialogWindows.view(this, PdfPreview.class).build();
-        window.getView().setInputFile(fileRelf);
-        window.setResizable(true);
-        window.open();
-    }
-
-    private void previewTextFile(FileRef fileRelf) {
-        DialogWindow<TextPreview> window = dialogWindows.view(this, TextPreview.class).build();
-        window.getView().setInputFile(fileRelf);
-        window.setResizable(true);
-        window.open();
-    }
-
-    private void previewImageFile(FileRef fileRelf) {
-        DialogWindow<ImagePreview> window = dialogWindows.view(this, ImagePreview.class).build();
-        window.getView().setInputFile(fileRelf);
-        window.setResizable(true);
-        window.open();
-    }
-
-    private void preViewVideoFile(FileRef fileRelf) {
-        DialogWindow<VideoPreview> window = dialogWindows.view(this, VideoPreview.class).build();
-        window.getView().setInputFile(fileRelf);
-        window.setResizable(true);
-        window.open();
-    }
-
-    private void preViewHtmlFile(FileRef fileRelf) {
-        DialogWindow<CodePreview> window = dialogWindows.view(this, CodePreview.class).build();
-        window.getView().setInputFile(fileRelf);
-        window.setResizable(true);
-        window.open();
-    }
-
-    private void previewExcelFile(FileRef fileRelf) {
-        DialogWindow<ExcelPreview> window = dialogWindows.view(this, ExcelPreview.class).build();
-        window.getView().setInputFile(fileRelf);
-        window.setResizable(true);
-        window.open();
-    }
-
-    private void previewZipFile(FileRef fileRelf) {
-        DialogWindow<ZipPreview> window = dialogWindows.view(this, ZipPreview.class).build();
-        window.getView().setInputFile(fileRelf);
-        window.setResizable(true);
-        window.open();
+        filePreviewUntil.previewFile(file.getFileRef(), file.getName(), this);
     }
 
     private void executeOcrSearch() {
@@ -761,8 +676,20 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
                     .show();
             return;
         }
-        var dw = dialogWindows.view(this, com.vn.ecm.view.sharecontent.ShareContentView.class).build();
+        var dw = dialogWindows.view(this, ShareContentView.class).build();
         dw.getView().setTargetFile(selected);
+        dw.open();
+    }
+
+    @Subscribe("foldersTree.accessDrive")
+    public void onFoldersTreeAccessDrive(final ActionPerformedEvent event) {
+        Folder selected = foldersTree.getSingleSelectedItem();
+        var dw = dialogWindows.view(this, MyDriveAssignDialog.class).build();
+        if(selected == null){
+            return;
+        }
+        dw.getView().setFolder(selected.getId());
+        dw.setResizable(true);
         dw.open();
     }
 

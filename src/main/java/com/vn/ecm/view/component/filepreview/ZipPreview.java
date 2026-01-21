@@ -3,6 +3,7 @@ package com.vn.ecm.view.component.filepreview;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.dialog.Dialog;
+import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -11,8 +12,14 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vn.ecm.dto.ZipFileDto;
+import com.vn.ecm.ecm.storage.DynamicStorageManager;
+import com.vn.ecm.entity.FileDescriptor;
 import com.vn.ecm.service.ecm.zipfile.ZipPreviewService;
+import com.vn.ecm.view.ecm.FilePreviewUntil;
 import io.jmix.core.FileRef;
+import io.jmix.core.FileStorage;
+import io.jmix.core.FileStorageLocator;
+import io.jmix.flowui.DialogWindows;
 import io.jmix.flowui.Notifications;
 import io.jmix.flowui.UiComponents;
 import io.jmix.flowui.component.grid.TreeDataGrid;
@@ -20,12 +27,14 @@ import io.jmix.flowui.download.DownloadFormat;
 import io.jmix.flowui.download.Downloader;
 import io.jmix.flowui.kit.action.ActionPerformedEvent;
 import io.jmix.flowui.model.CollectionContainer;
+import io.jmix.flowui.upload.TemporaryStorage;
 import io.jmix.flowui.view.*;
 import net.lingala.zip4j.exception.ZipException;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @ViewController("zipPreview")
 @ViewDescriptor("zip-preview.xml")
@@ -51,10 +60,21 @@ public class ZipPreview extends StandardView {
     @ViewComponent
     private CollectionContainer<ZipFileDto> zipTreeDc;
 
+    @Autowired
+    private FilePreviewUntil filePreviewUntil;
+    @Autowired
+    private FileStorageLocator fileStorageLocator;
+
     private String currentPassword;
 
-    public void setInputFile(FileRef fileRef) {
-        this.inputFile = fileRef;
+    @Autowired
+    private DynamicStorageManager dynamicStorageManager;
+    @Autowired
+    private TemporaryStorage temporaryStorage;
+
+    public void setInputFile(FileRef inputFile) {
+
+        this.inputFile = inputFile;
     }
 
     @Subscribe
@@ -85,6 +105,7 @@ public class ZipPreview extends StandardView {
                     .show();
         }
     }
+
     private void buildTreeAndFill(String password) throws Exception {
         List<ZipFileDto> roots = zipPreviewService.buildZipTree(inputFile, password);
         this.currentPassword = password;
@@ -110,6 +131,7 @@ public class ZipPreview extends StandardView {
             }
         }
     }
+
     private void openPasswordDialog() {
         Dialog dialog = new Dialog();
         dialog.setHeaderTitle("Tệp nén có mật khẩu");
@@ -139,6 +161,7 @@ public class ZipPreview extends StandardView {
         dialog.add(layout);
         dialog.open();
     }
+
     @Subscribe("zipTreeGrid.downloadAction")
     public void onDownload(ActionPerformedEvent event) {
         ZipFileDto selected = zipTreeGrid.getSingleSelectedItem();
@@ -169,6 +192,7 @@ public class ZipPreview extends StandardView {
                     .show();
         }
     }
+
     private void initFolderGridColumn() {
         if (zipTreeGrid.getColumnByKey("name") != null) {
             zipTreeGrid.removeColumn(zipTreeGrid.getColumnByKey("name"));
@@ -256,4 +280,50 @@ public class ZipPreview extends StandardView {
     }
 
 
+    @Subscribe("zipTreeGrid.previewFileAction")
+    public void onZipTreeGridPreviewFileAction(ActionPerformedEvent event) {
+
+        ZipFileDto selected = zipTreeGrid.getSingleSelectedItem();
+        if (selected == null || Boolean.TRUE.equals(selected.getFolder())) {
+            return;
+        }
+
+        try {
+
+            byte[] bytes = zipPreviewService.loadEntryBytes(
+                    inputFile,
+                    selected.getKey(),
+                    currentPassword
+            );
+
+            UUID tempId = temporaryStorage.saveFile(bytes);
+
+            FileStorage fileStorage;
+            String storageName = (inputFile != null) ? inputFile.getStorageName() : null;
+
+            if (storageName != null && !storageName.isBlank()) {
+                try {
+                    fileStorage = dynamicStorageManager.getFileStorageByName(storageName);
+                } catch (IllegalArgumentException ignored) {
+                    fileStorage = fileStorageLocator.getDefault();
+                }
+            } else {
+                fileStorage = fileStorageLocator.getDefault();
+            }
+
+            FileRef fileRef = temporaryStorage.putFileIntoStorage(
+                    tempId,
+                    selected.getName(),
+                    fileStorage
+            );
+            filePreviewUntil.previewFile(fileRef, selected.getName(), this);
+
+        } catch (Exception ex) {
+            notifications.create("Lỗi xem trước: " + ex.getMessage())
+                    .withType(Notifications.Type.ERROR)
+                    .show();
+        }
+    }
+
 }
+

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<view xmlns="http://jmix.io/schema/flowui/view"
+      title="msg://myDriveAssignDialog.title">
+    <data>
+        <collection id="usersDc" class="com.vn.ecm.entity.User">
+            <loader id="usersDl">
+                <query><![CDATA[select u from User u]]></query>
+            </loader>
+            <fetchPlan extends="_base"/>
+        </collection>
+       <instance id="myDriveConfigDc" class="com.vn.ecm.entity.MyDriveConfig"/>
+
+    </data>
+    <layout spacing="true">
+
+        <dataGrid id="usersDataGrid"
+                  width="100%"
+                  dataContainer="usersDc">
+            <columns>
+                <column property="username" />
+                <column property="email"/>
+            </columns>
+        </dataGrid>
+        <hbox spacing="true" justifyContent="END">
+            <button id="saveBtn" text="Cấp quyền"/>
+            <button id="cancelBtn" text="Hủy" />
+        </hbox>
+    </layout>
+</view>
