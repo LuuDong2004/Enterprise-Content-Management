@@ -2,7 +2,10 @@ package com.vn.ecm.service.ecm.folderandfile.Impl;
 
 import com.vn.ecm.entity.FileDescriptor;
 import com.vn.ecm.entity.Folder;
+import com.vn.ecm.entity.Permission;
+import com.vn.ecm.entity.SourceStorage;
 import com.vn.ecm.entity.User;
+import com.vn.ecm.entity.PermissionType;
 import com.vn.ecm.service.ecm.PermissionService;
 import com.vn.ecm.service.ecm.folderandfile.IFolderService;
 import io.jmix.core.DataManager;
@@ -16,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -280,6 +284,49 @@ public class FolderServiceImpl implements IFolderService {
                 .id(source.getId())
                 .optional()
                 .orElse(source);
+    }
+
+    @Override
+    @Transactional
+    public Folder getOrCreateRootFolder(User user) {
+        if (user == null) return null;
+
+        // 1. Find root folder owned by user (parent is null and has FULL permission)
+        Optional<Folder> rootFolder = dataManager.load(Folder.class)
+                .query("select f from Folder f join Permission p on p.folder = f " +
+                        "where f.parent is null and f.inTrash = false " +
+                        "and p.user = :user and p.permissionMask = :fullMask and p.inherited = false")
+                .parameter("user", user)
+                .parameter("fullMask", PermissionType.FULL.getValue())
+                .optional();
+
+        if (rootFolder.isPresent()) {
+            return rootFolder.get();
+        }
+
+        // 2. Not found, create a new "My Drive" folder
+        Folder newRoot = dataManager.create(Folder.class);
+        newRoot.setId(UUID.randomUUID());
+        newRoot.setName("My Drive");
+        newRoot.setParent(null);
+        newRoot.setCreatedDate(LocalDateTime.now());
+        newRoot.setInTrash(false);
+        newRoot.setFullPath("My Drive/");
+
+        // Find default storage
+        SourceStorage sourceStorage = dataManager.load(SourceStorage.class)
+                .query("select s from SourceStorage s where s.active = true")
+                .maxResults(1)
+                .optional()
+                .orElse(null);
+        newRoot.setSourceStorage(sourceStorage);
+
+        Folder savedRoot = dataManager.save(newRoot);
+
+        // 3. Initialize FULL permission for the user
+        permissionService.initializeFolderPermission(user, savedRoot);
+
+        return savedRoot;
     }
 
 }

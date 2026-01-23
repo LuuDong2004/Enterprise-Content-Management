@@ -9,6 +9,7 @@ public record ShareLinkItemDto (
     UUID id,
     String name,
     DriveItemType type,
+    String extension,
     String owner,
     LocalDateTime sharedDate,
     String permissionType,

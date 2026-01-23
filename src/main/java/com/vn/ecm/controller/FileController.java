@@ -19,6 +19,18 @@ public class FileController {
     @Autowired
     private FileService fileService;
 
+    @Autowired
+    private com.vn.ecm.service.ecm.folderandfile.IFileDescriptorUploadAndDownloadService uploadAndDownloadService;
+
+    @Autowired
+    private io.jmix.core.DataManager dataManager;
+
+    @Autowired
+    private com.vn.ecm.service.ecm.PermissionService permissionService;
+
+    @Autowired
+    private io.jmix.core.security.CurrentAuthentication currentAuthentication;
+
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> uploadFile(
             @RequestParam("file") MultipartFile file,
@@ -48,6 +60,51 @@ public class FileController {
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/{id}/download")
+    public ResponseEntity<byte[]> downloadFile(@PathVariable UUID id) {
+        try {
+            FileDescriptor fileDescriptor = dataManager.load(FileDescriptor.class)
+                    .id(id)
+                    .fetchPlan(fp -> {
+                        fp.add("name");
+                        fp.add("extension");
+                        fp.add("fileRef");
+                        fp.add("sourceStorage");
+                    })
+                    .optional()
+                    .orElseThrow(() -> new IllegalArgumentException("File not found: " + id));
+
+            // Logic check quyền có thể thêm ở đây nếu cần
+            
+            byte[] fileBytes = uploadAndDownloadService.downloadFile(fileDescriptor);
+            
+            String contentType = determineContentType(fileDescriptor.getExtension());
+            
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileDescriptor.getName() + "\"")
+                    .body(fileBytes);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    private String determineContentType(String extension) {
+        if (extension == null) return MediaType.APPLICATION_OCTET_STREAM_VALUE;
+        switch (extension.toLowerCase()) {
+            case "pdf": return MediaType.APPLICATION_PDF_VALUE;
+            case "jpg":
+            case "jpeg": return MediaType.IMAGE_JPEG_VALUE;
+            case "png": return MediaType.IMAGE_PNG_VALUE;
+            case "gif": return MediaType.IMAGE_GIF_VALUE;
+            case "txt": return MediaType.TEXT_PLAIN_VALUE;
+            case "html": return MediaType.TEXT_HTML_VALUE;
+            case "xml": return MediaType.APPLICATION_XML_VALUE;
+            case "json": return MediaType.APPLICATION_JSON_VALUE;
+            default: return MediaType.APPLICATION_OCTET_STREAM_VALUE;
         }
     }
 }

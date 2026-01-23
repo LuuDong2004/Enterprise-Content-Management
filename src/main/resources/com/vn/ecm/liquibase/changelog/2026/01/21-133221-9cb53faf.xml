@@ -15,6 +15,11 @@
         </createTable>
     </changeSet>
     <changeSet id="2" author="ECM">
+        <addColumn tableName="FILE_Descriptor">
+            <column name="CREATE_DATE" type="DATETIME"/>
+        </addColumn>
+    </changeSet>
+    <changeSet id="3" author="ECM">
         <createIndex indexName="IDX_MY_DRIVE_CONFIG_MY_DRIVE" tableName="MY_DRIVE_CONFIG" unique="true">
             <column name="MY_DRIVE_ID"/>
         </createIndex>
@@ -23,7 +28,7 @@
                                  constraintName="FK_MY_DRIVE_CONFIG_ON_MY_DRIVE" referencedColumnNames="ID"
                                  referencedTableName="FOLDER"/>
     </changeSet>
-    <changeSet id="3" author="ECM">
+    <changeSet id="4" author="ECM">
         <createIndex indexName="IDX_MY_DRIVE_CONFIG_OWNER" tableName="MY_DRIVE_CONFIG" unique="true">
             <column name="OWNER_ID"/>
         </createIndex>

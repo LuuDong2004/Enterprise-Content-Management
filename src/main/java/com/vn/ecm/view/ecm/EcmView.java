@@ -576,55 +576,6 @@ public class EcmView extends StandardView implements BeforeEnterObserver, AfterN
         filePreviewUntil.previewFile(file.getFileRef(), file.getName(), this);
     }
 
-    private void previewPdfFile(FileRef fileRelf) {
-        DialogWindow<PdfPreview> window = dialogWindows.view(this, PdfPreview.class).build();
-        window.getView().setInputFile(fileRelf);
-        window.setResizable(true);
-        window.open();
-    }
-
-    private void previewTextFile(FileRef fileRelf) {
-        DialogWindow<TextPreview> window = dialogWindows.view(this, TextPreview.class).build();
-        window.getView().setInputFile(fileRelf);
-        window.setResizable(true);
-        window.open();
-    }
-
-    private void previewImageFile(FileRef fileRelf) {
-        DialogWindow<ImagePreview> window = dialogWindows.view(this, ImagePreview.class).build();
-        window.getView().setInputFile(fileRelf);
-        window.setResizable(true);
-        window.open();
-    }
-
-    private void preViewVideoFile(FileRef fileRelf) {
-        DialogWindow<VideoPreview> window = dialogWindows.view(this, VideoPreview.class).build();
-        window.getView().setInputFile(fileRelf);
-        window.setResizable(true);
-        window.open();
-    }
-
-    private void preViewHtmlFile(FileRef fileRelf) {
-        DialogWindow<CodePreview> window = dialogWindows.view(this, CodePreview.class).build();
-        window.getView().setInputFile(fileRelf);
-        window.setResizable(true);
-        window.open();
-    }
-
-    private void previewExcelFile(FileRef fileRelf) {
-        DialogWindow<ExcelPreview> window = dialogWindows.view(this, ExcelPreview.class).build();
-        window.getView().setInputFile(fileRelf);
-        window.setResizable(true);
-        window.open();
-    }
-
-    private void previewZipFile(FileRef fileRelf) {
-        DialogWindow<ZipPreview> window = dialogWindows.view(this, ZipPreview.class).build();
-        window.getView().setInputFile(fileRelf);
-        window.setResizable(true);
-        window.open();
-    }
-
     private void executeOcrSearch() {
         if (currentStorage == null) {
             notifications.create("Vui lòng chọn kho lưu trữ trước khi tìm kiếm.")
