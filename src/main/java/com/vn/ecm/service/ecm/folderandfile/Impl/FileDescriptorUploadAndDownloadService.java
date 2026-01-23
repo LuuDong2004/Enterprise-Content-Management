@@ -1,14 +1,15 @@
 package com.vn.ecm.service.ecm.folderandfile.Impl;
 
 import com.vn.ecm.ecm.storage.DynamicStorageManager;
-import com.vn.ecm.entity.FileDescriptor;
-import com.vn.ecm.entity.Folder;
-import com.vn.ecm.entity.SourceStorage;
+import com.vn.ecm.entity.*;
 import com.vn.ecm.ocr.log.OcrFileTextSearchService;
+import com.vn.ecm.service.ecm.PermissionService;
 import com.vn.ecm.service.ecm.folderandfile.IFileDescriptorUploadAndDownloadService;
 import io.jmix.core.DataManager;
 import io.jmix.core.FileRef;
 import io.jmix.core.FileStorage;
+import io.jmix.core.security.AccessDeniedException;
+import io.jmix.core.security.CurrentAuthentication;
 import io.jmix.flowui.upload.TemporaryStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,6 +41,10 @@ public class FileDescriptorUploadAndDownloadService implements IFileDescriptorUp
     private FileDescriptorService fileDescriptorService;
     @Autowired
     private OcrFileTextSearchService ocrFileTextSearchService;
+    @Autowired
+    private PermissionService permissionService;
+    @Autowired
+    private CurrentAuthentication currentAuthentication;
 
     public FileDescriptor uploadFile(UUID fileId,
             String fileName,
@@ -48,8 +53,18 @@ public class FileDescriptorUploadAndDownloadService implements IFileDescriptorUp
             SourceStorage sourceStorage,
             String username,
             File tempFile) {
+
         File ocrTempCopy = duplicateTempFile(tempFile, fileName);
         try {
+            User user = (User) currentAuthentication.getUser();
+            boolean permission = permissionService.hasPermission(user, PermissionType.CREATE,folder);
+            if(!permission){
+                throw new AccessDeniedException(
+                        "Tệp",
+                        "Xem",
+                        "Tải lên"
+                );
+            }
             String uniqueName = fileDescriptorService.suggestUniqueName(folder, sourceStorage, fileName);
             FileStorage fileStorage = storageManager.getOrCreateFileStorage(sourceStorage);
             FileRef fileRef = tempStorage.putFileIntoStorage(fileId, fileName, fileStorage);
@@ -95,6 +110,16 @@ public class FileDescriptorUploadAndDownloadService implements IFileDescriptorUp
 
     public byte[] downloadFile(FileDescriptor fileDescriptor) {
         FileStorage fileStorage = storageManager.getOrCreateFileStorage(fileDescriptor.getSourceStorage());
+
+        User user = (User) currentAuthentication.getUser();
+        boolean permission = permissionService.hasPermission(user, PermissionType.READ, fileDescriptor);
+        if(!permission){
+            throw new AccessDeniedException(
+                    "FILE",
+                    fileDescriptor.getId().toString(),
+                    "READ"
+            );
+        }
         try (InputStream inputStream = fileStorage.openStream(fileDescriptor.getFileRef())) {
             return inputStream.readAllBytes();
         } catch (Exception e) {
