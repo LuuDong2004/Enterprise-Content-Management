@@ -1,10 +1,11 @@
 package com.vn.ecm.service.ecm.folderandfile.Impl;
 //v1
-import com.vn.ecm.entity.FileDescriptor;
-import com.vn.ecm.entity.Folder;
-import com.vn.ecm.entity.SourceStorage;
+import com.vn.ecm.entity.*;
+import com.vn.ecm.service.ecm.PermissionService;
 import com.vn.ecm.service.ecm.folderandfile.IFileDescriptorService;
 import io.jmix.core.DataManager;
+import io.jmix.core.security.AccessDeniedException;
+import io.jmix.core.security.CurrentAuthentication;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +17,11 @@ public class FileDescriptorService implements IFileDescriptorService {
 
     @Autowired
     private DataManager dataManager;
+    @Autowired
+    private PermissionService permissionService;
+
+    @Autowired
+    private CurrentAuthentication currentAuthentication;
 
     @Override
     public void removeFileToTrash(FileDescriptor fileDescriptor,String user) {
@@ -61,6 +67,30 @@ public class FileDescriptorService implements IFileDescriptorService {
                 .parameter("name", name)
                 .optional()
                 .orElse(null);
+    }
+
+
+    public FileDescriptor loadFile(UUID id) {
+        FileDescriptor fileDescriptor = dataManager.load(FileDescriptor.class)
+                .id(id)
+                .fetchPlan(fp ->{
+                    fp.add("name");
+                    fp.add("extension");
+                    fp.add("fileRef");
+                    fp.add("sourceStorage");
+                }).optional()
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy file: " + id));
+        User currUser = (User) currentAuthentication.getUser();
+        boolean permission = permissionService.hasPermission(currUser, PermissionType.READ, fileDescriptor);
+        if (!permission) {
+            throw new AccessDeniedException(
+                    "FILE",
+                    fileDescriptor.getId().toString(),
+                    "READ"
+            );
+
+        }
+        return fileDescriptor;
     }
 
 
