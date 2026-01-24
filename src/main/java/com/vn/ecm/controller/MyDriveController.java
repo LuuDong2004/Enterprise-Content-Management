@@ -95,8 +95,8 @@ public class MyDriveController {
         dto.put("id", f.getId().toString());
         dto.put("name", f.getName());
         dto.put("parentId", f.getParent() != null ? f.getParent().getId().toString() : null);
-        dto.put("storage",
-                f.getSourceStorage() != null ? f.getSourceStorage().getName() : null);
+        dto.put("sourceStorageId",
+                f.getSourceStorage() != null ? f.getSourceStorage().getId() : null);
         return dto;
     }
     private Map<String, Object> toFileDto(FileDescriptor f) {

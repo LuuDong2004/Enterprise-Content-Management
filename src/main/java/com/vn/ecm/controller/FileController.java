@@ -112,8 +112,13 @@ public class FileController {
                             HttpHeaders.CONTENT_DISPOSITION,
                             "attachment; filename=\"" + fd.getName() + "\""
                     )
+                    .header(
+                            HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS,
+                            HttpHeaders.CONTENT_DISPOSITION
+                    )
                     .contentLength(data.length)
                     .body(data);
+
 
         } catch (AccessDeniedException ex) {
             Map<String, Object> body = new HashMap<>();
