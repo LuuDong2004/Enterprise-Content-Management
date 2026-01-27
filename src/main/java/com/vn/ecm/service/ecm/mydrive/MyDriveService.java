@@ -76,8 +76,8 @@ public class MyDriveService {
 
     public List<Folder> getSubFolders(User user, Folder parent) {
 
-        Folder myDrive = getMyDriveByUser(user);
-        if (!isInsideMyDrive(parent, myDrive)) {
+        // Check READ permission on parent folder first
+        if (!permissionService.hasPermission(user, PermissionType.READ, parent)) {
             return List.of();
         }
 
@@ -97,8 +97,8 @@ public class MyDriveService {
 
     public List<FileDescriptor> getFiles(User user, Folder folder) {
 
-        Folder myDrive = getMyDriveByUser(user);
-        if (!isInsideMyDrive(folder, myDrive)) {
+        // Check READ permission on parent folder first
+        if (!permissionService.hasPermission(user, PermissionType.READ, folder)) {
             return List.of();
         }
 
